@@ -6,5 +6,6 @@
 from .loadMetaData import loadMetaData
 from .createIMRTPlan import createIMRTPlan
 from .loadData import loadData
-from .runIMRTOptimization_CVX import runIMRTOptimization_CVX
-
+from .getVoxels import getVoxels
+from .runIMRTOptimization_CVX import runIMRTOptimization_CVX, getSmoothnessMatrix
+from .runNNLSOptimization_CVX import runNNLSOptimization_CVX
