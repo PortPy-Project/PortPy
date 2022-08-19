@@ -93,13 +93,15 @@ def runIMRTOptimization_CVX(myPlan):
     constraints = []
     # constraints += [wMean == cp.sum(w)/w.shape[0]]
     for i in range(len(clinicalConstraints)):
-        if clinicalConstraints[i]['maxHardConstraint_Gy'] is not None:
-            org = clinicalConstraints[i]['structNames']
-            if org != 'GTV':
-                constraints += [infMatrix[getVoxels(myPlan, org)-1, :] @ w <= clinicalConstraints[i]['maxHardConstraint_Gy']/numFractions]
-        if clinicalConstraints[i]['meanHardConstraint_Gy'] is not None:
-            org = clinicalConstraints[i]['structNames']
-            constraints += [(1/len(getVoxels(myPlan, org)))*(cp.sum(infMatrix[getVoxels(myPlan, org)-1, :] @ w)) <= clinicalConstraints[i]['meanHardConstraint_Gy']/numFractions]
+        if 'maxHardConstraint_Gy' in clinicalConstraints[i]:
+            if clinicalConstraints[i]['maxHardConstraint_Gy'] is not None:
+                org = clinicalConstraints[i]['structNames']
+                if org != 'GTV':
+                    constraints += [infMatrix[getVoxels(myPlan, org)-1, :] @ w <= clinicalConstraints[i]['maxHardConstraint_Gy']/numFractions]
+        if 'meanHardConstraint_Gy' in clinicalConstraints[i]:
+            if clinicalConstraints[i]['meanHardConstraint_Gy'] is not None:
+                org = clinicalConstraints[i]['structNames']
+                constraints += [(1/len(getVoxels(myPlan, org)))*(cp.sum(infMatrix[getVoxels(myPlan, org)-1, :] @ w)) <= clinicalConstraints[i]['meanHardConstraint_Gy']/numFractions]
 
     ##Step 1 and 2 constraint
     constraints += [infMatrix[getVoxels(myPlan, 'PTV')-1, :] @ w <= pres + dO]
