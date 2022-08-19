@@ -5,64 +5,69 @@ import matplotlib.pyplot as plt
 
 def main():
     patientFolderPath = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Paraspinal_Patient_1'
-    saveFilePath = r'C:\Users\fua\Documents\Figures'
-    saveFileName = saveFilePath + r'\robust_smooth.jpg'
+    saveFilePath = r'C:\Users\fua\Pictures\Figures'
+    saveFileName = saveFilePath + r'\robust_smooth-paraspinal.jpg'
     
     # Read all the metadata for the required patient.
     metaData = loadMetaData(patientFolderPath)
     
     # Beams for different patient movements +/- (x,y,z) direction.
     # Gantry angles: 220, 240, 260, 100, 120, 140, 160, 180
-    beamIndicesDict = {"Nominal": np.arange(9),
-                       "Xmin3":   np.arange(9,18),
-                       # "Xplus3":  np.arange(18,27),
-                       # "Ymin3":   np.arange(27,36),
-                       # "Yplus3":  np.arange(36,45),
-                       # "Zmin3":   np.arange(45,54),
-                       # "Zplus3":  np.arange(54,63)
+    beamIndicesNom = np.arange(9)
+    beamIndicesMove = {"Xmin3":   np.arange(9,18),
+                       "Xplus3":  np.arange(18,27),
+                       "Ymin3":   np.arange(27,36),
+                       "Yplus3":  np.arange(36,45),
+                       "Zmin3":   np.arange(45,54),
+                       "Zplus3":  np.arange(54,63)
                       }
 
     # Optimization parameters.
-    cutoff = 0.025    
     # smoothLambda = [0, 0.15, 0.25, 0.5, 1, 10]
     smoothLambda = [0, 0.5]
+    
+    # Create IMRT plan for nominal scenario.
+    myPlanNom = createIMRTPlan(metaData, beamIndices = beamIndicesNom)
+    
+    print("Solving NNLS nominal problem...")
+    beamOptTrue = []
+    doseOptTrue = []
+    for lam in smoothLambda:
+        print("Smoothing weight: {0}".format(lam))
+        w_smooth, obj_smooth, d_true_smooth, d_cut_smooth = runNNLSOptimization_CVX(myPlanNom, cutoff = 0, lambda_x = lam, lambda_y = lam, verbose = False)
+        beamOptTrue.append(w_smooth)
+        doseOptTrue.append(d_true_smooth)
+    
+    # Form matrices with rows = beamlets intensities/dose voxels, columns = smoothing weights.
+    beamOptTrueMat = np.column_stack(beamOptTrue)
+    doseOptTrueMat = np.column_stack(doseOptTrue)
+    doseOptTrueNorm = np.linalg.norm(doseOptTrueMat, axis = 0)   # ||A^{nom}*x_l||_2 for l = 1,...,len(smoothLambda).
 
-    doseTrueNormMat = []
-    doseDiffNormMat = []
-    scenarioNameList = []
-    for scenarioName, beamIndices in beamIndicesDict.items():
-        # Create IMRT Plan.
-        print("Solving NNLS cutoff problem for {0} scenario...".format(scenarioName))
-        myPlan = createIMRTPlan(metaData, beamIndices = beamIndices)
+    # Compute deviation of dose in movement scenarios from nominal dose.
+    print("Computing robustness error...")
+    doseDiffMatNorm = []
+    for scenarioName, beamIndices in beamIndicesMove.items():
+        # Import dose-influence matrix for movement scenario.
+        print("Movement scenario: {0}".format(scenarioName))
+        myPlanMove = createIMRTPlan(metaData, beamIndices = beamIndices)
+        infMatMove = myPlanMove["infMatrixSparse"]
         
-        doseTrueNorm = []
-        doseDiffNorm = []
-        
-        for lam in smoothLambda:
-            print("Smoothing weight: {0}".format(lam))
-            w_smooth, obj_smooth, d_true_smooth, d_cut_smooth = runNNLSOptimization_CVX(myPlan, cutoff = cutoff, lambda_x = lam, lambda_y = lam, verbose = False)
-            d_true_norm = np.linalg.norm(d_true_smooth)
-            d_diff_norm = np.linalg.norm(d_cut_smooth - d_true_smooth)
-            doseTrueNorm.append(d_true_norm)
-            doseDiffNorm.append(d_diff_norm)
-            
-        doseTrueNormMat += [doseTrueNorm]
-        doseDiffNormMat += [doseDiffNorm]
-        scenarioNameList.append(scenarioName)
+        doseMoveMat = infMatMove @ beamOptTrueMat              # Rows = dose voxels, columns = smoothing weights.
+        doseDiffMat = doseMoveMat - doseOptTrueMat             # Column l = A^{s}*x_l - A^{nom}*x_l, where s = movement scenario.
+        doseDiffNorm = np.linalg.norm(doseDiffMat, axis = 0)   # ||A^{s}*x_l - A^{nom}*x_l||_2 for l = 1,...,len(smoothLambda).
+        doseDiffMatNorm.append(doseDiffNorm)
     
-    # Form matrices with rows = smoothing weights, columns = movement scenarios.
-    doseTrueNormMat = np.column_stack(doseTrueNormMat)
-    doseDiffNormMat = np.column_stack(doseDiffNormMat)
-    doseRelDiffNormMat = np.sum(doseDiffNormMat, axis = 1)/np.sum(doseTrueNormMat, axis = 1)
-    
+    # Form matrix with rows = scenarios, columns = smoothing weights.
+    doseDiffMatNorm = np.row_stack(doseDiffMatNorm)
+    doseDiffSum = np.sum(doseDiffMatNorm, axis = 0)
+    doseDiffSumNorm = doseDiffSum/doseOptTrueNorm
+   
     # Plot robustness measure versus smoothing weight.
     fig = plt.figure(figsize = (12,8))
-    for j in range(len(scenarioNameList)):
-        plt.plot(smoothLambda, doseRelDiffNormMat[j], label = scenarioNameList[j])
+    plt.plot(smoothLambda, doseDiffSumNorm)
     plt.xlabel("$\lambda$")
-    plt.ylabel("$\sum_{s=1}^N ||A_s^{cutoff}x_s - A_s^{true}x_s||_2/\sum_{s=1}^N ||A_s^{true}x_s||_2$")
+    plt.ylabel("$\sum_{s=1}^N ||A^{s}x_l - A^{nom}x_l||_2/\sum_{s=1}^N ||A^{nom}x_l||_2$")
     plt.title("Robustness Error vs. Smoothing Weight")
-    plt.legend()
     plt.show()
     
     fig.savefig(saveFileName, bbox_inches = "tight", dpi = 300)

@@ -52,10 +52,10 @@ def runNNLSOptimization_CVX(myPlan, cutoff = 0, lambda_x = 0, lambda_y = 0, verb
     constraints = []
     # constraints += [wMean == cp.sum(w)/w.shape[0]]
     for i in range(len(clinicalConstraints)):
-        if clinicalConstraints[i]['maxHardConstraint_Gy'] is not None:
+        if 'maxHardConstraint_Gy' in clinicalConstraints[i] and clinicalConstraints[i]['maxHardConstraint_Gy'] is not None:
             org = clinicalConstraints[i]['structNames']
             constraints += [infMatrix[getVoxels(myPlan, org)-1, :] @ w <= clinicalConstraints[i]['maxHardConstraint_Gy']]
-        if clinicalConstraints[i]['meanHardConstraint_Gy'] is not None:
+        if 'meanHardConstraint_Gy' in clinicalConstraints[i] and clinicalConstraints[i]['meanHardConstraint_Gy'] is not None:
             org = clinicalConstraints[i]['structNames']
             constraints += [(1/len(getVoxels(myPlan, org)))*(cp.sum(infMatrix[getVoxels(myPlan, org)-1, :] @ w)) <= clinicalConstraints[i]['meanHardConstraint_Gy']]
     print("Constraints done")
