@@ -3,8 +3,14 @@ from utils.loadData import loadData
 from utils.infMatrixConcatenate import infMatrixConcatenate
 
 
-def createIMRTPlan(metaData, beamIndices=None):
-
+def createIMRTPlan(metaData, options=None, beamIndices=None):
+    if len(options) != 0:
+        if 'loadInfluenceMatrixFull' in options and not options['loadInfluenceMatrixFull']:
+            metaData['beams']['influenceMatrixFull_File'] = [None] * len(metaData['beams']['influenceMatrixFull_File'])
+        if 'loadInfluenceMatrixSparse' in options and not options['loadInfluenceMatrixSparse']:
+            metaData['beams']['influenceMatrixSparse_File'] = [None] * len(metaData['beams']['influenceMatrixSparse_File'])
+        if 'loadBeamEyeViewStructureMask' in options and not options['loadBeamEyeViewStructureMask']:
+            metaData['beams']['beamEyeViewStructureMask_File'] = [None] * len(metaData['beams']['beamEyeViewStructureMask_File'])
     myPlan = metaData.copy()
     del myPlan['beams']
     beamReq = dict()
