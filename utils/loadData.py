@@ -36,7 +36,7 @@ def loadData(myData, folderPath):
                                     myData.setdefault(key[0:-5], dict()).setdefault('Mask', []).append(f[file_tag[1]][j][:].T)
                             else:
                                 myData.setdefault(key[0:-5], []).append(f[file_tag[1]][:].T)
-                            if key[0:-5] == 'influenceMatrixSparse':
+                            if key[0:-5] == 'influenceMatrixSparse' or key[0:-5] == 'influenceMatrixFull':
                                 infMatrixSparseForBeam = myData[key[0:-5]][i]
                                 myData[key[0:-5]][i] = csr_matrix((infMatrixSparseForBeam[:, 2], (infMatrixSparseForBeam[:, 0].astype(int) - 1,
                                              infMatrixSparseForBeam[:, 1].astype(int) - 1)))
