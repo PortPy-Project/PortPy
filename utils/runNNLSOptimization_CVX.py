@@ -1,11 +1,12 @@
 import scipy.io as spio
+import scipy.sparse as spsparse
 import cvxpy as cp
 import numpy as np
 import mosek
 import time
 from utils import *
 
-def runNNLSOptimization_CVX(myPlan, cutoff = 0, lambda_x = 0, lambda_y = 0, verbose = True):
+def runNNLSOptimization_CVX(myPlan, cutoff = 0, lambda_x = 0, lambda_y = 0, sparse = True, verbose = True):
     if cutoff < 0 or cutoff > 1:
         raise ValueError("cutoff must be a scalar in [0,1]")
     if lambda_x < 0:
@@ -15,7 +16,7 @@ def runNNLSOptimization_CVX(myPlan, cutoff = 0, lambda_x = 0, lambda_y = 0, verb
     
     t = time.time()
     
-    infMatrix = myPlan['infMatrixSparse']
+    infMatrix = myPlan['infMatrixSparse'] if sparse else myPlan['infMatrixFull']
     clinicalConstraints = myPlan['clinicalCriteria']['constraints']
     pres = myPlan['clinicalCriteria']['presPerFraction_Gy']
     numFractions = myPlan['clinicalCriteria']['numOfFraction']
@@ -32,8 +33,11 @@ def runNNLSOptimization_CVX(myPlan, cutoff = 0, lambda_x = 0, lambda_y = 0, verb
     else:
         infMatrixMax = infMatrix.max()
         infMatrixCut = infMatrix.copy()
-        infMatrixCut.data[infMatrixCut.data <= cutoff*infMatrixMax] = 0
-    print('Truncated influence matrix to {0} of max value'.format(cutoff))
+        if spsparse.issparse(infMatrix):
+            infMatrixCut.data[infMatrixCut.data <= cutoff*infMatrixMax] = 0
+        else:
+            infMatrixCut[infMatrixCut <= cutoff*infMatrixMax] = 0
+        print('Truncated influence matrix to {0} of max value'.format(cutoff))
 	
     # Construct the problem.
     w = cp.Variable(n_beams, nonneg = True)

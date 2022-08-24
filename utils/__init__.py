@@ -9,3 +9,4 @@ from .loadData import loadData
 from .getVoxels import getVoxels
 from .runIMRTOptimization_CVX import runIMRTOptimization_CVX, getSmoothnessMatrix
 from .runNNLSOptimization_CVX import runNNLSOptimization_CVX
+from .miscUtils import scaleDose
