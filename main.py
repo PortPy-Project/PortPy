@@ -20,8 +20,8 @@ def main():
     options['loadInfluenceMatrixSparse'] = 1
     options['loadBeamEyeViewStructureMask'] = 0
 
-    beam_indices = [46, 131, 36, 121, 26, 66, 151, 56, 141]
-    # beam_indices = [46, 131, 36, 121, 26]
+    # beam_indices = [46, 131, 36, 121, 26, 66, 151, 56, 141]
+    beam_indices = [10, 20, 30, 50, 70, 90]
     my_plan = create_imrt_plan(meta_data, options=options, beam_indices=beam_indices)
 
     w = run_imrt_optimization_cvx(my_plan)
