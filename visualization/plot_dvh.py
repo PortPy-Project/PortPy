@@ -14,9 +14,8 @@ def get_colors(num):
     return colors
 
 
-def plot_dvh(my_plan, dose, orgs=None, style='solid', norm_flag=0, width=None, colors=None, figsize=(12, 8), title=None, filename=None, show=True):
-    weight_flag = 1
-    legend_font_size = 8
+def plot_dvh(my_plan, dose, orgs=None, style='solid', norm_flag=0, weight_flag=1, width=None, colors=None, figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
+
     plt.rcParams['font.size'] = 12
     if width is None:
         if style == 'dotted' or style == 'dashed':
@@ -56,7 +55,7 @@ def plot_dvh(my_plan, dose, orgs=None, style='solid', norm_flag=0, width=None, c
             y = np.ones(len(vox) + 1) - np.arange(0, len(vox)+1) / len(vox)
         y[-1] = 0
         y = np.array(y)
-        plt.plot(x, 100*y, linestyle=style, linewidth=width, color=colors[i])
+        plt.plot(x, 100*y, linestyle=style, linewidth=width, color=colors[i], *args, **kwargs)
         legend.append(all_orgs[i])
 
     plt.xlabel('Dose (Gy)')
