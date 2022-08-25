@@ -14,7 +14,7 @@ def get_colors(num):
     return colors
 
 
-def plot_dvh(my_plan, dose, orgs=None, style='solid', norm_flag=0, weight_flag=1, width=None, colors=None, figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
+def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=0, weight_flag=1, width=None, colors=None, figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
 
     plt.rcParams['font.size'] = 12
     if width is None:

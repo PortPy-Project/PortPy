@@ -28,7 +28,7 @@ def main():
 
     wMaps = visualization.get_fluence_map(my_plan, w)
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD']
-    visualization.plot_dvh(my_plan, my_plan['infMatrixSparse']*w, orgs=orgs)
+    visualization.plot_dvh(my_plan['infMatrixSparse']*w, my_plan, orgs=orgs)
     ##Plot 1st beam fluence
     (fig, ax, surf) = visualization.surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
     fig.colorbar(surf)
