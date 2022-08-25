@@ -20,27 +20,28 @@ def listtodict(jsondata):
         jsondict = jsondata.copy()
     return jsondict
 
-def loadMetaData(path):
-    metaData = dict()
+
+def load_metadata(path):
+    meta_data = dict()
 
     fname = os.path.join(path, 'StructureSet_MetaData.json')
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    metaData['structures'] = listtodict(jsondata)
+    meta_data['structures'] = listtodict(jsondata)
 
 
     fname = os.path.join(path, 'MachineParams_MetaData.json')
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    metaData['machineParams'] = listtodict(jsondata)
+    meta_data['machineParams'] = listtodict(jsondata)
 
     fname = os.path.join(path, 'OptimizationVoxels_MetaData.json')
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    metaData['optVoxels'] = listtodict(jsondata)
+    meta_data['optVoxels'] = listtodict(jsondata)
 
 
     fname = os.path.join(path, 'CT_MetaData.json')
@@ -48,32 +49,28 @@ def loadMetaData(path):
         # Opening JSON file
         f = open(fname)
         jsondata = json.load(f)
-        metaData['ct'] = listtodict(jsondata)
+        meta_data['ct'] = listtodict(jsondata)
 
     fname = os.path.join(path, 'ClinicalCriteria_MetaData.json')
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    metaData['clinicalCriteria'] = listtodict(jsondata)
+    meta_data['clinicalCriteria'] = listtodict(jsondata)
 
     beamFolder = os.path.join(path, 'Beams')
     beamsJson = [pos_json for pos_json in os.listdir(beamFolder) if pos_json.endswith('.json')]
 
     beamsJson = natsorted(beamsJson)
-    metaData['beams'] = dict()
+    meta_data['beams'] = dict()
     for i in range(len(beamsJson)):
         fname = os.path.join(beamFolder, beamsJson[i])
         f = open(fname)
         jsondata = json.load(f)
 
         for key in jsondata:
-            metaData['beams'].setdefault(key, []).append(jsondata[key])
+            meta_data['beams'].setdefault(key, []).append(jsondata[key])
             # dataMeta['beamsMetaData'][key].append(jsondata[key])
 
-    metaData['patientFolderPath'] = path
-    return metaData
+    meta_data['patientFolderPath'] = path
+    return meta_data
 
-
-if __name__ == "__main__":
-    path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\PatientData\Lung_Patient_1'
-    metaData = loadMetaData(path)

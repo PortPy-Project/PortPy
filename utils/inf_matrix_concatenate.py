@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import hstack
 
 
-def infMatrixConcatenate(myPlan):
+def inf_matrix_concatenate(myPlan):
     if 'influenceMatrixSparse' in myPlan['beams']:
         # myPlan['infMatrixSparse'] = []
         for i in range(np.size(myPlan['beams']['Index'])):

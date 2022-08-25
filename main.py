@@ -1,16 +1,15 @@
 
 from utils import *
 import os
-from visualization import *
+import visualization
 import matplotlib.pyplot as plt
 
-
 def main():
-    patientName = 'Lung_Patient_2'
-    patientFolderPath = os.path.join(os.getcwd(), "..", 'Data', patientName)
+    patient_name = 'Lung_Patient_1'
+    patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', patient_name)
 
     # read all the meta data for the required patient
-    metaData = loadMetaData(patientFolderPath)
+    meta_data = load_metadata(patient_folder_path)
 
     ##create IMRT Plan
 
@@ -21,16 +20,16 @@ def main():
     options['loadInfluenceMatrixSparse'] = 1
     options['loadBeamEyeViewStructureMask'] = 0
 
-    beamIndices = [10, 20, 30, 40]
+    beam_indices = [46, 131, 36, 121, 26, 66, 151, 56, 141]
+    # beam_indices = [46, 131, 36, 121, 26]
+    my_plan = create_imrt_plan(meta_data, options=options, beam_indices=beam_indices)
 
-    myPlan = createIMRTPlan(metaData, options=options, beamIndices=beamIndices)
+    w = run_imrt_optimization_cvx(my_plan)
 
-    w = runIMRTOptimization_CVX(myPlan)
-
-    wMaps = getFluenceMap(myPlan, w)
-
+    wMaps = visualization.get_fluence_map(my_plan, w)
+    visualization.plot_dvh(my_plan, my_plan['infMatrixSparse']*w)
     ##Plot 1st beam fluence
-    (fig, ax, surf) = surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
+    (fig, ax, surf) = visualization.surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
     fig.colorbar(surf)
     ax.set_zlabel('Fluence Intensity')
     plt.show()

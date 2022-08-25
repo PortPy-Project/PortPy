@@ -3,10 +3,9 @@ import cvxpy as cp
 import numpy as np
 import mosek
 import time
-from utils import *
 
 
-def getVoxels(myPlan, org):
+def get_voxels(myPlan, org):
     for i in range(len(myPlan['structures']['Names'])):
         if myPlan['structures']['Names'][i] == org:
             vox = myPlan['structures']['optimizationVoxIndices'][i]
@@ -60,7 +59,7 @@ def getSmoothnessMatrix(beamReq):
     return sRow, sCol
 
 
-def runIMRTOptimization_CVX(myPlan):
+def run_imrt_optimization_cvx(myPlan):
     t = time.time()
 
     infMatrix = myPlan['infMatrixSparse']
@@ -73,8 +72,8 @@ def runIMRTOptimization_CVX(myPlan):
 
     # Construct the problem.
     w = cp.Variable(infMatrix.shape[1], pos=True)
-    dO = cp.Variable(len(getVoxels(myPlan, 'PTV')), pos=True)
-    dU = cp.Variable(len(getVoxels(myPlan, 'PTV')), pos=True)
+    dO = cp.Variable(len(get_voxels(myPlan, 'PTV')), pos=True)
+    dU = cp.Variable(len(get_voxels(myPlan, 'PTV')), pos=True)
     # Form objective.
     print('Objective Start')
     obj = []
@@ -82,7 +81,7 @@ def runIMRTOptimization_CVX(myPlan):
     ##Step 1 objective
 
     ##obj.append((1/sum(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]))*cp.sum_squares(cp.multiply(cp.sqrt(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]), infMatrix[getVoxels(myPlan,'PTV')-1, :] @ w + wMean*pars['alpha']*pars['delta'][getVoxels(myPlan,'PTV')-1] - pars['presPerFraction'])))
-    obj.append(10000*(1/len(getVoxels(myPlan, 'PTV')))*(cp.sum_squares(dO) + 10*cp.sum_squares(dU)))
+    obj.append(10000 * (1 / len(get_voxels(myPlan, 'PTV'))) * (cp.sum_squares(dO) + 10 * cp.sum_squares(dU)))
 
     ##Smoothing objective function
 
@@ -97,15 +96,15 @@ def runIMRTOptimization_CVX(myPlan):
             if clinicalConstraints[i]['maxHardConstraint_Gy'] is not None:
                 org = clinicalConstraints[i]['structNames']
                 if org != 'GTV':
-                    constraints += [infMatrix[getVoxels(myPlan, org)-1, :] @ w <= clinicalConstraints[i]['maxHardConstraint_Gy']/numFractions]
+                    constraints += [infMatrix[get_voxels(myPlan, org) - 1, :] @ w <= clinicalConstraints[i]['maxHardConstraint_Gy'] / numFractions]
         if 'meanHardConstraint_Gy' in clinicalConstraints[i]:
             if clinicalConstraints[i]['meanHardConstraint_Gy'] is not None:
                 org = clinicalConstraints[i]['structNames']
-                constraints += [(1/len(getVoxels(myPlan, org)))*(cp.sum(infMatrix[getVoxels(myPlan, org)-1, :] @ w)) <= clinicalConstraints[i]['meanHardConstraint_Gy']/numFractions]
+                constraints += [(1 / len(get_voxels(myPlan, org))) * (cp.sum(infMatrix[get_voxels(myPlan, org) - 1, :] @ w)) <= clinicalConstraints[i]['meanHardConstraint_Gy'] / numFractions]
 
     ##Step 1 and 2 constraint
-    constraints += [infMatrix[getVoxels(myPlan, 'PTV')-1, :] @ w <= pres + dO]
-    constraints += [infMatrix[getVoxels(myPlan, 'PTV')-1, :] @ w >= pres - dU]
+    constraints += [infMatrix[get_voxels(myPlan, 'PTV') - 1, :] @ w <= pres + dO]
+    constraints += [infMatrix[get_voxels(myPlan, 'PTV') - 1, :] @ w >= pres - dU]
 
     ##Smoothness Constraint
     for b in range(len(myPlan['beams']['Index'])):

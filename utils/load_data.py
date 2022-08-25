@@ -6,12 +6,12 @@ from scipy.sparse import csr_matrix
 import h5py
 
 
-def loadData(myData, folderPath):
+def load_data(myData, folderPath):
     # fn = myData.keys()
     for key in myData.copy():
         item = myData[key]
         if type(item) is dict:
-            myData[key] = loadData(item, folderPath)
+            myData[key] = load_data(item, folderPath)
         elif key.endswith('_File'):
             success = 1
             for i in range(np.size(myData[key])):
