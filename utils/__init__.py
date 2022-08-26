@@ -3,10 +3,11 @@
 # modules = glob.glob(join(dirname(__file__), "*.py"))
 # __all__ = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
 
-from .loadMetaData import loadMetaData
-from .createIMRTPlan import createIMRTPlan
-from .loadData import loadData
-from .getVoxels import getVoxels
-from .runIMRTOptimization_CVX import runIMRTOptimization_CVX, getSmoothnessMatrix
-from .runNNLSOptimization_CVX import runNNLSOptimization_CVX
-from .miscUtils import scaleDose
+from .load_metadata import load_metadata
+from .create_imrt_plan import create_imrt_plan
+from .load_data import load_data
+from .get_voxels import get_voxels
+from .run_imrt_optimization_CVX import run_imrt_optimization_cvx
+from .run_nnls_optimization_CVX import run_nnls_optimization_cvx
+from .misc_utils import scale_dose
+

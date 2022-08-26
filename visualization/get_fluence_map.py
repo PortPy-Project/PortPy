@@ -1,5 +1,5 @@
 import numpy as np
-def getFluenceMap(myPlan, w):
+def get_fluence_map(myPlan, w):
 #Generate the beamlet maps from w
 
     wMaps = []
