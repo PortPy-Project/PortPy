@@ -1,4 +1,5 @@
 from utils import *
+from visualization import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,6 +63,7 @@ def main():
     # Compute deviation of dose in movement scenarios from nominal dose.
     print("Computing robustness error...")
     dose_diff_mat_norm = []
+    dose_move_mat_list = []
     for scenario_name, beam_indices in beam_indices_move.items():
         # Import dose-influence matrix for movement scenario.
         print("Movement scenario: {0}".format(scenario_name))
@@ -73,6 +75,7 @@ def main():
         
         # Compute dose delivered by optimal beamlets.
         dose_move_mat = inf_mat_move @ beam_opt_true_mat              # Rows = dose voxels, columns = smoothing weights.
+        dose_move_mat_list.append(dose_move_mat)
         
         # For each scenario and smoothing weight, scale dose vector so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
         for j in range(len(smooth_lambda)):
@@ -97,6 +100,15 @@ def main():
     plt.show()
     
     fig.savefig(save_file_name, bbox_inches = "tight", dpi = 300)
+    
+    # Plot DVH curves for nominal scenario.
+    lam_idx = 0
+    orgs = ['PTV', 'CTV', 'LUNGS_NOT_GTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]))
+
+    # Plot DVH bands for nominal and movement scenarios.
+    # dose_list = [dose_opt_true_mat[:,lam_idx]] + [dose_move_mat[:,lam_idx] for dose_move_mat in dose_move_mat_list]
+    # plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "DVH Bands for All Scenarios ($\lambda$ = {0})".format(smooth_lambda[lam_idx]))
 
 if __name__ == "__main__":
     main()
