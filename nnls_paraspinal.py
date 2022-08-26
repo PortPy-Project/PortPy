@@ -8,6 +8,8 @@ def main():
     patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Paraspinal_Patient_2'
     save_file_path = r'C:\Users\fua\Pictures\Figures'
     save_file_name = save_file_path + r'\robust_smooth-paraspinal.jpg'
+    save_dvh_nom_name = save_file_path + r'\dvh_nominal-paraspinal.jpg'
+    save_dvh_band_name = save_file_path + r'\dvh_bands-paraspinal.jpg'
     
     # Read all the metadata for the required patient.
     meta_data = load_metadata(patient_folder_path)
@@ -75,11 +77,11 @@ def main():
         
         # Compute dose delivered by optimal beamlets.
         dose_move_mat = inf_mat_move @ beam_opt_true_mat              # Rows = dose voxels, columns = smoothing weights.
-        dose_move_mat_list.append(dose_move_mat)
         
         # For each scenario and smoothing weight, scale dose vector so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
         for j in range(len(smooth_lambda)):
             dose_move_mat[i_ptv,j] = scale_dose(dose_move_mat[i_ptv,j], pres, vol_perc)
+        dose_move_mat_list.append(dose_move_mat)
         
         dose_diff_mat = dose_move_mat - dose_opt_true_mat             # Column l = A^{s}*x_l - A^{nom}*x_l, where s = movement scenario.
         dose_diff_norm = np.linalg.norm(dose_diff_mat, axis = 0)      # ||A^{s}*x_l - A^{nom}*x_l||_2 for l = 1,...,len(smoothLambda).
@@ -102,13 +104,13 @@ def main():
     fig.savefig(save_file_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves for nominal scenario.
-    lam_idx = 0
-    orgs = ['PTV', 'CTV', 'LUNGS_NOT_GTV', 'ESOPHAGUS', 'HEART', 'CORD']
-    plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]))
+    lam_idx = 2   # lambda = 0.01 seems to work best.
+    orgs = ['PTV', 'CTV', 'LUNG_L', 'LUNG_R', 'ESOPHAGUS', 'HEART', 'CORD']
+    plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_nom_name)
 
     # Plot DVH bands for nominal and movement scenarios.
-    # dose_list = [dose_opt_true_mat[:,lam_idx]] + [dose_move_mat[:,lam_idx] for dose_move_mat in dose_move_mat_list]
-    # plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "DVH Bands for All Scenarios ($\lambda$ = {0})".format(smooth_lambda[lam_idx]))
+    dose_list = [dose_opt_true_mat[:,lam_idx]] + [dose_move_mat[:,lam_idx] for dose_move_mat in dose_move_mat_list]
+    plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "DVH Bands for Nominal and Movement Scenarios ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_band_name)
 
 if __name__ == "__main__":
     main()
