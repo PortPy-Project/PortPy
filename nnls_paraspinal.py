@@ -106,11 +106,11 @@ def main():
     # Plot DVH curves for nominal scenario.
     lam_idx = 2   # lambda = 0.01 seems to work best.
     orgs = ['PTV', 'CTV', 'LUNG_L', 'LUNG_R', 'ESOPHAGUS', 'HEART', 'CORD']
-    plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_nom_name)
+    plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Paraspinal Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_nom_name)
 
     # Plot DVH bands for nominal and movement scenarios.
     dose_list = [dose_opt_true_mat[:,lam_idx]] + [dose_move_mat[:,lam_idx] for dose_move_mat in dose_move_mat_list]
-    plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "DVH Bands for Nominal and Movement Scenarios ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_band_name)
+    plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "DVH Bands for all Paraspinal Scenarios ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_band_name)
 
 if __name__ == "__main__":
     main()

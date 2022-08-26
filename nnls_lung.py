@@ -5,9 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Lung_Patient_2'
+    patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Lung_Patient_1'
     file_figure_path = r'C:\Users\fua\Pictures\Figures'
-    file_figure_name = file_figure_path + r'\robust_smooth-lung_2.jpg'
+    file_figure_name = file_figure_path + r'\robust_smooth-lung_1.jpg'
+    file_dvh_name = file_figure_path + r'\dvh-lung_1.jpg'
     
     # Read all the meta data for the required patient
     meta_data = load_metadata(patient_folder_path)
@@ -15,9 +16,8 @@ def main():
     # Options for loading requested data
     # If 1, then load the data. If 0, then skip loading the data
     options = dict()
-    # options['loadInfluenceMatrixFull'] = 0   # Skip loading full dose influence matrix.
     options['loadInfluenceMatrixFull'] = 1
-    options['loadInfluenceMatrixSparse'] = 1
+    options['loadInfluenceMatrixSparse'] = 0
     options['loadBeamEyeViewStructureMask'] = 0
 
     # gantry_rtns = [8, 16, 24, 32, 80, 120]
@@ -25,7 +25,7 @@ def main():
     # beam_indices = [46,131,36,121,26,66,151,56,141]
     beam_indices = [10, 20, 30, 40]
     smooth_lambda = [0, 0.15, 0.25, 0.5, 1, 10]
-    # smooth_lambda = [0, 0.15]
+    # smooth_lambda = [0, 0.5, 1]
     # cutoff = 0.1
     cutoff = 0.01
     vol_perc = 0.9
@@ -43,6 +43,7 @@ def main():
     # w_smooth, obj_smooth, rob_smooth = run_nnls_optimization_cvx(my_plan, cutoff = 0.025, lambda_x = 0.6, lambda_y = 0.4, verbose = False)
     
     print("Solving NNLS cutoff problem...")
+    dose_true_opt = []
     dose_true_diff = []
     for lam in smooth_lambda:
         print("Smoothing weight: {0}".format(lam))
@@ -54,6 +55,7 @@ def main():
         d_cut_smooth[i_ptv] = scale_dose(d_cut_smooth[i_ptv], pres, vol_perc)
         
         rob_smooth = np.linalg.norm(d_cut_smooth - d_true_smooth)/np.linalg.norm(d_true_smooth)
+        dose_true_opt.append(d_true_smooth)
         dose_true_diff.append(rob_smooth)
     
     # Plot robustness measure versus smoothing weight.
@@ -64,10 +66,15 @@ def main():
     plt.xlabel("$\lambda$")
     # plt.ylabel("$||A^{cutoff}x - A^{true}x||_2$")
     plt.ylabel("$||A^{cutoff}x - A^{true}x||_2/||A^{true}x||_2$")
-    plt.title("Robustness Error vs. Smoothing Weight (Lung Patient 2)")
+    plt.title("Robustness Error vs. Smoothing Weight (Lung Patient 1)")
     plt.show()
     
     fig.savefig(file_figure_name, bbox_inches = "tight", dpi = 300)
+    
+    # Plot DVH curves.
+    lam_idx = 1   # lambda = 0.5 or 1.0 seems to work best.
+    orgs = ['PTV', 'GTV', 'LUNG_L', 'LUNG_R', 'ESOPHAGUS', 'HEART', 'CORD']
+    plot_dvh(dose_true_opt[lam_idx], my_plan, orgs = orgs, title = "DVH for Lung Patient 1 ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = file_dvh_name)
 
 if __name__ == "__main__":
     main()
