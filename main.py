@@ -26,10 +26,15 @@ def main():
 
     w = run_imrt_optimization_cvx(my_plan)
 
-    wMaps = visualization.get_fluence_map(my_plan, w)
+    ##plot dvh and robust dvh
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
+                 my_plan['infMatrixSparse'] * w * 0.95]
+    visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs)
     visualization.plot_dvh(my_plan['infMatrixSparse']*w, my_plan, orgs=orgs)
+
     ##Plot 1st beam fluence
+    wMaps = visualization.get_fluence_map(my_plan, w)
     (fig, ax, surf) = visualization.surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
     fig.colorbar(surf)
     ax.set_zlabel('Fluence Intensity')
