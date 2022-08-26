@@ -30,7 +30,7 @@ def main():
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD']
     dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
                  my_plan['infMatrixSparse'] * w * 0.95]
-    visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs, norm_flag=True)
+    visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs)
     visualization.plot_dvh(my_plan['infMatrixSparse']*w, my_plan, orgs=orgs)
 
     ##Plot 1st beam fluence
