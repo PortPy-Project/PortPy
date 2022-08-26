@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import random
 from utils import get_voxels
 import numpy as np
-
+from evaluation import get_dose
 
 def get_colors(num):
     random.seed(42)
@@ -35,7 +35,7 @@ def get_dvh(dose, my_plan, organ, weight_flag=True):
     return x, y
 
 
-def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=False, weight_flag=True, plot_scenario=None, width=None, colors=None,
+def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=False, norm_volume=90, norm_struct='PTV', weight_flag=True, plot_scenario=None, width=None, colors=None,
                     figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
     if not isinstance(dose_list, list):
         dose_list = [dose_list]
@@ -54,6 +54,8 @@ def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=Fals
     max_dose = 0.0
     all_orgs = my_plan['structures']['Names']
     # orgs = [org.upper for org in orgs]
+    pres = my_plan['clinicalCriteria']['presPerFraction_Gy'] * my_plan['clinicalCriteria'][
+        'numOfFraction']
     legend = []
     fig = plt.figure(figsize=figsize)
     plt.rcParams['font.size'] = 12
@@ -62,11 +64,10 @@ def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=Fals
             continue
         dose_sort_list = []
         for dose in dose_list:
-
             x, y = get_dvh(dose, my_plan, all_orgs[i], weight_flag=weight_flag)
             dose_sort_list.append(x)
         d_sort_mat = np.column_stack(dose_sort_list)
-        # Compute min/max DVH curve taken elementwise across scenarios.
+        # Compute min/max DVH curve taken across scenarios.
         d_min_mat = np.min(d_sort_mat, axis=1)
         d_max_mat = np.max(d_sort_mat, axis=1)
 
@@ -77,6 +78,11 @@ def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=Fals
 
             for n in range(len(plot_scenario)):
                 scene_num = plot_scenario[n]
+                if norm_flag:
+                    norm_factor = get_dose(dose_list[scene_num], my_plan, norm_struct, norm_volume) / pres
+                    dose_sort_list[scene_num] = dose_sort_list[scene_num] / norm_factor
+                    d_min_mat = d_min_mat/norm_factor
+                    d_max_mat = d_max_mat / norm_factor
                 plt.plot(dose_sort_list[scene_num], 100*y, linestyle=style, color=colors[i], linewidth=width, *args, **kwargs)
         max_dose = np.maximum(max_dose, d_max_mat[-1])
         plt.plot(d_min_mat, 100 * y, linestyle='dotted', linewidth=width, color=colors[i], *args, **kwargs)
@@ -109,7 +115,7 @@ def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=Fals
         fig.savefig(filename, bbox_inches="tight", dpi=300)
 
 
-def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=False, weight_flag=True, width=None, colors=None,
+def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=False, norm_volume=90, norm_struct='PTV', weight_flag=True, width=None, colors=None,
              figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
     plt.rcParams['font.size'] = 12
     if width is None:
@@ -125,9 +131,13 @@ def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=False, weight_fl
     max_dose = 0.0
     all_orgs = my_plan['structures']['Names']
     # orgs = [org.upper for org in orgs]
+    pres = my_plan['clinicalCriteria']['presPerFraction_Gy'] * my_plan['clinicalCriteria'][
+        'numOfFraction']
     legend = []
     fig = plt.figure(figsize=figsize)
-
+    if norm_flag:
+        norm_factor = get_dose(dose, my_plan, norm_struct, norm_volume)/pres
+        dose = dose/norm_factor
     for i in range(np.size(all_orgs)):
         if all_orgs[i] not in orgs:
             continue
@@ -150,8 +160,7 @@ def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=False, weight_fl
     plt.grid(b=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
     y = np.arange(0, 101)
     if norm_flag:
-        x = my_plan['clinicalCriteria']['presPerFraction_Gy'] * my_plan['clinicalCriteria'][
-            'numOfFraction'] * np.ones_like(y)
+        x = pres * np.ones_like(y)
     else:
         x = my_plan['clinicalCriteria']['presPerFraction_Gy'] * np.ones_like(y)
     plt.plot(x, y, color='black')
