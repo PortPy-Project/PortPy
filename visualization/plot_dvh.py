@@ -14,7 +14,7 @@ def get_colors(num):
     return colors
 
 
-def get_dvh(dose, my_plan, organ, weight_flag=1):
+def get_dvh(dose, my_plan, organ, weight_flag=True):
     vox = get_voxels(my_plan, organ)
     org_sort_dose = np.sort(dose[vox - 1])
     sort_ind = np.argsort(dose[vox - 1])
@@ -35,7 +35,7 @@ def get_dvh(dose, my_plan, organ, weight_flag=1):
     return x, y
 
 
-def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=0, weight_flag=1, plot_scenario=None, width=None, colors=None,
+def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=False, weight_flag=True, plot_scenario=None, width=None, colors=None,
                     figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
     if not isinstance(dose_list, list):
         dose_list = [dose_list]
@@ -109,7 +109,7 @@ def plot_robust_dvh(dose_list, my_plan, orgs=None, style='solid', norm_flag=0, w
         fig.savefig(filename, bbox_inches="tight", dpi=300)
 
 
-def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=0, weight_flag=1, width=None, colors=None,
+def plot_dvh(dose, my_plan, orgs=None, style='solid', norm_flag=False, weight_flag=True, width=None, colors=None,
              figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
     plt.rcParams['font.size'] = 12
     if width is None:
