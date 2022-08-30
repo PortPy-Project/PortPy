@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 
 def main():
     patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Paraspinal_Patient_2'
-    save_file_path = r'C:\Users\fua\Pictures\Figures'
-    save_file_name = save_file_path + r'\robust_smooth-paraspinal.jpg'
-    save_dvh_nom_name = save_file_path + r'\dvh_nominal-paraspinal.jpg'
-    save_dvh_band_name = save_file_path + r'\dvh_bands-paraspinal.jpg'
+    save_figure_path = r'C:\Users\fua\Pictures\Figures'
+    save_data_path = r'C:\Users\fua\Documents\Data'
+    save_figure_name = save_figure_path + r'\robust_smooth-paraspinal.jpg'
+    save_dvh_nom_name = save_figure_path + r'\dvh_nominal-paraspinal.jpg'
+    save_dvh_band_name = save_figure_path + r'\dvh_bands-paraspinal.jpg'
+    fun_data_name = lambda s: save_data_path + r'\paraspinal_2-{0}.npy'.format(s)
+    save_data = True
     
     # Read all the metadata for the required patient.
     meta_data = load_metadata(patient_folder_path)
@@ -41,18 +44,21 @@ def main():
     print("Creating IMRT plan for nominal scenario...")
     my_plan_nom = create_imrt_plan(meta_data, beam_indices = beam_indices_nom, options = options)
     pres = my_plan_nom["clinicalCriteria"]["presPerFraction_Gy"]
+    num_frac = my_plan_nom["clinicalCriteria"]["numOfFraction"]
     i_ptv = get_voxels(my_plan_nom, "PTV") - 1
     
     print("Solving NNLS nominal problem...")
     beam_opt_true = []
     dose_opt_true = []
+    dose_opt_raw = []
     for lam in smooth_lambda:
         print("Smoothing weight: {0}".format(lam))
         w_smooth, obj_smooth, d_true_smooth, d_cut_smooth = run_nnls_optimization_cvx(my_plan_nom, cutoff = 0, lambda_x = lam, lambda_y = lam, verbose = False)
+        dose_opt_raw.append(d_true_smooth)
         
         # Scale dose vectors so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
         d_true_smooth[i_ptv] = scale_dose(d_true_smooth[i_ptv], pres, vol_perc)
-        d_cut_smooth[i_ptv] = scale_dose(d_cut_smooth[i_ptv], pres, vol_perc)
+        # d_cut_smooth[i_ptv] = scale_dose(d_cut_smooth[i_ptv], pres, vol_perc)
         
         beam_opt_true.append(w_smooth)
         dose_opt_true.append(d_true_smooth)
@@ -61,6 +67,12 @@ def main():
     beam_opt_true_mat = np.column_stack(beam_opt_true)
     dose_opt_true_mat = np.column_stack(dose_opt_true)
     dose_opt_true_norm = np.linalg.norm(dose_opt_true_mat, axis = 0)   # ||A^{nom}*x_l||_2 for l = 1,...,len(smooth_lambda).
+    
+    # Save smoothing weights and nominal dose matrix.
+    if save_data:
+        np.save(fun_data_name("lambda"), smooth_lambda)
+        np.save(fun_data_name("dose_true"), np.column_stack(dose_opt_raw))
+        # np.save(fun_data_name("dose_true"), dose_opt_true)
 
     # Compute deviation of dose in movement scenarios from nominal dose.
     print("Computing robustness error...")
@@ -77,6 +89,10 @@ def main():
         
         # Compute dose delivered by optimal beamlets.
         dose_move_mat = inf_mat_move @ beam_opt_true_mat              # Rows = dose voxels, columns = smoothing weights.
+        
+        # Save dose matrix for scenario.
+        if save_data:
+            np.save(fun_data_name("dose_move-{0}".format(scenario_name)), dose_move_mat)
         
         # For each scenario and smoothing weight, scale dose vector so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
         for j in range(len(smooth_lambda)):
@@ -101,7 +117,7 @@ def main():
     plt.title("Robustness Error vs. Smoothing Weight (Paraspinal Patient 2)")
     plt.show()
     
-    fig.savefig(save_file_name, bbox_inches = "tight", dpi = 300)
+    fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves for nominal scenario.
     lam_idx = 2   # lambda = 0.01 seems to work best.
