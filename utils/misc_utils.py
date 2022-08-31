@@ -1,9 +1,10 @@
 import numpy as np
 
 # Scale dose vector so V(vol_perc%) = p, i.e., vol_perc% of voxels receive 100% of prescribed dose p.
-def scale_dose(d, p, vol_perc):
-    d_perc = np.percentile(d, 1 - vol_perc)
-    scale = p / d_perc
+def scale_dose(d, p, vol_perc, idx = None):
+    d_slice = d if idx is None else d[idx]
+    d_slice_perc = np.percentile(d_slice, 1 - vol_perc)
+    scale = p / d_slice_perc
     return scale*d
 
 def get_voxels(myPlan, org):

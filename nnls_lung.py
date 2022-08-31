@@ -63,8 +63,8 @@ def main():
         dose_cut_raw.append(d_cut_smooth)
         
         # Scale dose vectors so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
-        d_true_smooth[i_ptv] = scale_dose(d_true_smooth[i_ptv], pres, vol_perc)
-        d_cut_smooth[i_ptv] = scale_dose(d_cut_smooth[i_ptv], pres, vol_perc)
+        d_true_smooth = scale_dose(d_true_smooth, pres, vol_perc, i_ptv)
+        d_cut_smooth = scale_dose(d_cut_smooth, pres, vol_perc, i_ptv)
         
         dose_true_opt.append(d_true_smooth)
         dose_cut_opt.append(d_cut_smooth)

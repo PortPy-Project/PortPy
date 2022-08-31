@@ -57,8 +57,8 @@ def main():
         dose_opt_raw.append(d_true_smooth)
         
         # Scale dose vectors so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
-        d_true_smooth[i_ptv] = scale_dose(d_true_smooth[i_ptv], pres, vol_perc)
-        # d_cut_smooth[i_ptv] = scale_dose(d_cut_smooth[i_ptv], pres, vol_perc)
+        d_true_smooth = scale_dose(d_true_smooth, pres, vol_perc, i_ptv)
+        # d_cut_smooth = scale_dose(d_cut_smooth, pres, vol_perc, i_ptv)
         
         beam_opt_true.append(w_smooth)
         dose_opt_true.append(d_true_smooth)
@@ -96,7 +96,7 @@ def main():
         
         # For each scenario and smoothing weight, scale dose vector so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
         for j in range(len(smooth_lambda)):
-            dose_move_mat[i_ptv,j] = scale_dose(dose_move_mat[i_ptv,j], pres, vol_perc)
+            dose_move_mat[:,j] = scale_dose(dose_move_mat[:,j], pres, vol_perc, i_ptv)
         dose_move_mat_list.append(dose_move_mat)
         
         dose_diff_mat = dose_move_mat - dose_opt_true_mat             # Column l = A^{s}*x_l - A^{nom}*x_l, where s = movement scenario.
