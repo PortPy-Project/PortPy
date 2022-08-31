@@ -1,11 +1,12 @@
 from utils import *
 from visualization import *
+from evaluation import get_dose
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    patient_num = 2
+    patient_num = 1
     patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Lung_Patient_{0}'.format(patient_num)
     save_figure_path = r'C:\Users\fua\Pictures\Figures'
     save_data_path = r'C:\Users\fua\Documents\Data'
@@ -63,13 +64,17 @@ def main():
         dose_cut_raw.append(d_cut_smooth)
         
         # Scale dose vectors so V(90%) = p, i.e., 90% of PTV receives 100% of prescribed dose.
-        d_true_smooth = scale_dose(d_true_smooth, pres, vol_perc, i_ptv)
-        d_cut_smooth = scale_dose(d_cut_smooth, pres, vol_perc, i_ptv)
+        # d_true_scale = scale_dose(d_true_smooth, pres, vol_perc, i_ptv)
+        # d_cut_scale = scale_dose(d_cut_smooth, pres, vol_perc, i_ptv)
+        norm_factor_true = get_dose(d_true_smooth, my_plan, "PTV", 90)/pres
+        d_true_scale = d_true_smooth/norm_factor_true
+        norm_factor_cut = get_dose(d_cut_smooth, my_plan, "PTV", 90)/pres
+        d_cut_scale = d_cut_smooth/norm_factor_cut
         
-        dose_true_opt.append(d_true_smooth)
-        dose_cut_opt.append(d_cut_smooth)
+        dose_true_opt.append(d_true_scale)
+        dose_cut_opt.append(d_cut_scale)
         
-        rob_smooth = np.linalg.norm(d_cut_smooth - d_true_smooth)/np.linalg.norm(d_true_smooth)
+        rob_smooth = np.linalg.norm(d_cut_scale - d_true_scale)/np.linalg.norm(d_true_scale)
         dose_diff_norm.append(rob_smooth)
     
     # Save smoothing weights and dose matrices.
@@ -88,15 +93,17 @@ def main():
     plt.xlabel("$\lambda$")
     # plt.ylabel("$||A^{cutoff}x - A^{true}x||_2$")
     plt.ylabel("$||A^{cutoff}x - A^{true}x||_2/||A^{true}x||_2$")
-    plt.title("Robustness Error vs. Smoothing Weight (Lung Patient {0})".format(patient_num))
+    plt.title("Lung Patient {0}: Robustness Error vs. Smoothing Weight".format(patient_num))
     plt.show()
     
     fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves.
     lam_idx = 1   # lambda = 0.5 or 1.0 seems to work best.
-    orgs = ['PTV', 'GTV', 'LUNG_L', 'LUNG_R', 'ESOPHAGUS', 'HEART', 'CORD']
-    plot_dvh(dose_true_opt[lam_idx], my_plan, orgs = orgs, title = "DVH for Lung Patient {0} ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), filename = save_dvh_name)
+    orgs = ["PTV", "ESOPHAGUS", "HEART", "LUNG_L", "LUNG_R"]
+    # plot_dvh(dose_true_opt[lam_idx], my_plan, orgs = orgs, title = "DVH for Lung Patient {0} ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), filename = save_dvh_name)
+    plot_dvh(dose_true_raw[lam_idx], my_plan, orgs = orgs, norm_flag = True, norm_volume = 90, norm_struct = 'PTV', 
+             title = "Lung Patient {0}: DVH ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), filename = save_dvh_name)
 
 if __name__ == "__main__":
     main()

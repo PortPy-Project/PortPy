@@ -1,5 +1,6 @@
 from utils import *
 from visualization import *
+from evaluation import get_dose
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,9 +15,10 @@ def create_lung_plot(patient_num = 1, show_fig = True, save_fig = True):
     save_dvh_name = save_figure_path + r'\dvh-lung_{0}.jpg'.format(patient_num) if save_fig else None
     
     beam_indices = [10, 20, 30, 40]
-    orgs = ["PTV", "GTV", "LUNG_L", "LUNG_R", "ESOPHAGUS", "HEART", "CORD"]
+    orgs = ["PTV", "ESOPHAGUS", "HEART", "LUNG_L", "LUNG_R"]
     # cutoff = 0.01
-    vol_perc = 0.9
+    # vol_perc = 0.9
+    vol_norm = 90
     
     # Read all the meta data for the required patient
     meta_data = load_metadata(patient_folder_path)
@@ -49,12 +51,16 @@ def create_lung_plot(patient_num = 1, show_fig = True, save_fig = True):
         # Scale dose vectors so V(90%) = p, i.e., vol_perc% of PTV receives 100% of prescribed dose.
         # d_true_perc = np.percentile(d_true_mat[i_ptv,j], 1 - vol_perc)
         # d_true_scale = (pres / d_true_perc)*d_true_mat[:,j]
-        d_true_scale = scale_dose(d_true_mat[:,j], pres, vol_perc, i_ptv)
+        # d_true_scale = scale_dose(d_true_mat[:,j], pres, vol_perc, i_ptv)
+        norm_factor = get_dose(d_true_mat[:,j], my_plan, "PTV", vol_norm)/pres
+        d_true_scale = d_true_mat[:,j]/norm_factor
         d_true_scale_list.append(d_true_scale)
     
         # d_cut_perc = np.percentile(d_cut_mat[i_ptv,j], 1 - vol_perc)
         # d_cut_scale = (pres / d_cut_perc)*d_cut_mat[:,j]
-        d_cut_scale = scale_dose(d_cut_mat[:,j], pres, vol_perc, i_ptv)
+        # d_cut_scale = scale_dose(d_cut_mat[:,j], pres, vol_perc, i_ptv)
+        norm_factor = get_dose(d_cut_mat[:,j], my_plan, "PTV", vol_norm)/pres
+        d_cut_scale = d_cut_mat[:,j]/norm_factor
         d_cut_scale_list.append(d_cut_scale)
         
         # Compute relative difference between scaled optimal doses.
@@ -77,9 +83,10 @@ def create_lung_plot(patient_num = 1, show_fig = True, save_fig = True):
         fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves.
-    lam_idx = 1   # lambda = 0.5 or 1.0 seems to work best.
-    plot_dvh(d_true_scale_list[lam_idx], my_plan, orgs = orgs, title = "Lung Patient {0}: DVH ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), 
-             show = show_fig, filename = save_dvh_name)
+    lam_idx = 1
+    # lam_idx = np.argmin(d_diff_norm)   # Find smoothing weight that achieves lowest robustness error.
+    plot_dvh(d_true_mat[:,lam_idx], my_plan, orgs = orgs, norm_flag = True, norm_volume = vol_norm, norm_struct = "PTV", 
+             title = "Lung Patient {0}: DVH ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), show = show_fig, filename = save_dvh_name)
 
 def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
     patient_folder_path = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Data\Paraspinal_Patient_{0}'.format(patient_num)
@@ -101,8 +108,9 @@ def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
                          "Zmin3":   np.arange(46,55),
                          "Zplus3":  np.arange(55,64)
                         }
-    orgs = ["PTV", "CTV", "LUNG_L", "LUNG_R", "ESOPHAGUS", "HEART", "CORD"]
-    vol_perc = 0.9
+    orgs = ["PTV", "CORD", "ESOPHAGUS", "LUNG_L", "LUNG_R"]
+    # vol_perc = 0.9
+    vol_norm = 90
     
     # Read all the metadata for the required patient.
     meta_data = load_metadata(patient_folder_path)
@@ -129,30 +137,46 @@ def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
     
     # Scale dose vectors so V(90%) = p, i.e., vol_perc% of PTV receives 100% of prescribed dose.
     print("Scaling dose vectors...")
+    print("Nominal scenario")
+    dose_nom_scale_mat = np.zeros(dose_nom_mat.shape)
     for j in range(len(smooth_lambda)):
-        dose_nom_mat[:,j] = scale_dose(dose_nom_mat[:,j], pres, vol_perc, i_ptv)
-        for k in range(len(dose_move_mat_list)):
-            dose_move_mat_list[k][:,j] = scale_dose(dose_move_mat_list[k][:,j], pres, vol_perc, i_ptv)
+        # dose_nom_mat[:,j] = scale_dose(dose_nom_mat[:,j], pres, vol_perc, i_ptv)
+        norm_factor = get_dose(dose_nom_mat[:,j], my_plan_nom, "PTV", vol_norm)/pres
+        dose_nom_scale_mat[:,j] = dose_nom_mat[:,j]/norm_factor
+    
+    k = 0
+    dose_move_scale_mat_list = []
+    for scenario, beam_indices in beam_indices_move.items():
+        print("Movement scenario: {0}".format(scenario))
+        my_plan_move = create_imrt_plan(meta_data, beam_indices = beam_indices, options = options)
+        
+        dose_move_scale = np.zeros(dose_move_mat_list[k].shape)
+        for j in range(len(smooth_lambda)):
+            dose_move_vec = dose_move_mat_list[k][:,j]
+            norm_factor = get_dose(dose_move_vec, my_plan_move, "PTV", vol_norm)/pres
+            dose_move_scale[:,j] = dose_move_vec/norm_factor
+        dose_move_scale_mat_list.append(dose_move_scale)
+        k = k + 1
             
     print("Computing relative scaled difference...")
     dose_diff_mat_norm = []
     for k in range(len(dose_move_mat_list)):
-        dose_diff_mat = dose_move_mat_list[k] - dose_nom_mat       # Column l = A^{s}*x_l - A^{nom}*x_l, where s = movement scenario.
-        dose_diff_norm = np.linalg.norm(dose_diff_mat, axis = 0)   # ||A^{s}*x_l - A^{nom}*x_l||_2 for l = 1,...,len(smoothLambda).
+        dose_diff_mat = dose_move_scale_mat_list[k] - dose_nom_scale_mat   # Column l = A^{s}*x_l - A^{nom}*x_l, where s = movement scenario.
+        dose_diff_norm = np.linalg.norm(dose_diff_mat, axis = 0)           # ||A^{s}*x_l - A^{nom}*x_l||_2 for l = 1,...,len(smoothLambda).
         dose_diff_mat_norm.append(dose_diff_norm)
     
     # Form matrix with rows = scenarios, columns = smoothing weights.
     dose_diff_mat_norm = np.row_stack(dose_diff_mat_norm)
     dose_diff_sum = np.sum(dose_diff_mat_norm, axis = 0)
-    dose_nom_norm = np.linalg.norm(dose_nom_mat, axis = 0)         # ||A^{nom}*x_l||_2 for l = 1,...,len(smooth_lambda).
-    dose_diff_sum_norm = dose_diff_sum/dose_nom_norm
+    dose_nom_scale_norm = np.linalg.norm(dose_nom_scale_mat, axis = 0)     # ||A^{nom}*x_l||_2 for l = 1,...,len(smooth_lambda).
+    dose_diff_sum_norm = dose_diff_sum/dose_nom_scale_norm
     
     # Plot robustness measure versus smoothing weight.
     fig = plt.figure(figsize = (12,8))
     plt.plot(smooth_lambda, dose_diff_sum_norm)
     # plt.semilogy(smooth_lambda, dose_diff_sum_norm)
     plt.xlabel("$\lambda$")
-    plt.ylabel("$\sum_{s=1}^N ||A^{s}x_{\lambda} - A^{nom}x_{\lambda}||_2/\sum_{s=1}^N ||A^{nom}x_{\lambda}||_2$")
+    plt.ylabel("$\sum_{s=1}^N ||A^{s}x_{\lambda} - A^{nom}x_{\lambda}||_2/||A^{nom}x_{\lambda}||_2$")
     plt.title("Paraspinal Patient {0}: Robustness Error vs. Smoothing Weight".format(patient_num))
     
     if show_fig:
@@ -161,14 +185,15 @@ def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
         fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves for nominal scenario.
-    lam_idx = 2   # lambda = 0.01 seems to work best.
-    plot_dvh(dose_nom_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "Paraspinal Patient {0}: DVH for Nominal Scenario ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), 
-             show = show_fig, filename = save_dvh_nom_name)
+    lam_idx = 2
+    # lam_idx = np.argmin(dose_diff_sum_norm)   # Find smoothing weight that achieves lowest robustness error.
+    plot_dvh(dose_nom_mat[:,lam_idx], my_plan_nom, orgs = orgs, norm_flag = True, norm_volume = vol_norm, norm_struct = "PTV", 
+             title = "Paraspinal Patient {0}: DVH for Nominal Scenario ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), show = show_fig, filename = save_dvh_nom_name)
 
     # Plot DVH bands for nominal and movement scenarios.
     dose_list = [dose_nom_mat[:,lam_idx]] + [dose_move_mat[:,lam_idx] for dose_move_mat in dose_move_mat_list]
-    plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, title = "Paraspinal Patient {0}: DVH Bands for all Scenarios ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), 
-                    show = show_fig, filename = save_dvh_band_name)
+    plot_robust_dvh(dose_list, my_plan_nom, orgs = orgs, norm_flag = True, norm_volume = vol_norm, norm_struct = "PTV", 
+                    title = "Paraspinal Patient {0}: DVH Bands for all Scenarios ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), show = show_fig, filename = save_dvh_band_name)
     
 if __name__ == "__main__":
     create_lung_plot(1, show_fig = True, save_fig = True)
