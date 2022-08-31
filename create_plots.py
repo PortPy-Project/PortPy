@@ -175,6 +175,8 @@ def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
     fig = plt.figure(figsize = (12,8))
     plt.plot(smooth_lambda, dose_diff_sum_norm)
     # plt.semilogy(smooth_lambda, dose_diff_sum_norm)
+    plt.semilogx(smooth_lambda, dose_diff_sum_norm)
+    plt.xlim(left = 1e-9)
     plt.xlabel("$\lambda$")
     plt.ylabel("$\sum_{s=1}^N ||A^{s}x_{\lambda} - A^{nom}x_{\lambda}||_2/||A^{nom}x_{\lambda}||_2$")
     plt.title("Paraspinal Patient {0}: Robustness Error vs. Smoothing Weight".format(patient_num))
@@ -185,8 +187,8 @@ def create_paraspinal_plot(patient_num = 1, show_fig = True, save_fig = True):
         fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves for nominal scenario.
-    lam_idx = 2
-    # lam_idx = np.argmin(dose_diff_sum_norm)   # Find smoothing weight that achieves lowest robustness error.
+    # lam_idx = 0
+    lam_idx = np.argmin(dose_diff_sum_norm)   # Find smoothing weight that achieves lowest robustness error.
     plot_dvh(dose_nom_mat[:,lam_idx], my_plan_nom, orgs = orgs, norm_flag = True, norm_volume = vol_norm, norm_struct = "PTV", 
              title = "Paraspinal Patient {0}: DVH for Nominal Scenario ($\lambda$ = {1})".format(patient_num, smooth_lambda[lam_idx]), show = show_fig, filename = save_dvh_nom_name)
 

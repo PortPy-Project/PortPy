@@ -38,8 +38,11 @@ def main():
 
     # Optimization parameters.
     # smooth_lambda = [0, 0.15, 0.25, 0.5, 1, 10]
-    smooth_lambda = [0, 0.01, 0.05, 0.15, 0.25, 0.5]
-    # smooth_lambda = [0, 0.5]
+    # smooth_lambda = [0, 0.01, 0.05, 0.15, 0.25, 0.5]
+    # smooth_lambda = [np.finfo(float).eps, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
+    # smooth_lambda = np.logspace(start = 9, stop = -2, base = 0.1, num = 12)
+    smooth_lambda = np.logspace(7, stop = -2, base = 0.1, num = 10)
+    smooth_lambda = np.concatenate([np.array([0]), smooth_lambda])
     vol_perc = 0.9
     
     # Create IMRT plan for nominal scenario.
@@ -120,8 +123,11 @@ def main():
    
     # Plot robustness measure versus smoothing weight.
     fig = plt.figure(figsize = (12,8))
-    plt.plot(smooth_lambda, dose_diff_sum_norm)
+    # plt.plot(smooth_lambda, dose_diff_sum_norm)
     # plt.semilogy(smooth_lambda, dose_diff_sum_norm)
+    # plt.semilogx(smooth_lambda, dose_diff_sum_norm)
+    plt.semilogx(smooth_lambda[1:], dose_diff_sum_norm[1:])
+    # plt.xlim(left = 1e-16)
     plt.xlabel("$\lambda$")
     plt.ylabel("$\sum_{s=1}^N ||A^{s}x_{\lambda} - A^{nom}x_{\lambda}||_2/||A^{nom}x_{\lambda}||_2$")
     plt.title("Paraspinal Patient 2: Robustness Error vs. Smoothing Weight")
@@ -130,7 +136,7 @@ def main():
     fig.savefig(save_figure_name, bbox_inches = "tight", dpi = 300)
     
     # Plot DVH curves for nominal scenario.
-    lam_idx = 2   # lambda = 0.01 seems to work best.
+    lam_idx = np.argmin(dose_diff_sum_norm)   # Find smoothing weight that achieves lowest robustness error.
     orgs = ['PTV', 'CORD', 'ESOPHAGUS', 'LUNG_L', 'LUNG_R']
     # plot_dvh(dose_opt_true_mat[:,lam_idx], my_plan_nom, orgs = orgs, title = "DVH for Paraspinal Nominal Scenario ($\lambda$ = {0})".format(smooth_lambda[lam_idx]), filename = save_dvh_nom_name)
     plot_dvh(dose_opt_raw_mat[:,lam_idx], my_plan_nom, orgs = orgs, norm_flag = True, norm_volume = 90, norm_struct = 'PTV', 
