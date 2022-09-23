@@ -31,17 +31,17 @@ def load_metadata(path):
     meta_data['structures'] = listtodict(jsondata)
 
 
-    fname = os.path.join(path, 'MachineParams_MetaData.json')
-    # Opening JSON file
-    f = open(fname)
-    jsondata = json.load(f)
-    meta_data['machineParams'] = listtodict(jsondata)
+    # fname = os.path.join(path, 'MachineParams_MetaData.json')
+    # # Opening JSON file
+    # f = open(fname)
+    # jsondata = json.load(f)
+    # meta_data['machineParams'] = listtodict(jsondata)
 
     fname = os.path.join(path, 'OptimizationVoxels_MetaData.json')
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    meta_data['optVoxels'] = listtodict(jsondata)
+    meta_data['opt_voxels'] = listtodict(jsondata)
 
 
     fname = os.path.join(path, 'CT_MetaData.json')
@@ -55,7 +55,7 @@ def load_metadata(path):
     # Opening JSON file
     f = open(fname)
     jsondata = json.load(f)
-    meta_data['clinicalCriteria'] = listtodict(jsondata)
+    meta_data['clinical_criteria'] = listtodict(jsondata)
 
     beamFolder = os.path.join(path, 'Beams')
     beamsJson = [pos_json for pos_json in os.listdir(beamFolder) if pos_json.endswith('.json')]
@@ -71,6 +71,6 @@ def load_metadata(path):
             meta_data['beams'].setdefault(key, []).append(jsondata[key])
             # dataMeta['beamsMetaData'][key].append(jsondata[key])
 
-    meta_data['patientFolderPath'] = path
+    meta_data['patient_folder_path'] = path
     return meta_data
 

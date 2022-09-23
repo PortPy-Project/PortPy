@@ -29,17 +29,20 @@ def load_data(myData, folderPath):
                             if key[0:-5] == 'optimizationVoxIndices':
                                 vox = f[file_tag[1]][:].T.ravel()
                                 myData.setdefault(key[0:-5], []).append(vox.astype(int))
-                            elif key[0:-5] == 'beamEyeViewStructureMask':
+                            elif key[0:-5] == 'BEV_2d_structure_mask':
                                 orgs = f[file_tag[1]].keys()
+                                organ_mask_dict = dict()
                                 for j in orgs:
-                                    myData.setdefault(key[0:-5], dict()).setdefault('Organ', []).append(j)
-                                    myData.setdefault(key[0:-5], dict()).setdefault('Mask', []).append(f[file_tag[1]][j][:].T)
+                                    organ_mask_dict[j] = f[file_tag[1]][j][:].T
+#                                     organ_mask_dict['Mask'].append(f[file_tag[1]][j][:].T)
+                                myData.setdefault(key[0:-5], []).append(organ_mask_dict)
+#                                 myData.setdefault(key[0:-5], []).append(f[file_tag[1]][j][:].T)
                             else:
                                 myData.setdefault(key[0:-5], []).append(f[file_tag[1]][:].T)
                             if key[0:-5] == 'influenceMatrixSparse' or key[0:-5] == 'influenceMatrixFull':
                                 infMatrixSparseForBeam = myData[key[0:-5]][i]
-                                myData[key[0:-5]][i] = csr_matrix((infMatrixSparseForBeam[:, 2], (infMatrixSparseForBeam[:, 0].astype(int) - 1,
-                                             infMatrixSparseForBeam[:, 1].astype(int) - 1)))
+                                myData[key[0:-5]][i] = csr_matrix((infMatrixSparseForBeam[:, 2], (infMatrixSparseForBeam[:, 0].astype(int),
+                                             infMatrixSparseForBeam[:, 1].astype(int))))
                         else:
                             print('Problem reading Data: {}'.format(myData[key][i]))
                             success = 0
