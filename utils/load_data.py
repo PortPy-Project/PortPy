@@ -36,6 +36,16 @@ def load_data(myData, folderPath):
                                     organ_mask_dict[j] = f[file_tag[1]][j][:].T
 #                                     organ_mask_dict['Mask'].append(f[file_tag[1]][j][:].T)
                                 myData.setdefault(key[0:-5], []).append(organ_mask_dict)
+                            elif key[0:-5] == 'BEV_structure_contour_points':
+                                orgs = f[file_tag[1]].keys()
+                                organ_mask_dict = dict()
+                                for j in orgs:
+                                    segments = f[file_tag[1]][j].keys()
+                                    for seg in segments:
+                                        organ_mask_dict.setdefault(j, []).append(f[file_tag[1]][j][seg][:].T)
+                                        # organ_mask_dict[j] = f[file_tag[1]][j][seg][:].T
+                                #                                     organ_mask_dict['Mask'].append(f[file_tag[1]][j][:].T)
+                                myData.setdefault(key[0:-5], []).append(organ_mask_dict)
 #                                 myData.setdefault(key[0:-5], []).append(f[file_tag[1]][j][:].T)
                             else:
                                 myData.setdefault(key[0:-5], []).append(f[file_tag[1]][:].T)

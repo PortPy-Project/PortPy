@@ -3,11 +3,12 @@ from utils import *
 import os
 import visualization
 import matplotlib.pyplot as plt
-# from utils.plan import Plan
+from utils.plan import Plan
+
 
 def main():
+    # patient_name = 'ECHO_PROST_1'
     patient_name = 'ECHO_PROST_1'
-
     ##create IMRT Plan
 
     ##options for loading requested data
@@ -19,11 +20,13 @@ def main():
 
     # beam_indices = [46, 131, 36, 121, 26, 66, 151, 56, 141]
     my_plan = Plan(patient_name, options=options)
-
-    w = run_imrt_optimization_cvx(my_plan)
+    a = my_plan.beams.get_structure_mask_2dgrid(beam_id=0, organ='PTV')
+    b = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0, organ='PTV')
+    w = my_plan.run_optimization()
+    # w = run_imrt_optimization_cvx(my_plan)
 
     ##plot dvh and robust dvh
-    orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL']
     dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
                  my_plan['infMatrixSparse'] * w * 0.95]
     visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs, plot_scenario=[0])

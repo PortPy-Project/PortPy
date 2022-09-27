@@ -16,8 +16,8 @@ class Structures:
 
     def get_voxels_idx(self, structure_name):
         ind = self.structures_dict['name'].index(structure_name)
-        vox_ind = np.where(self.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)
-        return vox_ind[0]
+        vox_ind = np.where(self.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
+        return vox_ind
 
     def get_volume_cc(self, structure_name):
         ind = self.structures_dict['name'].index(structure_name)
