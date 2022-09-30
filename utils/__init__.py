@@ -9,4 +9,3 @@ from .load_data import load_data
 from .run_imrt_optimization_CVX import run_imrt_optimization_cvx
 from .get_voxels import get_voxels
 from .plan import Plan
-

@@ -3,7 +3,7 @@ from utils import *
 import os
 import visualization
 import matplotlib.pyplot as plt
-from utils.plan import Plan
+# from utils.plan import Plan
 
 
 def main():
@@ -21,24 +21,28 @@ def main():
     # beam_indices = [46, 131, 36, 121, 26, 66, 151, 56, 141]
     my_plan = Plan(patient_name, options=options)
     a = my_plan.beams.get_structure_mask_2dgrid(beam_id=0, organ='PTV')
-    b = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0, organ='PTV')
-    w = my_plan.run_optimization()
+    b = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0)
+    my_plan.run_optimization()
+
+
     # w = run_imrt_optimization_cvx(my_plan)
 
     ##plot dvh and robust dvh
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL']
-    dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
-                 my_plan['infMatrixSparse'] * w * 0.95]
-    visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs, plot_scenario=[0])
-    visualization.plot_dvh(my_plan['infMatrixSparse']*w, my_plan, orgs=orgs)
+    my_plan.plot_dvh(orgs=orgs)
+
+    # dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
+    #              my_plan['infMatrixSparse'] * w * 0.95]
+    # visualization.plot_robust_dvh(dose_list, my_plan, orgs=orgs, plot_scenario=[0])
+    # visualization.plot_dvh(my_plan['infMatrixSparse']*w, my_plan, orgs=orgs)
 
     ##Plot 1st beam fluence
-    wMaps = visualization.get_fluence_map(my_plan, w)
-    (fig, ax, surf) = visualization.surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
-    fig.colorbar(surf)
-    ax.set_zlabel('Fluence Intensity')
-    plt.show()
-
+    # wMaps = visualization.get_fluence_map(my_plan, w)
+    # (fig, ax, surf) = visualization.surface_plot(wMaps[0], cmap='viridis', edgecolor='black')
+    # fig.colorbar(surf)
+    # ax.set_zlabel('Fluence Intensity')
+    # plt.show()
+    # my_plan.plot_dvh()
 
 if __name__ == "__main__":
     main()
