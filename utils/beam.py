@@ -3,8 +3,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 # import cv2
 from shapely.geometry import LinearRing, Polygon, Point
-
-
+from visualization.visualization import surface_plot
 # from skimage.draw import polygon as poly
 
 
@@ -14,6 +13,8 @@ class Beams:
     """
 
     def __init__(self, beams, opt_beamlets_PTV_margin_mm=None):
+        # self.optimal_intensity = None
+        self.optimal_intensity = None
         self.beams_dict = beams
         if opt_beamlets_PTV_margin_mm is None:
             opt_beamlets_PTV_margin_mm = 3
@@ -50,7 +51,7 @@ class Beams:
         ind = self.beams_dict['ID'].index(beam_id)
         return self.beams_dict['collimator_angle'][ind]
 
-    def get_optimization_beamlets(self, beam_ids=None, organ='PTV'):
+    def get_optimization_beamlets(self, beam_ids=None):
         if beam_ids is None:
             beam_ids = self.beams_dict['ID']
         all_beamlets = np.array([])
@@ -194,6 +195,45 @@ class Beams:
         beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
         return beam_map
 
+    def get_fluence_map(self, beam_ids=None):
+        # Generate the beamlet maps from w
+        if beam_ids is None:
+            beam_ids = self.beams_dict['ID']
+        wMaps = []
+        for b, beam_id in enumerate(beam_ids):
+            ind = self.beams_dict['ID'].index(beam_id)
+            maps = self.beams_dict['beamlet_idx_2dgrid'][ind]
+            numRows = np.size(maps, 0)
+            numCols = np.size(maps, 1)
+            wMaps.append(np.zeros((numRows, numCols)))
+            for r in range(numRows):
+                for c in range(numCols):
+                    if maps[r, c] >= 0:
+                        curr = maps[r, c]
+                        wMaps[b][r, c] = self.optimal_intensity[curr]
+
+        return wMaps
+
+    def plot_fluence_2d(self, beam_id=None):
+        # Generate the beamlet maps from w
+        beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
+        fluence_map_2d = self.get_fluence_map(beam_ids=beam_id)
+        plt.matshow(fluence_map_2d[0])
+        plt.xlabel('x-axis')
+        plt.ylabel('y-axis')
+
+    def plot_fluence_3d(self, beam_id=None):
+        beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
+        fluence_map_2d = self.get_fluence_map(beam_ids=beam_id)
+        (fig, ax, surf) = surface_plot(fluence_map_2d[0], cmap='viridis', edgecolor='black')
+        ax.set_zlabel('Fluence Intensity')
+        ax.set_xlabel('x-axis(MLC)')
+        ax.set_xlabel('y-axis')
+        fig.colorbar(surf)
+        plt.show()
+
+
+
     # def get_beamlet_idx_2dgrid(self, beam_id=None, organ='PTV', margin=None, orig_res=True):
     #
     #     # ind = np.where(np.array(self.beams_dict['ID']) == beam_id)
@@ -303,6 +343,7 @@ class Beams:
 
     # def plot_2d_beamlet_intensity(self, x, beam_id=None, orig_res=True):
     #     beamlets_2d_grid = self.get_beamlet_idx_2dgrid(beam_id=beam_id, organ='PTV', orig_res=orig_res)
+
 
 # class Beam:
 #     """

@@ -24,17 +24,14 @@ class Optimization:
         dU = cp.Variable(len(st.get_voxels_idx('PTV')), pos=True)
         # Form objective.
         print('Objective Start')
-        obj = []
+        obj = [10000 * (1 / len(st.get_voxels_idx('PTV'))) * (cp.sum_squares(dO) + 10 * cp.sum_squares(dU)),
+               1000 * (0.6 * cp.sum_squares(X @ w) + 0.4 * cp.sum_squares(Y @ w))]
 
         ##Step 1 objective
 
         ##obj.append((1/sum(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]))*cp.sum_squares(cp.multiply(cp.sqrt(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]), infMatrix[getVoxels(myPlan,'PTV')-1, :] @ w + wMean*pars['alpha']*pars['delta'][getVoxels(myPlan,'PTV')-1] - pars['presPerFraction'])))
-        obj.append(
-            10000 * (1 / len(st.get_voxels_idx('PTV'))) * (cp.sum_squares(dO) + 10 * cp.sum_squares(dU)))
 
         ##Smoothing objective function
-
-        obj.append(1000 * (0.6 * cp.sum_squares(X @ w) + 0.4 * cp.sum_squares(Y @ w)))
 
         print('Objective done')
         print('Constraints Start')
@@ -54,7 +51,7 @@ class Optimization:
                         (1 / len(st.get_voxels_idx(org))) * (cp.sum(infMatrix[st.get_voxels_idx(org), :] @ w)) <=
                         clinical_constraints[i]['mean_hard_constraint_Gy'] / num_fractions]
 
-        ##Step 1 and 2 constraint
+        # Step 1 and 2 constraint
         constraints += [infMatrix[st.get_voxels_idx('PTV'), :] @ w <= pres + dO]
         constraints += [infMatrix[st.get_voxels_idx('PTV'), :] @ w >= pres - dU]
 
@@ -75,7 +72,8 @@ class Optimization:
         print("optimal value with MOSEK:", prob.value)
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
-        self.optimal_intensity = w.value
+        # self.optimal_intensity = w.value
+        self.beams.optimal_intensity = w.value
 
     @staticmethod
     def get_smoothness_matrix(beamReq):
@@ -98,7 +96,7 @@ class Optimization:
                 endCol = np.size(map, 1) - 2
                 while (map[r, startCol] == -1) and (startCol <= endCol):
                     startCol = startCol + 1
-                while ((map[r, endCol] == -1) and (startCol <= endCol)):
+                while (map[r, endCol] == -1) and (startCol <= endCol):
                     endCol = endCol - 1
 
                 for c in range(startCol, endCol + 1):

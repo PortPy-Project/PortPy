@@ -3,8 +3,6 @@ from utils import load_metadata, load_data
 from .beam import Beams
 from .structures import Structures
 import os
-import cvxpy as cp
-import time
 from visualization.visualization import Visualization
 from utils.optimization import Optimization
 # from evaluation.evaluation import Evaluation
@@ -63,5 +61,6 @@ class Plan(Visualization, Optimization):
         self.clinical_criteria = my_plan['clinical_criteria']
         # self.visualization = Visualization()
         # self.evaluation = Evaluation()
+
 
 

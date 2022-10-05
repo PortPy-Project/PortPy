@@ -5,7 +5,7 @@ import numpy as np
 # from evaluation import get_dose
 # from utils.plan import Plan
 from evaluation.evaluation import Evaluation
-# import get_fluence_map
+from .surface_plot import surface_plot
 
 
 class Visualization(Evaluation):
@@ -105,7 +105,7 @@ class Visualization(Evaluation):
                  figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
 
         if dose is None:
-            dose = self.beams.get_influence_matrix() * self.optimal_intensity
+            dose = self.beams.get_influence_matrix() * self.beams.optimal_intensity
         plt.rcParams['font.size'] = 12
         if width is None:
             if style == 'dotted' or style == 'dashed':
@@ -170,5 +170,6 @@ class Visualization(Evaluation):
 
         return colors
 
-    # def get_fluence_map(self):
-    #     get_fluence_map.get_fluence_map(self)
+    @staticmethod
+    def surface_plot(matrix, **kwargs):
+        return surface_plot(matrix, **kwargs)
