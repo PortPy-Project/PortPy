@@ -13,8 +13,8 @@ class Optimization:
         t = time.time()
 
         infMatrix = self.beams.get_influence_matrix(beam_ids=self.beams.beams_dict['ID'])
-        clinical_constraints = self.clinical_criteria['constraints']
-        pres = self.clinical_criteria['pres_per_fraction_Gy']
+        criteria = self.clinical_criteria['criteria']
+        pres = self.clinical_criteria['pres_per_fraction_gy']
         num_fractions = self.clinical_criteria['num_of_fractions']
         [X, Y] = self.get_smoothness_matrix(self.beams.beams_dict)
         st = self.structures
@@ -37,19 +37,20 @@ class Optimization:
         print('Constraints Start')
         constraints = []
         # constraints += [wMean == cp.sum(w)/w.shape[0]]
-        for i in range(len(clinical_constraints)):
-            if 'max_hard_constraint_Gy' in clinical_constraints[i]:
-                if clinical_constraints[i]['max_hard_constraint_Gy'] is not None:
-                    org = clinical_constraints[i]['structNames']
-                    if org != 'GTV':
-                        constraints += [infMatrix[st.get_voxels_idx(org), :] @ w <= clinical_constraints[i][
-                            'max_hard_constraint_Gy'] / num_fractions]
-            if 'mean_hard_constraint_Gy' in clinical_constraints[i]:
-                if clinical_constraints[i]['mean_hard_constraint_Gy'] is not None:
-                    org = clinical_constraints[i]['structNames']
+        for i in range(len(criteria)):
+            if 'max_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
+                    if org != 'GTV' or org != 'CTV':
+                        constraints += [infMatrix[st.get_voxels_idx(org), :] @ w <= limit / num_fractions]
+            if 'mean_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
                     constraints += [
                         (1 / len(st.get_voxels_idx(org))) * (cp.sum(infMatrix[st.get_voxels_idx(org), :] @ w)) <=
-                        clinical_constraints[i]['mean_hard_constraint_Gy'] / num_fractions]
+                        limit / num_fractions]
 
         # Step 1 and 2 constraint
         constraints += [infMatrix[st.get_voxels_idx('PTV'), :] @ w <= pres + dO]
