@@ -16,9 +16,8 @@ class Plan(Visualization, Optimization):
 
     # def __init__(self, ID, gantry_angle=None, collimator_angle=None, iso_center=None, beamlet_map_2d=None,
     #              BEV_structure_mask=None, beamlet_width_mm=None, beamlet_height_mm=None, beam_modality=None, MLC_type=None):
-    def __init__(self, patient_name, beam_indices=None, options=None):
+    def __init__(self, patient_name, beam_ids=None, options=None):
 
-        # patient_name = 'ECHO_PROST_1'
         super().__init__()
         patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', patient_name)
         # read all the meta data for the required patient
@@ -36,21 +35,21 @@ class Plan(Visualization, Optimization):
                 meta_data['beams']['beamEyeViewStructureMask_File'] = [None] * len(
                     meta_data['beams']['beamEyeViewStructureMask_File'])
 
-        if beam_indices is None:
-            beam_indices = [0, 10, 20, 30]
+        if beam_ids is None:
+            beam_ids = [0, 10, 20, 30]
         my_plan = meta_data.copy()
         del my_plan['beams']
         beamReq = dict()
         inds = []
-        for i in range(len(beam_indices)):
-            if beam_indices[i] in meta_data['beams']['ID']:
-                ind = np.where(np.array(meta_data['beams']['ID']) == beam_indices[i])
+        for i in range(len(beam_ids)):
+            if beam_ids[i] in meta_data['beams']['ID']:
+                ind = np.where(np.array(meta_data['beams']['ID']) == beam_ids[i])
                 ind = ind[0][0]
                 inds.append(ind)
                 for key in meta_data['beams']:
                     beamReq.setdefault(key, []).append(meta_data['beams'][key][ind])
         my_plan['beams'] = beamReq
-        if len(inds) < len(beam_indices):
+        if len(inds) < len(beam_ids):
             print('some indices are not available')
         my_plan = load_data(my_plan, my_plan['patient_folder_path'])
         # df = pd.DataFrame.from_dict(my_plan['beams'])

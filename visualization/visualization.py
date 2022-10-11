@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import random
-from utils import get_voxels
 import numpy as np
 # from evaluation import get_dose
 # from utils.plan import Plan
@@ -17,7 +16,6 @@ class Visualization(Evaluation):
         self.clinical_criteria = None
         self.optimal_intensity = None
 
-
     def plot_robust_dvh(self, dose_list, my_plan, orgs=None, style='solid', norm_flag=False, norm_volume=90,
                         norm_struct='PTV', weight_flag=True, plot_scenario=None, width=None, colors=None,
                         figsize=(12, 8), legend_font_size=10, title=None, filename=None, show=True, *args, **kwargs):
@@ -33,13 +31,13 @@ class Visualization(Evaluation):
         if colors is None:
             colors = self.get_colors(30)
         if orgs is None:
-            orgs = []
-            orgs = my_plan['structures']['Names']
+            # orgs = []
+            orgs = self.structures.structures_dict['name']
         max_dose = 0.0
-        all_orgs = my_plan['structures']['Names']
+        all_orgs = self.structures.structures_dict['name']
         # orgs = [org.upper for org in orgs]
-        pres = my_plan['clinicalCriteria']['presPerFraction_Gy'] * my_plan['clinicalCriteria'][
-            'numOfFraction']
+        pres = self.clinical_criteria['pres_per_fraction_gy'] * self.clinical_criteria[
+            'num_of_fractions']
         legend = []
         fig = plt.figure(figsize=figsize)
         plt.rcParams['font.size'] = 12
@@ -88,10 +86,10 @@ class Visualization(Evaluation):
         plt.grid(b=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         if norm_flag:
-            x = my_plan['clinicalCriteria']['presPerFraction_Gy'] * my_plan['clinicalCriteria'][
-                'numOfFraction'] * np.ones_like(y)
+            x = self.clinical_criteria['pres_per_fraction_gy'] * self.clinical_criteria[
+                'num_of_fractions'] * np.ones_like(y)
         else:
-            x = my_plan['clinicalCriteria']['presPerFraction_Gy'] * np.ones_like(y)
+            x = self.clinical_criteria['pres_per_fraction_gy'] * np.ones_like(y)
         plt.plot(x, y, color='black')
         if title:
             plt.title(title)
@@ -120,7 +118,7 @@ class Visualization(Evaluation):
         max_dose = 0.0
         all_orgs = self.structures.structures_dict['name']
         # orgs = [org.upper for org in orgs]
-        pres = self.clinical_criteria['pres_per_fraction_Gy'] * self.clinical_criteria[
+        pres = self.clinical_criteria['pres_per_fraction_gy'] * self.clinical_criteria[
             'num_of_fractions']
         legend = []
         fig = plt.figure(figsize=figsize)
@@ -151,7 +149,7 @@ class Visualization(Evaluation):
         if norm_flag:
             x = pres * np.ones_like(y)
         else:
-            x = self.clinical_criteria['pres_per_fraction_Gy'] * np.ones_like(y)
+            x = self.clinical_criteria['pres_per_fraction_gy'] * np.ones_like(y)
         plt.plot(x, y, color='black')
         if title:
             plt.title(title)
