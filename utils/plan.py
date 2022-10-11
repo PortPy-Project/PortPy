@@ -19,7 +19,7 @@ class Plan(Visualization, Optimization):
     def __init__(self, patient_name, beam_ids=None, options=None):
 
         super().__init__()
-        patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', patient_name)
+        patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', 'Data', patient_name)
         # read all the meta data for the required patient
         meta_data = load_metadata(patient_folder_path)
 
@@ -36,7 +36,7 @@ class Plan(Visualization, Optimization):
                     meta_data['beams']['beamEyeViewStructureMask_File'])
 
         if beam_ids is None:
-            beam_ids = [0, 10, 20, 30]
+            beam_ids = meta_data['planner_beam_ids']['IDs']
         my_plan = meta_data.copy()
         del my_plan['beams']
         beamReq = dict()

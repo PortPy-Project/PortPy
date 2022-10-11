@@ -14,11 +14,11 @@ def example_1():
     options['loadInfluenceMatrixSparse'] = 1
     options['loadBeamEyeViewStructureMask'] = 1
 
-    # Enter the beam indices for creating plan
+    # Enter the beam ids required for creating plan
     beam_ids = np.arange(0, 7)
 
     # create plan object
-    my_plan = Plan(patient_name, beam_ids=beam_ids, options=options)
+    my_plan = Plan(patient_name, options=options)
 
     # sample methods to access data
     beam_PTV_mask_0 = my_plan.beams.get_structure_mask_2dgrid(beam_id=0, organ='PTV')

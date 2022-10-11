@@ -51,6 +51,13 @@ def load_metadata(path):
         jsondata = json.load(f)
         meta_data['ct'] = listtodict(jsondata)
 
+    fname = os.path.join(path, 'PlannerBeams.json')
+    if os.path.isfile(fname):
+        # Opening JSON file
+        f = open(fname)
+        jsondata = json.load(f)
+        meta_data['planner_beam_ids'] = listtodict(jsondata)
+
     fname = os.path.join(path, 'ClinicalCriteria_MetaData.json')
     # Opening JSON file
     f = open(fname)
