@@ -22,6 +22,12 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 5. [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/) ([Varian Medical Systems](https://www.varian.com/))
 
 # Installing PortPy
+
+Clone this repository
+```bash
+git clone https://github.com/PortPy-Project/PortPy.git
+```
+
 You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
 
 Install all the dependencies present in requirements.txt:
