@@ -23,21 +23,22 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 
 # Installing PortPy
 
-Clone this repository
-```bash
-git clone https://github.com/PortPy-Project/PortPy.git
-```
+- Clone this repository:
+  ```bash
+  git clone https://github.com/PortPy-Project/PortPy.git
+  cd PortPy
+  ```
 
-You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
+- You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
 
-Install all the dependencies present in requirements.txt:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-(venv) pip install -r requirements.txt
-```
+  Install all the dependencies present in requirements.txt:
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  (venv) pip install -r requirements.txt
+  ```
 
-In order to understand the functionality of PortPy in better way, we suggest you to go through example_1.py to create a sample IMRT plan and visualize it.
+In order to understand the functionality of PortPy in better way, we suggest you to navigate through example_1.py to create a sample IMRT plan and visualize it.
 
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
