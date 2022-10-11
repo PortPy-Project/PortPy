@@ -19,7 +19,7 @@ class Plan(Visualization, Optimization):
     def __init__(self, patient_name, beam_ids=None, options=None):
 
         super().__init__()
-        patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', 'Data', patient_name)
+        patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', patient_name)
         # read all the meta data for the required patient
         meta_data = load_metadata(patient_folder_path)
 

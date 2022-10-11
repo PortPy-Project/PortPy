@@ -9,7 +9,7 @@ class Optimization:
         self.clinical_criteria = None
         self.beams = None
 
-    def run_optimization(self):
+    def run_optimization(self, solver='MOSEK'):
         t = time.time()
 
         infMatrix = self.beams.get_influence_matrix(beam_ids=self.beams.beams_dict['ID'])
@@ -69,7 +69,7 @@ class Optimization:
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
         # Defining the constraints
         print('Problem loaded')
-        prob.solve(solver=cp.MOSEK, verbose=True)
+        prob.solve(solver=solver, verbose=True)
         print("optimal value with MOSEK:", prob.value)
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))

@@ -14,17 +14,17 @@ def example_1():
     options['loadInfluenceMatrixSparse'] = 1
     options['loadBeamEyeViewStructureMask'] = 1
 
-    # Enter the beam ids required for creating plan
-    beam_ids = np.arange(0, 7)
-
-    # create plan object
+    # create my_plan object for the planner beams
+    # for the customized beams, you can pass the argument beam_ids
+    # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
     my_plan = Plan(patient_name, options=options)
 
-    # sample methods to access data
+    # sample methods to access data for beam with beam_id=0
     beam_PTV_mask_0 = my_plan.beams.get_structure_mask_2dgrid(beam_id=0, organ='PTV')
     beamlet_idx_2dgrid_0 = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0)
 
-    # run optimization
+    # run IMRT optimization using cvxpy and default solver MOSEK
+    # to use open source solvers e.g.ECOS using cvxpy, you can argument solver='ECOS'
     my_plan.run_optimization()
 
     # plot fluence
