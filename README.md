@@ -5,7 +5,14 @@ PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a co
 3. Visualization modules to visualize releavant plan information (e.g, dose volume histograms, dose distribution, fluence map)
 4. Evaluation modules to quantify plan quality with respect to established clinical metrics (e.g., RTOG metrics, dose conformality, tumor control probability, normal tissue control probability)
 # Data
-Data needed for optimization and algorithm development (e.g., a set of beams/beamlets/voxels, dose contribution of each beamlet to each voxel) are provided for a set of pre-specified machine parameters (e.g., beam/colimator/couch angles). We initially provide these data for a set of publicaly available dataset from [TCIA](https://www.cancerimagingarchive.net/). We hope to expand our dataset in the future. The data needed for optimization is extracted from the research version of Eclipse<sup>TM</sup> treatment planning system ([Varian Medical Systems](https://www.varian.com/)) using its API.       
+Data needed for optimization and algorithm development (e.g., a set of beams/beamlets/voxels, dose contribution of each beamlet to each voxel) are provided for a set of pre-specified machine parameters (e.g., beam/colimator/couch angles). We initially provide these data for a set of publicaly available dataset from [TCIA](https://www.cancerimagingarchive.net/). We hope to expand our dataset in the future. The data needed for optimization is extracted from the research version of Eclipse<sup>TM</sup> treatment planning system ([Varian Medical Systems](https://www.varian.com/)) using its API. 
+
+You can download the sample data [here](https://zenodo.org/record/7183694).
+```bash
+tar -xjvf Data.tar.bz2
+```
+Once downloaded, move the data folder into the current project directory.
+
 # Team
 PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
 1. [Masoud Zarepisheh](https://masoudzp.github.io/) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
@@ -15,6 +22,17 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 5. [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/) ([Varian Medical Systems](https://www.varian.com/))
 
 # Installing PortPy
+You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
+
+Install all the dependencies present in requirements.txt:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+(venv) pip install -r requirements.txt
+```
+
+In order to understand the functionality of PortPy in better way, we suggest you to go through example_1.py to create a sample IMRT plan and visualize it.
+
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
 
