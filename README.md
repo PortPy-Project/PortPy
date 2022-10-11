@@ -7,11 +7,11 @@ PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a co
 # Data
 Data needed for optimization and algorithm development (e.g., a set of beams/beamlets/voxels, dose contribution of each beamlet to each voxel) are provided for a set of pre-specified machine parameters (e.g., beam/colimator/couch angles). We initially provide these data for a set of publicaly available dataset from [TCIA](https://www.cancerimagingarchive.net/). We hope to expand our dataset in the future. The data needed for optimization is extracted from the research version of Eclipse<sup>TM</sup> treatment planning system ([Varian Medical Systems](https://www.varian.com/)) using its API. 
 
-You can download the sample data [here](https://zenodo.org/record/7186561).
+You can download the sample patient data [here](https://zenodo.org/record/7186561).
 ```bash
-tar -xjvf Data.tar.bz2
+tar -xjvf Lung_Patient_1.tar.bz2
 ```
-Once downloaded, move the data folder into the current project directory.
+Create a directory named 'Data' in the current project directory and copy downloaded file to it. e.g ./Data/Lung_Patient_1
 
 
 # Installing PortPy
