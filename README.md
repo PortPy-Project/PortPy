@@ -13,13 +13,6 @@ tar -xjvf Data.tar.bz2
 ```
 Once downloaded, move the data folder into the current project directory.
 
-# Team
-PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
-1. [Masoud Zarepisheh](https://masoudzp.github.io/) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
-2. [Gourav Jhanwar](https://github.com/gourav3017) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
-3. [Saad Nadeem](https://nadeemlab.org/) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
-4. [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) ([Maastro Clinic, Netherlands](https://www.mskcc.org/))
-5. [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/) ([Varian Medical Systems](https://www.varian.com/))
 
 # Installing PortPy
 
@@ -42,4 +35,12 @@ In order to understand the functionality of PortPy in better way, we suggest you
 
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
+
+# Team
+PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
+1. [Masoud Zarepisheh](https://masoudzp.github.io/) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
+2. [Saad Nadeem](https://nadeemlab.org/) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
+3. [Gourav Jhanwar](https://github.com/gourav3017) ([Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/))
+4. [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) ([Maastro Clinic, Netherlands](https://www.mskcc.org/))
+5. [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/) ([Varian Medical Systems](https://www.varian.com/))
 
