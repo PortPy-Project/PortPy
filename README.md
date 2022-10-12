@@ -1,6 +1,8 @@
 <p align="center">
   <img src="./images/PortPy_logo.png" width="50%">
 </p>
+
+
 # What is PortPy?
 PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop an open source python library to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code to promote *benchmarking*, *transparency*, *reproducibility* and *community-driven* development 
