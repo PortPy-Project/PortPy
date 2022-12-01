@@ -338,7 +338,7 @@ class Structures:
             self.modify_structure(structure=structure, mask_3d=margin_mask_3d)
 
     def shrink(self, structure, margin_mm=None, new_structure=None):
-        from skimage import data, morphology, transform
+        # from skimage import data, morphology, transform
         from scipy import ndimage
         ind = self.structures_dict['name'].index(structure)
         mask_3d = self.structures_dict['structure_mask_3d'][ind]
