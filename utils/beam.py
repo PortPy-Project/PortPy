@@ -104,8 +104,10 @@ class Beams:
             mask = self.create_BEV_mask_from_contours(beam_id=beam_id, structure=structure,
                                                       margin=self.opt_beamlets_PTV_margin_mm)
             beamlets = self.beams_dict['beamlets'][ind]
-            x_positions = [sub['position_x_mm'] for sub in beamlets]  # get the left corner
-            y_positions = [sub['position_y_mm'] for sub in beamlets]  # get the right corner
+            # x_positions = [sub['position_x_mm'] for sub in beamlets]  # get the left corner
+            # y_positions = [sub['position_y_mm'] for sub in beamlets]  # get the right corner
+            x_positions = beamlets['position_x_mm'][0]
+            y_positions = beamlets['position_y_mm'][0]
             x_min_max_sort = np.sort(np.unique(x_positions))
             y_max_min_sort = np.sort(np.unique(y_positions))[::-1]
             XX, YY = np.meshgrid(x_min_max_sort, y_max_min_sort)
@@ -156,16 +158,21 @@ class Beams:
                 shapely_poly = Polygon(s.buffer(margin), [r])
             #             poly_coordinates = np.array(list(t.exterior.coords))
             beamlets = self.beams_dict['beamlets'][ind]
-            x_positions = [sub['position_x_mm'] for sub in beamlets]
-            y_positions = [sub['position_y_mm'] for sub in beamlets]
+            # x_positions = [sub['position_x_mm'] for sub in beamlets]
+            # y_positions = [sub['position_y_mm'] for sub in beamlets]
+            x_positions = beamlets['position_x_mm'][0]
+            y_positions = beamlets['position_y_mm'][0]
             x_min_max_sort = np.sort(np.unique(x_positions))
             y_max_min_sort = np.sort(np.unique(y_positions))[::-1]
             points = []
-            for i in range(len(beamlets)):
-                x_coord = beamlets[i]['position_x_mm']
-                y_coord = beamlets[i]['position_y_mm']
+            # for i in range(len(beamlets)):
+            #     x_coord = beamlets[i]['position_x_mm']
+            #     y_coord = beamlets[i]['position_y_mm']
+            #     points.append(Point(x_coord, y_coord))
+            for i in range(len(beamlets['id'][0])):
+                x_coord = beamlets['position_x_mm'][0][i]
+                y_coord = beamlets['position_y_mm'][0][i]
                 points.append(Point(x_coord, y_coord))
-
             valid_points = []
             valid_points.extend(filter(shapely_poly.contains, points))
             x_and_y = [(a.x, a.y) for a in valid_points]
@@ -177,7 +184,8 @@ class Beams:
                 for col in range(XX.shape[1]):
                     ind = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
 
-                    if (beamlets[ind]['position_x_mm'], beamlets[ind]['position_y_mm']) in x_and_y:
+                    # if (beamlets[ind]['position_x_mm'], beamlets[ind]['position_y_mm']) in x_and_y:
+                    if (beamlets['position_x_mm'][0][ind], beamlets['position_y_mm'][0][ind]) in x_and_y:
                         # beam_map[row, col] = beamlets[ind]['id']
                         mask[row, col] = True
         return mask

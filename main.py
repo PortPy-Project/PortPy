@@ -25,7 +25,7 @@ def main():
     b = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0)
 
     # run optimization
-    my_plan.run_optimization()
+    my_plan.run_IMRT_optimization()
 
     # save data for debug mode
     picklefile = open('my_plan', 'wb')

@@ -3,38 +3,52 @@ from utils import load_metadata, load_data
 from .beam import Beams
 from .structures import Structures
 import os
-from visualization.visualization import Visualization
+from utils.visualization import Visualization
 from utils.optimization import Optimization
-# from evaluation.evaluation import Evaluation
+from utils.clinical_criteria import ClinicalCriteria
+from utils.evaluation import Evaluation
+
+
 # from typing import Dict, List, Optional, Union
 
 
-class Plan(Visualization, Optimization):
+class Plan:
     """
-    A class representing plan for given plan.
+    A class representing plan.
     """
 
-    # def __init__(self, ID, gantry_angle=None, collimator_angle=None, iso_center=None, beamlet_map_2d=None,
-    #              BEV_structure_mask=None, beamlet_width_mm=None, beamlet_height_mm=None, beam_modality=None, MLC_type=None):
-    def __init__(self, patient_name, beam_ids=None, options=None):
+    def __init__(self, patient_name, beam_ids=None, options=None, eval=True, visual=True):
 
-        super().__init__()
+        # super().__init__()
         patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', patient_name)
+
         # read all the meta data for the required patient
         meta_data = load_metadata(patient_folder_path)
 
-        # load data for the given beam_indices
-        if len(options) != 0:
-            if 'loadInfluenceMatrixFull' in options and not options['loadInfluenceMatrixFull']:
-                meta_data['beams']['influenceMatrixFull_File'] = [None] * len(
-                    meta_data['beams']['influenceMatrixFull_File'])
-            if 'loadInfluenceMatrixSparse' in options and not options['loadInfluenceMatrixSparse']:
-                meta_data['beams']['influenceMatrixSparse_File'] = [None] * len(
-                    meta_data['beams']['influenceMatrixSparse_File'])
-            if 'loadBeamEyeViewStructureMask' in options and not options['loadBeamEyeViewStructureMask']:
-                meta_data['beams']['beamEyeViewStructureMask_File'] = [None] * len(
-                    meta_data['beams']['beamEyeViewStructureMask_File'])
+        # options for loading requested data
+        # if 1 then load the data. if 0 then skip loading the data
+        meta_data = self.load_options(options=options, meta_data=meta_data)
+        # filter metadata for the given beam_indices
+        my_plan = self.get_plan_beams(beam_ids=beam_ids, meta_data=meta_data)
+        # Load data
+        my_plan = load_data(my_plan, my_plan['patient_folder_path'])
+        self.beams = Beams(my_plan['beams'])
+        self.structures = Structures(my_plan['structures'], my_plan['opt_voxels'])
+        self.ct = my_plan['ct']
+        # self.structures.create_rinds()
+        self.patient_name = patient_name
+        self.clinical_criteria = ClinicalCriteria(my_plan['clinical_criteria'])
+        self.optimize = Optimization(beams=self.beams, structures=self.structures,
+                                     clinical_criteria=self.clinical_criteria)
+        if eval:
+            self.evaluate = Evaluation(beams=self.beams, structures=self.structures,
+                                       clinical_criteria=self.clinical_criteria)
+        if visual:
+            self.visualize = Visualization(beams=self.beams, structures=self.structures,
+                                           clinical_criteria=self.clinical_criteria, evaluate=self.evaluate, ct=self.ct)
 
+    @staticmethod
+    def get_plan_beams(beam_ids=None, meta_data=None):
         if beam_ids is None:
             beam_ids = meta_data['planner_beam_ids']['IDs']
         my_plan = meta_data.copy()
@@ -51,15 +65,19 @@ class Plan(Visualization, Optimization):
         my_plan['beams'] = beamReq
         if len(inds) < len(beam_ids):
             print('some indices are not available')
-        my_plan = load_data(my_plan, my_plan['patient_folder_path'])
-        # df = pd.DataFrame.from_dict(my_plan['beams'])
-        # self.beam = [Beam(df.loc[i]) for i in range(len(beam_indices))]
-        self.beams = Beams(my_plan['beams'])
-        self.structures = Structures(my_plan['structures'], my_plan['opt_voxels'])
-        self.patient_name = patient_name
-        self.clinical_criteria = my_plan['clinical_criteria']
-        # self.visualization = Visualization()
-        # self.evaluation = Evaluation()
+        return my_plan
 
-
-
+    @staticmethod
+    def load_options(options=None, meta_data=None):
+        if options is None:
+            options = dict()
+            options['loadInfluenceMatrixFull'] = 0
+            options['loadInfluenceMatrixSparse'] = 1
+        if len(options) != 0:
+            if 'loadInfluenceMatrixFull' in options and not options['loadInfluenceMatrixFull']:
+                meta_data['beams']['influenceMatrixFull_File'] = [None] * len(
+                    meta_data['beams']['influenceMatrixSparse_File'])
+            if 'loadInfluenceMatrixSparse' in options and not options['loadInfluenceMatrixSparse']:
+                meta_data['beams']['influenceMatrixFull_File'] = [None] * len(
+                    meta_data['beams']['influenceMatrixSparse_File'])
+        return meta_data
