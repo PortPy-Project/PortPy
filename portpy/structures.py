@@ -284,7 +284,7 @@ class Structures:
         return struct
 
     def expand(self, structure, margin_mm=None, new_structure=None):
-        from skimage import data, morphology, transform
+        # from skimage import data, morphology, transform
         from scipy import ndimage
         ind = self.structures_dict['name'].index(structure)
         mask_3d = self.structures_dict['structure_mask_3d'][ind]
