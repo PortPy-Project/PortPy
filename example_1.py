@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.plan import Plan
+from portpy.plan import Plan
 import pickle
 
 
@@ -58,6 +58,7 @@ def example_1():
     # st.modify_structure('PTV', mask_3d_mod)
     # st.add_structure('PTV-GTV', mask_3d_mod1)
     # st.add_structure('PTV_and_GTV', mask_3d_mod2)
+
 
 if __name__ == "__main__":
     example_1()

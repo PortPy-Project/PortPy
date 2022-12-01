@@ -1,8 +1,8 @@
 from scipy import interpolate
 import numpy as np
-from utils.beam import Beams
-from utils.structures import Structures
-from utils.clinical_criteria import ClinicalCriteria
+from portpy.beam import Beams
+from portpy.structures import Structures
+from portpy.clinical_criteria import ClinicalCriteria
 
 
 class Evaluation:

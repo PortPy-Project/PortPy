@@ -1,12 +1,12 @@
 import numpy as np
-from utils import load_metadata, load_data
+from portpy import load_metadata, load_data
 from .beam import Beams
 from .structures import Structures
 import os
-from utils.visualization import Visualization
-from utils.optimization import Optimization
-from utils.clinical_criteria import ClinicalCriteria
-from utils.evaluation import Evaluation
+from portpy.visualization import Visualization
+from portpy.optimization import Optimization
+from portpy.clinical_criteria import ClinicalCriteria
+from portpy.evaluation import Evaluation
 
 
 # from typing import Dict, List, Optional, Union

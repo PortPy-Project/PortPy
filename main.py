@@ -1,8 +1,8 @@
-from utils import *
+from portpy import *
 import os
 import visualization
 import matplotlib.pyplot as plt
-# from utils.plan import Plan
+# from portpy.plan import Plan
 import pickle
 
 

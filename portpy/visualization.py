@@ -6,14 +6,14 @@ from matplotlib.widgets import Slider
 import random
 import numpy as np
 # from evaluation import get_dose
-# from utils.plan import Plan
-from utils.evaluation import Evaluation
+# from portpy.plan import Plan
+from portpy.evaluation import Evaluation
 
 # from .surface_plot import surface_plot
 # import SimpleITK as sitk
-from utils.beam import Beams
-from utils.structures import Structures
-from utils.clinical_criteria import ClinicalCriteria
+from portpy.beam import Beams
+from portpy.structures import Structures
+from portpy.clinical_criteria import ClinicalCriteria
 # from ipywidgets.widgets import interact
 from matplotlib.widgets import CheckButtons
 from matplotlib.lines import Line2D

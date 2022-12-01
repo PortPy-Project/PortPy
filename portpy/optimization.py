@@ -1,9 +1,9 @@
 import numpy as np
 import cvxpy as cp
 import time
-from .beam import Beams
-from .structures import Structures
-from utils.clinical_criteria import ClinicalCriteria
+from portpy.beam import Beams
+from portpy.structures import Structures
+from portpy.clinical_criteria import ClinicalCriteria
 
 
 class Optimization:
@@ -58,8 +58,8 @@ class Optimization:
         # Form objective.
         print('Objective Start')
         obj = [10000 * (1 / len(st.get_voxels_idx('PTV'))) * (cp.sum_squares(dO) + 10 * cp.sum_squares(dU)),
-               1000 * (0.6 * cp.sum_squares(X @ w) + 0.4 * cp.sum_squares(Y @ w)),
-               10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+               1000 * (0.6 * cp.sum_squares(X @ w) + 0.4 * cp.sum_squares(Y @ w))]
+               # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
 
         ##Step 1 objective
 

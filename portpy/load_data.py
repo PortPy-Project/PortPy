@@ -1,4 +1,3 @@
-from . import *
 import os
 
 import numpy as np

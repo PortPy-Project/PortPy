@@ -3,7 +3,6 @@ import scipy as sp
 import matplotlib.pyplot as plt
 # import cv2
 from shapely.geometry import LinearRing, Polygon, Point
-from visualization.visualization import surface_plot
 # from skimage.draw import polygon as poly
 
 
@@ -233,13 +232,22 @@ class Beams:
     def plot_fluence_3d(self, beam_id=None):
         beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
         fluence_map_2d = self.get_fluence_map(beam_ids=beam_id)
-        (fig, ax, surf) = surface_plot(fluence_map_2d[0], cmap='viridis', edgecolor='black')
+        (fig, ax, surf) = Beams.surface_plot(fluence_map_2d[0], cmap='viridis', edgecolor='black')
         ax.set_zlabel('Fluence Intensity')
         ax.set_xlabel('x-axis(MLC)')
         ax.set_xlabel('y-axis')
         fig.colorbar(surf)
         plt.show()
 
+    @staticmethod
+    def surface_plot(matrix, **kwargs):
+        # acquire the cartesian coordinate matrices from the matrix
+        # x is cols, y is rows
+        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
+        return fig, ax, surf
 
 
     # def get_beamlet_idx_2dgrid(self, beam_id=None, organ='PTV', margin=None, orig_res=True):

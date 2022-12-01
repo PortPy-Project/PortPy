@@ -24,7 +24,7 @@ Create a directory named 'Data' in the current project directory and copy the do
 - Clone this repository:
   ```bash
   git clone https://github.com/PortPy-Project/PortPy.git
-  cd PortPy
+  cd portpy
   ```
 
 - You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
