@@ -3,6 +3,8 @@ import os
 from natsort import natsorted
 
 import itertools
+
+
 def listtodict(jsondata):
     '''
     A recursive function which constructs from dictionary from list of dictionary
@@ -21,7 +23,7 @@ def listtodict(jsondata):
     return jsondict
 
 
-def load_metadata(path):
+def load_metadata(path, options=None):
     meta_data = dict()
 
     fname = os.path.join(path, 'StructureSet_MetaData.json')
@@ -29,7 +31,6 @@ def load_metadata(path):
     f = open(fname)
     jsondata = json.load(f)
     meta_data['structures'] = listtodict(jsondata)
-
 
     # fname = os.path.join(path, 'MachineParams_MetaData.json')
     # # Opening JSON file
@@ -42,7 +43,6 @@ def load_metadata(path):
     f = open(fname)
     jsondata = json.load(f)
     meta_data['opt_voxels'] = listtodict(jsondata)
-
 
     fname = os.path.join(path, 'CT_MetaData.json')
     if os.path.isfile(fname):
@@ -79,5 +79,20 @@ def load_metadata(path):
             # dataMeta['beamsMetaData'][key].append(jsondata[key])
 
     meta_data['patient_folder_path'] = path
+    meta_data = load_options(options=options, meta_data=meta_data)
     return meta_data
 
+
+def load_options(options=None, meta_data=None):
+    if options is None:
+        options = dict()
+        options['loadInfluenceMatrixFull'] = 0
+        options['loadInfluenceMatrixSparse'] = 1
+    if len(options) != 0:
+        if 'loadInfluenceMatrixFull' in options and not options['loadInfluenceMatrixFull']:
+            meta_data['beams']['influenceMatrixFull_File'] = [None] * len(
+                meta_data['beams']['influenceMatrixSparse_File'])
+        if 'loadInfluenceMatrixSparse' in options and not options['loadInfluenceMatrixSparse']:
+            meta_data['beams']['influenceMatrixFull_File'] = [None] * len(
+                meta_data['beams']['influenceMatrixSparse_File'])
+    return meta_data

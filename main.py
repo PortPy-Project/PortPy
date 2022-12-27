@@ -25,7 +25,7 @@ def main():
     b = my_plan.beams.get_beamlet_idx_2dgrid(beam_id=0)
 
     # run optimization
-    my_plan.run_IMRT_optimization()
+    my_plan.run_IMRT_fluence_map_CVXPy()
 
     # save data for debug mode
     picklefile = open('my_plan', 'wb')
@@ -44,7 +44,7 @@ def main():
 
     ##plot dvh and robust dvh
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL']
-    my_plan.plot_dvh(orgs=orgs)
+    my_plan.plot_dvh(structs=orgs)
 
     # dose_list = [my_plan['infMatrixSparse'] * w, my_plan['infMatrixSparse'] * w * 1.05,
     #              my_plan['infMatrixSparse'] * w * 0.95]

@@ -11,6 +11,7 @@ class ClinicalCriteria:
         # self.optimal_intensity = None
         self.optimal_intensity = None
         self.clinical_criteria_dict = clinical_criteria
+        self.opt_sol = []
 
     def add_criterion(self, criterion=None, parameters=None, constraints=None):
 
