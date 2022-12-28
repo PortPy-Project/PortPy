@@ -30,6 +30,7 @@ def example_1():
     orgs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL',
             'RIND_0', 'RIND_1', 'RIND_2', 'RIND_3']
     visualize.plot_dvh(my_plan, sol=sol, structs=orgs)
+    my_plan.plot_dvh(sol=sol, structs=orgs)
 
     # plot 2d slice for the given structures
     visualize.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'])

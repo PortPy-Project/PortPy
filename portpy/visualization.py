@@ -578,7 +578,7 @@ class Visualization:
                 max_dose = Evaluation.get_max_dose(sol, structure_name=struct)
                 if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
                     df.at[ind, 'Plan Value'] = max_dose
-                if 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
+                elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
                     df.at[ind, 'Plan Value'] = max_dose / (
                                 my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
             if df.name[ind] == 'mean_dose':
@@ -591,6 +591,11 @@ class Visualization:
                     dose = df.parameters[ind]['dose_gy']
                     volume = Evaluation.get_volume(sol, struct=struct, dose_value=dose)
                     df.at[ind, 'Plan Value'] = volume
+                elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
+                    dose = df.parameters[ind]['dose_gy']
+                    volume = Evaluation.get_volume(sol, struct=struct, dose_value=dose)
+                    vol_cc = my_plan.structures.get_volume_cc(structure_name=struct)*volume/100
+                    df.at[ind, 'Plan Value'] = vol_cc
 
         def color_plan_value(row):
 
@@ -617,12 +622,12 @@ class Visualization:
             if limit_key in row['constraints']:
                 if row['Plan Value'] > row['constraints'][limit_key]:
                     row_color = [highlight, default]
-                elif row['Plan Value'] <= row['constraints'][limit_key]:
+                else:
                     row_color = [highlight_green, default]
             if goal_key in row['constraints']:
                 if row['Plan Value'] > row['constraints'][goal_key]:
                     row_color = [highlight_brown, default]
-                elif row['Plan Value'] <= row['constraints'][goal_key]:
+                else:
                     row_color = [highlight_green, default]
             return row_color
 
@@ -638,9 +643,9 @@ class Visualization:
                           </body>
                         </html>.
                         '''
-        with open('cc.html', 'w') as f:
+        with open('temp.html', 'w') as f:
             f.write(html_string.format(table=html))
 
         # with open('cc.html', 'w') as f:
         #     f.write(html)
-        webbrowser.open('file://' + os.path.realpath('cc.html'))
+        webbrowser.open('file://' + os.path.realpath('temp.html'))

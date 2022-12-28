@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import itertools
 
+
 class InfluenceMatrix:
     """
     class of influence matrix
@@ -54,19 +55,28 @@ class InfluenceMatrix:
 
         print('Done')
 
-    def get_structure_voxels(self):
-        pass
-
     def get_voxel_info(self, row_number):
         pass
 
     def get_beamlet_info(self, col_number):
         pass
 
-    def dose_1d_to_3d(self, sol=None):
+    def dose_1d_to_3d(self, sol: dict = None, dose_1d=None):
+        """
+
+        :param sol: solution from optimization
+        :param dose_1d: dose in 1d. Optional
+        :return: dose in 3d
+
+        Get dose in 3d array. same resolution as CT
+        """
         dose_vox_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
         # dose_1d = self.opt_voxels_dict['dose_1d']
-        dose_1d = sol['dose_1d']
+        if dose_1d is None:
+            if 'dose_1d' not in sol:
+                dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']  # multiply it with num fractions
+            else:
+                dose_1d = sol['dose_1d']
         dose_3d = np.zeros_like(dose_vox_map, dtype=float)
         inds = np.unique(dose_vox_map[dose_vox_map >= 0])
         a = np.where(np.isin(dose_vox_map, inds))
@@ -74,13 +84,47 @@ class InfluenceMatrix:
         self.dose_3d = dose_3d
         return dose_3d
 
-    def dose_3d_to_1d(self):
-        pass
+    def dose_3d_to_1d(self, dose_3d: np.ndarray = None):
+        """
 
-    def fluence_2d_to_1d(self):
-        pass
+        :param dose_3d: 3d dose
+        :return: dose in 1d voxel indices
+        """
+        dose_vox_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+        if dose_3d is None:
+            dose_3d = self.dose_3d
+        inds = np.unique(dose_vox_map[dose_vox_map >= 0])
+        dose_1d = np.zeros_like(inds, dtype=float)
+        a = np.where(np.isin(dose_vox_map, inds))
+        dose_1d[dose_vox_map[a]] = dose_3d[a]
+        return dose_1d
 
-    def fluence_1d_to_2d(self, sol=None, scenario=0):
+    def fluence_2d_to_1d(self, fluence_2d: list):
+        """
+
+        :param fluence_2d: 2d fluence as list of nd array with same length as number of beams
+        :return: fluence in 1d for beamlet indices
+        """
+        fluence_1d = np.zeros((self.A.shape[1]))
+        for ind in range(len(self.beamlets_dict)):
+            maps = self.beamlets_dict[ind]['beamlet_idx_2dgrid']
+            numRows = np.size(maps, 0)
+            numCols = np.size(maps, 1)
+            # wMaps = np.zeros((numRows, numCols))
+            for r in range(numRows):
+                for c in range(numCols):
+                    if maps[r, c] >= 0:
+                        curr = maps[r, c]
+                        fluence_1d[curr] = fluence_2d[ind][r, c]
+        return fluence_1d
+
+    def fluence_1d_to_2d(self, sol: dict):
+        """
+
+        :param sol: solution from optimization
+        :return: 2d fluence as a list for each beam
+
+        """
         # if optimal_intensity is None:
         #     optimal_intensity = self.opt_sol[scenario]['optimal_intensity']
         wMaps = []

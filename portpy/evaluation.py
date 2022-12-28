@@ -11,7 +11,7 @@ class Evaluation:
         :param sol: solution dictionary
         :param dose: dose_1d in 1d
         :param struct: structure name for which to get the dose_1d
-        :param volume_per: query the dose_1d at volume_per
+        :param volume_per: query the dose at percentage volume
         :param weight_flag: for non uniform voxels weight flag always True
         :return: dose_1d at volume_percentage
         """

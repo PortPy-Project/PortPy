@@ -6,7 +6,9 @@ import os
 from portpy.clinical_criteria import ClinicalCriteria
 from portpy.influence_matrix import InfluenceMatrix
 import SimpleITK as sitk
-from portpy.visualization import Visualization as visualize
+from portpy.visualization import Visualization
+from portpy.optimization import Optimization
+
 # from typing import Dict, List, Optional, Union
 import pickle
 
@@ -205,5 +207,17 @@ class Plan:
     def get_num_of_fractions(self):
         return self.clinical_criteria.clinical_criteria_dict['num_of_fractions']
 
-    def plot_dvh(self, optimal_sol=None, dose=None, structs=None, options_norm=None, options_fig=None):
-        visualize.plot_dvh(self, sol=optimal_sol, structs=structs, options_norm=options_norm, options_fig=options_fig)
+    def plot_dvh(self, sol=None, dose_1d=None, structs=None, options_norm=None, options_fig=None):
+        Visualization.plot_dvh(self, sol=sol, dose_1d=dose_1d, structs=structs, options_norm=options_norm, options_fig=options_fig)
+
+    def run_IMRT_fluence_map_CVXPy(self, inf_matrix=None, solver='MOSEK'):
+        Optimization.run_IMRT_fluence_map_CVXPy(self, inf_matrix=inf_matrix, solver=solver)
+
+    def plot_fluence_2d(self, beam_id: int, optimal_fluence_2d=None):
+        Visualization.plot_fluence_2d(self, beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+
+    def plot_fluence_3d(self, beam_id: int, optimal_fluence_2d=None):
+        Visualization.plot_fluence_3d(self, beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+
+    def view_in_slicer(self, slicer_path=None, img_dir=None):
+        Visualization.view_in_slicer(self, slicer_path=slicer_path, img_dir=img_dir)
