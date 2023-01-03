@@ -8,10 +8,13 @@ from portpy.visualization import Visualization as visualize
 
 
 def eg_3_structure_transformations():
-
     # Enter patient name
     patient_name = 'Lung_Patient_1'
+
+    # visualize patient metadata for beams and structures
     visualize.display_patient_metadata(patient_name)
+
+    # display patients
     visualize.display_patients()
 
     # create my_plan object for the planner beams

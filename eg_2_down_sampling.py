@@ -8,7 +8,6 @@ from portpy.optimization import Optimization as optimize
 
 
 def eg_2_down_sampling():
-
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 

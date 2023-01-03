@@ -491,14 +491,14 @@ class Visualization:
         # 'seg', '=', 'slicer.util.loadSegmentation', '(','/home/oguzcan-bekar/Desktop/PyQt/mask.nii.gz', ');', 'seg.CreateClosedSurfaceRepresentation();'], shell=False)
 
     @staticmethod
-    def display_patient_metadata(pat_name, pat_dir=None, show_beams=True, show_structs=True):
-        if pat_dir is None:
-            pat_dir = os.path.join(os.getcwd(), "..", 'Data')
-            pat_dir = os.path.join(pat_dir, pat_name)
+    def display_patient_metadata(pat_name, data_dir=None, show_beams=True, show_structs=True):
+        if data_dir is None:
+            data_dir = os.path.join(os.getcwd(), "..", 'Data')
+            data_dir = os.path.join(data_dir, pat_name)
         else:
-            pat_dir = os.path.join(pat_dir, pat_name)
+            data_dir = os.path.join(data_dir, pat_name)
         options = {'loadInfluenceMatrixFull': 1}
-        meta_data = load_metadata(pat_dir, options=options)
+        meta_data = load_metadata(data_dir, options=options)
         if show_beams:
             beams = meta_data['beams']
             del beams['beamlets']
@@ -551,7 +551,7 @@ class Visualization:
         display_dict = {}
         if data_dir is None:
             data_dir = os.path.join(os.getcwd(), "..", 'Data')
-            # pat_dir = os.path.join(pat_dir, pat_name)
+            # data_dir = os.path.join(data_dir, pat_name)
         pat_names = os.listdir(data_dir)
         for i, pat_name in enumerate(pat_names):
             if pat_name == 'ECHO_PROST_1' or pat_name == 'Lung_Patient_1':
