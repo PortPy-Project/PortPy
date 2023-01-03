@@ -54,6 +54,12 @@ class Optimization(object):
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('BLAD_WALL')))] = 5
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
+        elif cc_dict['disease_site'] == 'Lung':
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
         # Construct the problem.
         x = cp.Variable(A.shape[1], pos=True)

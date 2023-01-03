@@ -1,11 +1,9 @@
 from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
 from portpy.optimization import Optimization as optimize
-import matplotlib.pyplot as plt
 
 
 def eg_2_down_sampling():
-    # Enter patient name
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 
@@ -13,10 +11,6 @@ def eg_2_down_sampling():
     visualize.display_patient_metadata(patient_name)
 
     # display patients
-    visualize.display_patients()
-
-    patient_name = 'Lung_Patient_1'
-    visualize.display_patient_metadata(patient_name)
     visualize.display_patients()
 
     # create my_plan object for the planner beams
@@ -33,21 +27,21 @@ def eg_2_down_sampling():
     sol_1 = optimize.run_IMRT_fluence_map_CVXPy(my_plan)
     sol_2 = optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_2)
 
-    # # save plan and optimal solution
-    # my_plan.save_plan()
-    # my_plan.save_optimal_sol(sol_2, sol_name='sol_2')
-    # my_plan.save_optimal_sol(sol_1, sol_name='sol_1')
-    # my_plan = Plan.load_plan()
-    # sol_1 = Plan.load_optimal_sol('sol_1')
-    # sol_2 = Plan.load_optimal_sol('sol_2')
+    # # save & load plan and optimal solutions
+    # my_plan.save_plan(path=r'C:\temp')
+    # my_plan.save_optimal_sol(sol_2, sol_name='sol_2', path=r'C:\temp')
+    # my_plan.save_optimal_sol(sol_1, sol_name='sol_1', path=r'C:\temp')
+    # my_plan = Plan.load_plan(path=r'C:\temp')
+    # sol_1 = Plan.load_optimal_sol('sol_1', path=r'C:\temp')
+    # sol_2 = Plan.load_optimal_sol('sol_2', path=r'C:\temp')
 
     # # plot fluence
     optimal_fluence_2d_down_sample = sol_2['inf_matrix'].fluence_1d_to_2d(sol_2)
     optimal_fluence_2d = my_plan.inf_matrix.fluence_1d_to_2d(sol_1)
-    visualize.plot_fluence_3d(my_plan, beam_id=1, optimal_fluence_2d=optimal_fluence_2d)
-    visualize.plot_fluence_2d(my_plan, beam_id=1, optimal_fluence_2d=optimal_fluence_2d)
-    visualize.plot_fluence_3d(my_plan, beam_id=1, optimal_fluence_2d=optimal_fluence_2d_down_sample)
-    visualize.plot_fluence_2d(my_plan, beam_id=1, optimal_fluence_2d=optimal_fluence_2d_down_sample)
+    visualize.plot_fluence_3d(my_plan, beam_id=0, optimal_fluence_2d=optimal_fluence_2d)
+    visualize.plot_fluence_2d(my_plan, beam_id=0, optimal_fluence_2d=optimal_fluence_2d)
+    visualize.plot_fluence_3d(my_plan, beam_id=0, optimal_fluence_2d=optimal_fluence_2d_down_sample)
+    visualize.plot_fluence_2d(my_plan, beam_id=0, optimal_fluence_2d=optimal_fluence_2d_down_sample)
     #
 
     # plot dvh dvh for both the cases
@@ -61,6 +55,7 @@ def eg_2_down_sampling():
     visualize.plot_2d_dose(my_plan, sol=sol_2)
 
     print('Done!')
+
 
 if __name__ == "__main__":
     eg_2_down_sampling()
