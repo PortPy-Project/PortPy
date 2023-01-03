@@ -106,7 +106,7 @@ class Plan:
         if sol['inf_matrix'].dose_3d is None:
             dose_arr = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
         else:
-            dose_arr = self.inf_matrix.dose_3d
+            dose_arr = sol['inf_matrix'].dose_3d
         dose = sitk.GetImageFromArray(dose_arr)
         dose.SetOrigin(self.ct['origin_xyz_mm'])
         dose.SetSpacing(self.ct['resolution_xyz_mm'])

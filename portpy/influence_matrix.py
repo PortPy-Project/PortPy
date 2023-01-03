@@ -455,9 +455,10 @@ class InfluenceMatrix:
         if sol is not None:
             optimal_fluence_2d = self.fluence_1d_to_2d(sol)
         ind = [i for i in range(len(self.beamlets_dict)) if self.beamlets_dict[i]['beam_id'] == beam_id][0]
-        plt.matshow(optimal_fluence_2d[ind])
+        mat = plt.matshow(optimal_fluence_2d[ind])
         plt.xlabel('x-axis (beamlets column)')
         plt.ylabel('y-axis (beamlets row)')
+        plt.colorbar(mat)
 
     def plot_fluence_3d(self, beam_id=None, optimal_fluence_2d=None, sol=None):
         # beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
