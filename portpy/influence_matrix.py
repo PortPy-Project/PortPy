@@ -447,20 +447,24 @@ class InfluenceMatrix:
         # vox_ind = np.where(self.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
         return vox_weights
 
-    def plot_fluence_2d(self, beam_id=None, optimal_fluence_2d=None):
+    def plot_fluence_2d(self, beam_id=None, optimal_fluence_2d=None, sol=None):
         # Generate the beamlet maps from w
         # beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
         # fluence_map_2d = self.get_fluence_map(beam_id=beam_id)
         # ind = self.beamlets_dict['beam_id'].index(beam_id)
+        if sol is not None:
+            optimal_fluence_2d = self.fluence_1d_to_2d(sol)
         ind = [i for i in range(len(self.beamlets_dict)) if self.beamlets_dict[i]['beam_id'] == beam_id][0]
         plt.matshow(optimal_fluence_2d[ind])
         plt.xlabel('x-axis (beamlets column)')
         plt.ylabel('y-axis (beamlets row)')
 
-    def plot_fluence_3d(self, beam_id=None, optimal_fluence_2d=None):
+    def plot_fluence_3d(self, beam_id=None, optimal_fluence_2d=None, sol=None):
         # beam_id = beam_id if isinstance(beam_id, list) else [beam_id]
         # fluence_map_2d = self.get_fluence_map(beam_id=beam_id)
         # ind = self.beamlets_dict['beam_id'].index(beam_id)
+        if sol is not None:
+            optimal_fluence_2d = self.fluence_1d_to_2d(sol)
         ind = [i for i in range(len(self.beamlets_dict)) if self.beamlets_dict[i]['beam_id'] == beam_id][0]
         (fig, ax, surf) = InfluenceMatrix.surface_plot(optimal_fluence_2d[ind], cmap='viridis', edgecolor='black')
         ax.set_zlabel('Fluence Intensity')

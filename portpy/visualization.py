@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import random
 import numpy as np
+from skimage import measure
 from portpy.evaluation import Evaluation
 from matplotlib.lines import Line2D
 import os
@@ -107,26 +108,32 @@ class Visualization:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
     @staticmethod
-    def plot_dvh(my_plan, sol, dose_1d=None, structs=None, options_norm=None, options_fig=None,
+    def plot_dvh(my_plan, sol: dict, dose_1d: np.ndarray = None, structs: list = None,
                  dose_scale: dose_type = "Absolute(Gy)",
-                 volume_scale: volume_type = "Relative(%)"):
+                 volume_scale: volume_type = "Relative(%)", **options):
         """
-        Create dvh plot for the selected structures
-        :param dose_1d: dose_1d in 1d
-        :param volume_scale: volume scale on y-axis.
-        :param dose_scale: dose_1d scale on x axis. Default= absolute(Gy)
-        :param sol: optimal sol dictionary
+
         :param my_plan: object of class Plan
+        :param sol: optimal sol dictionary
+        :param dose_1d: dose in 1d voxels
         :param structs: structures to be included in dvh plot
-        :param options_norm: normalization options. e.g. options_norm['norm_flag] = True will normalize the plan
-        :param options_fig: figure options. e.g. options_fig['style'] = 'solid' will set the style of dvh plot
+        :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = "Absolute(cc)" or volume_scale = "Relative(%)"
+        :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = "Absolute(Gy)" or dose_scale = "Relative(%)"
+        :keyword style (str): line style for dvh curve. default "solid". can be "dotted", "dash-dotted".
+        :keyword width (int): width of line. Default 2
+        :keyword colors(list): list of colors
+        :keyword legend_font_size: Set legend_font_size. default 10
+        :keyword figsize: Set figure size for the plot. Default figure size (12,8)
+        :keyword create_fig: Create a new figure. Default True. If False, append to the previous figure
+        :keyword title: Title for the figure
+        :keyword filename: Name of the file to save the figure in current directory
+        :keyword show: Show the figure. Default is True. If false, next plot can be append to it
+        :keyword norm_flag: Use to normalize the plan. Default is False.
+        :keyword norm_volume: Use to set normalization volume. default is 90 percentile.
         :return: dvh plot for the selected structures
 
+        Create dvh plot for the selected structures
         """
-        if options_fig is None:
-            options_fig = {}
-        if options_norm is None:
-            options_norm = {}
             # dose_1d = self.beams.get_influence_matrix() @ self.beams.optimal_intensity
             # dose_1d = my_plan.structures.opt_voxels_dict['dose_1d']
         if dose_1d is None:
@@ -136,19 +143,20 @@ class Visualization:
             else:
                 dose_1d = sol['dose_1d']
         # getting options_fig:
-        style = options_fig['style'] if 'style' in options_fig else 'solid'
-        width = options_fig['width'] if 'width' in options_fig else None
-        colors = options_fig['colors'] if 'colors' in options_fig else None
-        legend_font_size = options_fig['legend_font_size'] if 'legend_font_size' in options_fig else 10
-        figsize = options_fig['figsize'] if 'figsize' in options_fig else (12, 8)
-        title = options_fig['title'] if 'title' in options_fig else None
-        filename = options_fig['filename'] if 'filename' in options_fig else None
-        show = options_fig['show'] if 'show' in options_fig else True
+        style = options['style'] if 'style' in options else 'solid'
+        width = options['width'] if 'width' in options else None
+        colors = options['colors'] if 'colors' in options else None
+        legend_font_size = options['legend_font_size'] if 'legend_font_size' in options else 10
+        figsize = options['figsize'] if 'figsize' in options else (12, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        show = options['show'] if 'show' in options else True
+        create_fig = options['create_fig'] if 'create_fig' in options else True
 
         # getting norm options
-        norm_flag = options_norm['norm_flag'] if 'norm_flag' in options_norm else False
-        norm_volume = options_norm['norm_volume'] if 'norm_volume' in options_norm else 90
-        norm_struct = options_norm['norm_struct'] if 'norm_struct' in options_norm else 'PTV'
+        norm_flag = options['norm_flag'] if 'norm_flag' in options else False
+        norm_volume = options['norm_volume'] if 'norm_volume' in options else 90
+        norm_struct = options['norm_struct'] if 'norm_struct' in options else 'PTV'
 
         plt.rcParams['font.size'] = 12
         if width is None:
@@ -167,7 +175,8 @@ class Visualization:
         # orgs = [org.upper for org in orgs]
         pres = my_plan.get_prescription()
         legend = []
-        fig = plt.figure(figsize=figsize)
+        if create_fig:
+            plt.figure(figsize=figsize)
         if norm_flag:
             norm_factor = Evaluation.get_dose(sol, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
@@ -220,7 +229,7 @@ class Visualization:
         if show:
             plt.show()
         if filename is not None:
-            fig.savefig(filename, bbox_inches="tight", dpi=300)
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
 
     @staticmethod
     def plot_binary_mask_points(my_plan, structure, show=True, color=None):
@@ -262,26 +271,29 @@ class Visualization:
         return fig, ax, surf
 
     @staticmethod
-    def plot_fluence_2d(my_plan, beam_id: int, optimal_fluence_2d=None):
+    def plot_fluence_2d(my_plan, beam_id: int, optimal_fluence_2d=None, sol=None):
         """
+
 
         :param optimal_fluence_2d:
         :param my_plan: object of class Plan
         :param beam_id: beam_id of the beam
+        :param sol: solution dictionary after optimization
         :return: 2d optimal fluence plot
         """
-        my_plan.inf_matrix.plot_fluence_2d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+        my_plan.inf_matrix.plot_fluence_2d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d, sol=sol)
 
     @staticmethod
-    def plot_fluence_3d(my_plan, beam_id: int, optimal_fluence_2d=None):
+    def plot_fluence_3d(my_plan, beam_id: int, optimal_fluence_2d=None, sol=None):
         """
 
+                :param sol: solution after optimization
                 :param optimal_fluence_2d:
                 :param my_plan: object of class Plan
                 :param beam_id: beam_id of the beam
                 :return: 3d optimal fluence plot
                 """
-        my_plan.inf_matrix.plot_fluence_3d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+        my_plan.inf_matrix.plot_fluence_3d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d, sol=sol)
 
     @staticmethod
     def plot_2d_dose(my_plan, sol, slice_num=40, structs=None, show_dose=True, show_struct=True, show_isodose=True,
@@ -345,9 +357,12 @@ class Visualization:
                 cmap = mpl.colors.ListedColormap(colors[i])
                 # im = ax.imshow(struct_masks[ind][slice_num, :, :], alpha=0.6 * (struct_masks[ind][slice_num, :, :] > 0),
                 #                interpolation='none', cmap=cmap)
-                masked = np.ma.masked_where(struct_masks[ind][slice_num, :, :] == 0, struct_masks[ind][slice_num, :, :])
-                im = ax.imshow(masked, alpha=0.6,
-                               interpolation='none', cmap=cmap)
+                # masked = np.ma.masked_where(struct_masks[ind][slice_num, :, :] == 0, struct_masks[ind][slice_num, :, :])
+                # im = ax.imshow(masked, alpha=0.6,
+                #                interpolation='none', cmap=cmap)
+                contours = measure.find_contours(struct_masks[ind][slice_num, :, :], 0.5)
+                for contour in contours:
+                    plt.plot(contour[:, 1], contour[:, 0], linewidth=2, color=colors[i])
             labels = [struct for struct in structs]
             # get the colors of the values, according to the
             # colormap used by imshow
@@ -492,14 +507,14 @@ class Visualization:
             is_sparse = df['influenceMatrixSparse_File'].str.contains('sparse', na=False)
             for ind, (sparse, full) in enumerate(zip(is_full, is_sparse)):
                 if sparse and full:
-                    df.at[ind, 'sparse/full'] = 'sparse/full'
+                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Both'
                 elif sparse and not full:
-                    df.at[ind, 'sparse/full'] = 'sparse'
+                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Sparse'
                 elif not sparse and full:
-                    df.at[ind, 'sparse/full'] = 'full'
+                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Full'
 
             keep_columns = ['ID', 'gantry_angle', 'collimator_angle', 'couch_angle', 'beam_modality', 'energy_MV',
-                            'sparse/full',
+                            'influence_matrix(sparse/full)',
                             'iso_center', 'MLC_name',
                             'machine_name']
             df = df[keep_columns]
@@ -636,7 +651,10 @@ class Visualization:
         html_string = '''
                         <html>
                           <head><title>Portpy Clinical Criteria Evaluation</title></head>
-                          <link rel="stylesheet" type="text/css" href="df_style.css"/>
+                          <style> 
+                            table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}
+                            th, td {{padding: 5px;}}
+                          </style>
                           <body>
                           <h4> Clinical Criteria</h4>
                             {table}

@@ -2,7 +2,7 @@ from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
 
 
-def example_3():
+def eg_3_structure_transformations():
     # This example shows creating and modification of structures using portpy
     # Enter patient name
     patient_name = 'Lung_Patient_1'
@@ -22,4 +22,4 @@ def example_3():
 
 
 if __name__ == "__main__":
-    example_3()
+    eg_3_structure_transformations()
