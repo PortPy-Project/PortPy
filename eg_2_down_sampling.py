@@ -1,9 +1,14 @@
+"""
+    This example demonstrates the use of portpy to create down sampled IMRT plan and compare it with plan
+    with original resolution using different visualizations
+"""
 from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
 from portpy.optimization import Optimization as optimize
 
 
 def eg_2_down_sampling():
+
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 

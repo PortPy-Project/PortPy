@@ -36,7 +36,7 @@ Create a directory named 'Data' in the current project directory and copy the do
   (venv) pip install -r requirements.txt
   ```
 
-In order to understand the functionality of PortPy in better way, we suggest you to navigate through example_1.py to create a sample IMRT plan and visualize it.
+In order to understand the functionality of PortPy in better way, we suggest you to navigate through example eg_1_basics.py to create a sample IMRT plan and visualize it.
 
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.

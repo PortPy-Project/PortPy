@@ -1,9 +1,14 @@
+"""
+
+    This example shows creating and modification of structures using portpy
+"""
+
 from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
 
 
 def eg_3_structure_transformations():
-    # This example shows creating and modification of structures using portpy
+
     # Enter patient name
     patient_name = 'Lung_Patient_1'
     visualize.display_patient_metadata(patient_name)

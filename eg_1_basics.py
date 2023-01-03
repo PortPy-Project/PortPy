@@ -1,9 +1,15 @@
+"""
+
+This example demonstrates the use of portpy to create simple IMRT plan for lung patient
+and its visualization capabilities.
+"""
 from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
 from portpy.optimization import Optimization as optimize
 
 
 def eg_1_basics():
+
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 
@@ -27,13 +33,14 @@ def eg_1_basics():
     # my_plan = Plan.load_plan(path=r'C:\temp')
     # sol = Plan.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 
+    # plot fluence 3d and 2d
     visualize.plot_fluence_3d(my_plan, sol=sol, beam_id=0)
     visualize.plot_fluence_2d(my_plan, sol=sol, beam_id=0)
 
     # plot dvh for the structures in list
     structs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL',
                'RIND_0', 'RIND_1', 'RIND_2', 'RIND_3']
-    # plot methods is exposed using two ways:
+    # plot methods are exposed using two ways:
     # 1. using visualization class
     visualize.plot_dvh(my_plan, sol=sol, structs=structs)
 
