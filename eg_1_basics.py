@@ -1,7 +1,14 @@
 """
 
-This example demonstrates the use of portpy to create simple IMRT plan for lung patient
-and its visualization capabilities.
+This example demonstrates performing the following tasks using portpy:
+    1- Query the existing patients in the database (you first need to download the patient database from the link provided in the GitHub page).
+    2- Query the data provided for a specified patient in the database.
+    3- Create a simple IMRT plan using CVXPy package. You can use different opensource/commercial optimization engines from CVXPy but you first need to download them and obtain an appropriate license.
+        Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email address
+    4- Visualise the plan (dose distribution, fluence)
+    5- Evaluate the plan based on some clinically relevant metrics
+
+
 """
 from portpy.plan import Plan
 from portpy.visualization import Visualization as visualize
