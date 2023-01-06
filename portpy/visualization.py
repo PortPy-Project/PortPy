@@ -271,29 +271,27 @@ class Visualization:
         return fig, ax, surf
 
     @staticmethod
-    def plot_fluence_2d(my_plan, beam_id: int, optimal_fluence_2d=None, sol=None):
+    def plot_fluence_2d(beam_id: int, sol=None):
         """
 
 
         :param optimal_fluence_2d:
-        :param my_plan: object of class Plan
         :param beam_id: beam_id of the beam
         :param sol: solution dictionary after optimization
         :return: 2d optimal fluence plot
         """
-        my_plan.inf_matrix.plot_fluence_2d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d, sol=sol)
+        sol['inf_matrix'].plot_fluence_2d(beam_id=beam_id, sol=sol)
 
     @staticmethod
-    def plot_fluence_3d(my_plan, beam_id: int, optimal_fluence_2d=None, sol=None):
+    def plot_fluence_3d(beam_id: int, sol=None):
         """
 
                 :param sol: solution after optimization
-                :param optimal_fluence_2d:
-                :param my_plan: object of class Plan
+                :param optimal_fluence_2d: fluence in 2d (list of nd array)
                 :param beam_id: beam_id of the beam
                 :return: 3d optimal fluence plot
                 """
-        my_plan.inf_matrix.plot_fluence_3d(beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d, sol=sol)
+        sol['inf_matrix'].plot_fluence_3d(beam_id=beam_id, sol=sol)
 
     @staticmethod
     def plot_2d_dose(my_plan, sol, slice_num=40, structs=None, show_dose=True, show_struct=True, show_isodose=True,

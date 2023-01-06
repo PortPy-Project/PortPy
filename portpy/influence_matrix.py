@@ -15,7 +15,7 @@ class InfluenceMatrix:
 
     def __init__(self, plan_obj,
                  opt_beamlets_PTV_margin_mm: Optional['float'] = None,
-                 beamlet_width=2.5, beamlet_height=2.5,
+                 beamlet_width=2.5, beamlet_height=2.5, down_sample_xyz=None,
                  structure='PTV'):
         """
 
@@ -29,6 +29,7 @@ class InfluenceMatrix:
         self._beamlets_in_inf_matrix = []
         self.beamlet_width = beamlet_width
         self.beamlet_height = beamlet_height
+        self.down_sample_xyz = down_sample_xyz
 
         if hasattr(plan_obj.structures, 'opt_voxels_dict'):
             self.opt_voxels_dict = deepcopy(plan_obj.structures.opt_voxels_dict)
@@ -50,9 +51,12 @@ class InfluenceMatrix:
             self.opt_beamlets_PTV_margin_mm = opt_beamlets_PTV_margin_mm
         print('Creating BEV')
         self.preprocess_beams(plan_obj, structure=structure)
+        if self.down_sample_xyz is not None:
+            self.pre_process_voxels(plan_obj=plan_obj)
         self.A = self.get_influence_matrix(plan_obj)
         self.dose_3d = None
-
+        self._vox_map = None
+        self._vox_weights = None
         print('Done')
 
     def get_voxel_info(self, row_number):
@@ -148,7 +152,7 @@ class InfluenceMatrix:
         #     beam_ids = self.beamlets_dict['ID']
         # beam_ids_list = beam_ids if isinstance(beam_ids, list) else [beam_ids]
         # for i, beam_id in enumerate(beam_ids_list):
-        if self.beamlet_width > 2.5 or self.beamlet_height > 2.5:
+        if self.beamlet_width > 2.5 or self.beamlet_height > 2.5 or self.down_sample_xyz is not None:
             influenceMatrixSparse = plan.inf_matrix.A
         else:
             influenceMatrixSparse = plan.beams.beams_dict['influenceMatrixSparse']
@@ -172,7 +176,8 @@ class InfluenceMatrix:
                         #     inf_matrix[:, i] = influenceMatrixSparse[ind][:, np.unique(opt_beamlets[i])].sum(axis=1)
                         # inf_matrix = np.vstack([np.sum(influenceMatrixSparse[ind][:, opt_beamlets[n]], 1) for n in range(len(opt_beamlets))]).T
                     else:
-                        inf_matrix = influenceMatrixSparse[ind][:, opt_beamlets]
+                        if self.down_sample_xyz is None:
+                            inf_matrix = influenceMatrixSparse[ind][:, opt_beamlets]
                 else:
                     if self.beamlet_width > 2.5 or self.beamlet_height > 2.5:
                         inf_matrix_2 = sparse.hstack(
@@ -181,11 +186,18 @@ class InfluenceMatrix:
                         inf_matrix = sparse.hstack(
                             [inf_matrix, inf_matrix_2], format='csr')
                     else:
-                        inf_matrix = sparse.hstack(
-                            [inf_matrix, influenceMatrixSparse[ind][:, opt_beamlets]], format='csr')
+                        if self.down_sample_xyz is None:
+                            inf_matrix = sparse.hstack(
+                                [inf_matrix, influenceMatrixSparse[ind][:, opt_beamlets]], format='csr')
         # if del_org_matrix:
         if 'influenceMatrixSparse' in plan.beams.beams_dict:
             del plan.beams.beams_dict['influenceMatrixSparse']
+        if is_sparse and self.down_sample_xyz is not None:
+            if self.beamlet_width <= 2.5 or self.beamlet_height <= 2.5:
+                inf_matrix = influenceMatrixSparse
+            inf_matrix = sparse.vstack(
+                [csr_matrix((sparse.diags(self._vox_weights[i]).dot(inf_matrix[self._vox_map[i], :])).sum(axis=0)) for i in
+                 range(len(self._vox_map))], format='csr')
 
         return inf_matrix
 
@@ -396,6 +408,149 @@ class InfluenceMatrix:
         # beam_map = np.multiply(beam_map, mask)
         # beam_map = beam_map - np.int(1)  # subtract one again to get original beamlets
         return beam_map
+
+    def down_sample_voxels(self, down_sample_xyz=None):
+        from patchify import patchify, unpatchify
+        vox_3d = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+        dose_to_ct_int = np.round(np.array(self.opt_voxels_dict['dose_voxel_resolution_xyz_mm']) /
+                                np.array(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']))
+        dose_to_ct_int = dose_to_ct_int.astype(int)
+        # all_vox = np.unique(vox_3d[vox_3d >= 0])
+        # inds = np.unique(vox_3d[vox_3d >= 0])
+        # all_inds = vox_3d[vox_3d >= 0]
+        # a = np.where(np.isin(vox_3d, inds))
+        # a_arg = np.where(np.isin(vox_3d, inds))
+        # b = np.where(all_inds == 0)
+        # patch_ind = a_arg[b]
+
+        # down_samp_3d = np.ones_like(vox_3d, dtype=int)*int(-1)
+        # down_samp_3d[a] = dose_1d[vox_3d[a]]
+        # vox_map = np.ones((len(all_vox), 2)) * np.int(-1)
+        # count = 0
+        # all_vox = np.argwhere(vox_3d >= 0)
+        # skip = []
+        all_vox = np.unique(vox_3d[vox_3d >= 0])
+        # vox_map = np.ones((len(all_vox), 3)) * int(-1)
+        vox_map = []
+        vox_weights = []
+
+        # using patchify
+        # patches = patchify(vox_3d, (1, 4, 4), step=4)
+        # pat_shape = patches.shape
+        # pat = np.vstack(patches)
+        # pat = np.vstack(pat)
+        # count = 0
+        # for i in range(np.shape(pat)[0]):
+        #     if np.any(pat[i] > -1):
+        #         vox_inds, weights = np.unique(np.sort(pat[i][pat[i] >= 0]), return_counts=True)
+        #         weight = weights / np.product(dose_to_ct_int)  # calculate weight for each voxel
+        #         # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
+        #         vox_map.append(vox_inds)
+        #         vox_weights.append(weight)
+        #         # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
+        #         pat[i][pat[i] > -1] = int(count)
+        #         count = count + 1
+        # patches = pat.reshape(pat_shape)
+        # # merging back patches
+        # output_height = vox_3d.shape[1] - (vox_3d.shape[1] - 4) % 4
+        # output_width = vox_3d.shape[2] - (vox_3d.shape[2] - 4) % 4
+        # output_shape = (output_height, output_width, 111)
+        # output_image = unpatchify(patches, output_shape)
+        # down_sample_3d = patches.reshape(vox_3d.shape)
+        # down_sample_3d = unpatchify(patches, vox_3d.shape)
+
+        # using pytorch
+        import torch
+        vox_3d_torch = torch.from_numpy(vox_3d)
+        kc, kh, kw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz kernel size
+        dc, dh, dw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz stride
+        patches = vox_3d_torch.unfold(0, kc, dc).unfold(1, kh, dh).unfold(2, kw, dw)
+        unfold_shape = patches.size()
+        patches = patches.contiguous().view(-1, kc, kh, kw)
+        count = 0
+        for pat in patches:
+            if torch.any(pat > -1):
+                elem, ind = torch.sort(pat[pat >= 0])
+                vox_inds, weights = torch.unique(elem, return_counts=True)
+                weight = weights / torch.sum(weights)  # calculate weight for each voxel
+                # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
+                vox_map.append(vox_inds.numpy())
+                vox_weights.append(weight.numpy())
+                # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
+                pat[pat > -1] = count
+                count = count + 1
+        # Reshape back
+        patches_orig = patches.view(unfold_shape)
+        output_c = unfold_shape[0] * unfold_shape[3]
+        output_h = unfold_shape[1] * unfold_shape[4]
+        output_w = unfold_shape[2] * unfold_shape[5]
+        patches_orig = patches_orig.permute(0, 3, 1, 4, 2, 5).contiguous()
+        down_sample_3d_torch = patches_orig.view(output_c, output_h, output_w)
+        down_sample_3d = down_sample_3d_torch.numpy()
+        if down_sample_3d.shape != vox_3d.shape:
+            down_sample_3d = np.pad(
+                down_sample_3d,
+                [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
+                "constant", constant_values=-1)
+        # for ind_zyx in all_vox:
+        #     # if not np.any(skip == ind_zyx):  # ind_zyx not in skip:
+        #     if not np.any([np.all(ind_zyx == a) for a in skip]):
+        #         patch = vox_3d[ind_zyx[0], ind_zyx[1]:ind_zyx[1] + (down_sample_xyz[-2] - 1) * dose_to_ct_int,
+        #                 ind_zyx[2]:ind_zyx[2] + (down_sample_xyz[-3] - 1) * dose_to_ct_int]
+        #         vox = np.unique(patch[patch >= 0])
+        #         xy_ind = np.concatenate([np.argwhere(vox_3d[ind_zyx[0], :, :] == i) for i in vox])
+        #         xyz_ind = np.column_stack((np.ones(len(xy_ind), dtype='int') * ind_zyx[0], xy_ind[:, :]))
+        #         skip.extend(xyz_ind)
+        #         vox_map[vox, 1] = count
+        #         vox_map[vox, 0] = vox
+        #         count = count + 1
+        # # return vox_map
+
+        # Find indices of elements in list
+        # inds_covered = []
+        # all_vox = np.unique(vox_3d[vox_3d >= 0])
+        # down_samp_3d = np.ones_like(vox_3d, dtype=int) * int(-1)
+        # vox_map = np.ones((len(all_vox), 3))
+        # count = 0
+        # for i in range(vox_3d.shape[0]):
+        #     for j in range(vox_3d.shape[1]):
+        #         for k in range(vox_3d.shape[2]):
+        #             if vox_3d[i, j, k] > -1:
+        #                 if [i, j, k] not in inds_covered:
+        #                     patch = vox_3d[i:i + down_sample_xyz[-1], j:j + down_sample_xyz[-2], k:k + down_sample_xyz[-3]]
+        #                     rows = np.arange(j, j + down_sample_xyz[-2])
+        #                     cols = np.arange(k, k + down_sample_xyz[-3])
+        #                     slices = np.arange(i, i + down_sample_xyz[-1])
+        #                     vox_inds, weights = np.unique(np.sort(patch[patch >= 0]), return_counts=True)
+        #                     weight = weights / np.product(dose_to_ct_int)  # calculate weight for each voxel
+        #                     vox_map[vox_inds] = np.column_stack((vox_inds, count*np.ones_like(vox_inds), weight))
+        #                     for r in itertools.product(slices, rows, cols):
+        #                         inds_covered.append([r[0], r[1], r[2]])
+        #                     down_samp_3d[i:i + down_sample_xyz[-1], j:j + down_sample_xyz[-2], k:k + down_sample_xyz[-3]] = count
+        #                     count = count + 1
+        return vox_map, vox_weights, down_sample_3d
+        # for ind_zyx in all_vox:
+        #     b = np.where(all_inds == ind_zyx)
+        #     patch_ind = a_arg[b]
+        #     left_top_corner = np.min(patch_ind, axis=0)
+        #     patch = vox_3d[left_top_corner[0], left_top_corner[1]:left_top_corner[1] + down_sample_xyz[-2],
+        #             left_top_corner[2]:left_top_corner[2] + down_sample_xyz[-3]]
+
+    def pre_process_voxels(self, plan_obj):
+        if self.down_sample_xyz is not None:
+            vox_map, vox_weights, down_sample_3d = self.down_sample_voxels(down_sample_xyz=self.down_sample_xyz)
+            self.opt_voxels_dict['ct_to_dose_voxel_map'][0] = down_sample_3d
+            self._vox_map = vox_map
+            self._vox_weights = vox_weights
+            for structure_name in plan_obj.structures.structures_dict['name']:
+                ind = plan_obj.structures.structures_dict['name'].index(structure_name)
+                vox_3d = plan_obj.structures.structures_dict['structure_mask_3d'][ind] * \
+                         self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+                # self.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
+                vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
+                self.opt_voxels_dict['voxel_idx'][ind] = vox
+                self.opt_voxels_dict['voxel_size'][ind] = counts / np.max(counts)  # calculate weight for each voxel
+
 
     @staticmethod
     def sort_beamlets(b_map):

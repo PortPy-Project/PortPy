@@ -194,9 +194,9 @@ class Plan:
         # pickle the dictionary and write it to file
         pickle.dump(sol, pickle_file)
 
-    def create_inf_matrix(self, beamlet_width=2.5, beamlet_height=2.5):
+    def create_inf_matrix(self, beamlet_width=2.5, beamlet_height=2.5, down_sample_xyz=None):
 
-        return InfluenceMatrix(self, beamlet_width=beamlet_width, beamlet_height=beamlet_height)
+        return InfluenceMatrix(self, beamlet_width=beamlet_width, beamlet_height=beamlet_height, down_sample_xyz=down_sample_xyz)
 
     def get_prescription(self):
         pres = self.clinical_criteria.clinical_criteria_dict['pres_per_fraction_gy'] * \
@@ -213,11 +213,13 @@ class Plan:
     def run_IMRT_fluence_map_CVXPy(self, inf_matrix=None, solver='MOSEK'):
         Optimization.run_IMRT_fluence_map_CVXPy(self, inf_matrix=inf_matrix, solver=solver)
 
-    def plot_fluence_2d(self, beam_id: int, optimal_fluence_2d=None):
-        Visualization.plot_fluence_2d(self, beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+    @staticmethod
+    def plot_fluence_2d(beam_id: int, sol: dict = None):
+        Visualization.plot_fluence_2d(beam_id=beam_id, sol=sol)
 
-    def plot_fluence_3d(self, beam_id: int, optimal_fluence_2d=None):
-        Visualization.plot_fluence_3d(self, beam_id=beam_id, optimal_fluence_2d=optimal_fluence_2d)
+    @staticmethod
+    def plot_fluence_3d(beam_id: int, sol: dict = None):
+        Visualization.plot_fluence_3d(beam_id=beam_id, sol=sol)
 
     def view_in_slicer(self, slicer_path=None, img_dir=None):
         Visualization.view_in_slicer(self, slicer_path=slicer_path, img_dir=img_dir)
