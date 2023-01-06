@@ -41,12 +41,12 @@ def eg_1_basics():
     # sol = Plan.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 
     # plot fluence 3d and 2d
-    visualize.plot_fluence_3d(my_plan, sol=sol, beam_id=0)
-    visualize.plot_fluence_2d(my_plan, sol=sol, beam_id=0)
+    visualize.plot_fluence_3d(sol=sol, beam_id=0)
+    visualize.plot_fluence_2d(sol=sol, beam_id=0)
 
     # plot dvh for the structures in list
-    structs = ['PTV', 'CTV', 'GTV', 'ESOPHAGUS', 'HEART', 'CORD', 'BLADDER', 'BLAD_WALL', 'RECT_WALL',
-               'RIND_0', 'RIND_1', 'RIND_2', 'RIND_3']
+    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+
     # plot methods are exposed using two ways:
     # 1. using visualization class
     visualize.plot_dvh(my_plan, sol=sol, structs=structs)
@@ -55,12 +55,12 @@ def eg_1_basics():
     my_plan.plot_dvh(sol=sol, structs=structs)
 
     # plot 2d axial slice for the given structures
-    visualize.plot_2d_dose(my_plan, sol=sol, slice_num=50)
+    visualize.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'])
 
     # visualize plan metrics based upon clinical citeria
-    visualize.plan_metrics(my_plan, sol)
+    visualize.plan_metrics(my_plan, sol=sol)
 
-    # view ct, dose_1d and segmentations in 3d slicer.
+    # view ct, dose_1d and segmentations in 3d slicer. This requires downloading and installing 3d slicer
     # First save the Nrrd images in path directory
     my_plan.save_nrrd(sol=sol, path=r'C:\temp')
     visualize.view_in_slicer(my_plan, slicer_path=r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe', img_dir=r'C:\temp')
