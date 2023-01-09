@@ -141,6 +141,176 @@ class Optimization(object):
         return sol
 
     @staticmethod
+    def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
+        """
+        :param inf_matrix: object of class InfluenceMatrix
+        :param my_plan: object of class Plan
+        :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
+        :return: save optimal solution to plan object called opt_sol
+        run IMRT fluence map optimization using cvxpy
+        """
+        t = time.time()
+
+        # get data for optimization
+        if inf_matrix is None:
+            inf_matrix = my_plan.inf_matrix
+        A = inf_matrix.A
+        cc_dict = my_plan.clinical_criteria.clinical_criteria_dict
+        criteria = cc_dict['criteria']
+        pres = cc_dict['pres_per_fraction_gy']
+        num_fractions = cc_dict['num_of_fractions']
+        [Qx, Qy] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
+        st = inf_matrix
+
+        # create and add rind constraints
+        rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
+        if rinds[0] not in my_plan.structures.structures_dict['name']:
+            Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
+            Optimization.set_rinds_opt_voxel_idx(my_plan,
+                                                 inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
+        else:
+            Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
+
+        rind_max_dose_perc = [1.1, 1.0, 0.9, 0.7, 0.65]
+        for i, rind in enumerate(rinds):
+            parameters = {'structure_name': rind}
+            total_pres = cc_dict['pres_per_fraction_gy'] * cc_dict['num_of_fractions']
+            constraints = {'limit_dose_gy': total_pres * rind_max_dose_perc[i]}
+            my_plan.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
+                                                    constraints=constraints)
+
+        # voxel weights for oar objectives
+        all_vox = np.arange(A.shape[0])
+        oar_voxels = all_vox[~np.isin(np.arange(A.shape[0]), st.get_opt_voxels_idx('PTV'))]
+        oar_weights = np.ones(A[oar_voxels, :].shape[0])
+        if cc_dict['disease_site'] == 'Prostate':
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RECT_WALL')))] = 20
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('BLAD_WALL')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
+        elif cc_dict['disease_site'] == 'Lung':
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
+
+        # get volume constraint in V(Gy) <= v% format
+        import pandas as pd
+        df = pd.DataFrame()
+        count = 0
+        for i in range(len(criteria)):
+            if 'dose_volume' in criteria[i]['name']:
+                limit_key = Optimization.matching_keys(criteria[i]['constraints'], 'limit')
+                if limit_key in criteria[i]['constraints']:
+                    df.at[count, 'structure'] = criteria[i]['parameters']['structure_name']
+                    df.at[count, 'dose_gy'] = criteria[i]['parameters']['dose_gy']
+
+                    # getting max dose for the same structure
+                    max_dose_struct = 1000
+                    for j in range(len(criteria)):
+                        if 'max_dose' in criteria[j]['name']:
+                            if 'limit_dose_gy' in criteria[j]['constraints']:
+                                org = criteria[j]['parameters']['structure_name']
+                                if org == criteria[i]['parameters']['structure_name']:
+                                    max_dose_struct = criteria[j]['constraints']['limit_dose_gy']
+                    df.at[count, 'M'] = max_dose_struct - criteria[i]['parameters']['dose_gy']
+                    if 'perc' in limit_key:
+                        df.at[count, 'vol_perc'] = criteria[i]['constraints'][limit_key]
+                    count = count + 1
+        # Construct the problem.
+        x = cp.Variable(A.shape[1], pos=True)
+        dO = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
+        dU = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
+
+        # binary variable for dvh constraint
+        b = cp.Variable(len(np.concatenate([st.get_opt_voxels_idx(org) for org in df.structure.to_list()])),
+                        boolean=True)
+        # Form objective.
+        ptv_overdose_weight = 10000
+        ptv_underdose_weight = 10  # number of times of the ptv overdose weight
+        smoothness_weight = 1000
+        smoothness_X_weight = 0.6
+        smoothness_Y_weight = 0.4
+
+        print('Objective Start')
+        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                    cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+               smoothness_weight * (
+                           smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
+        # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+
+        ##Step 1 objective
+
+        ##obj.append((1/sum(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]))*cp.sum_squares(cp.multiply(cp.sqrt(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]), infMatrix[getVoxels(myPlan,'PTV')-1, :] @ w + wMean*pars['alpha']*pars['delta'][getVoxels(myPlan,'PTV')-1] - pars['presPerFraction'])))
+
+        ##Smoothing objective function
+
+        print('Objective done')
+        print('Constraints Start')
+        constraints = []
+        # constraints += [wMean == cp.sum(w)/w.shape[0]]
+        for i in range(len(criteria)):
+            if 'max_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
+                    if org != 'GTV' or org != 'CTV':
+                        constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
+            elif 'mean_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
+                    # constraints += [
+                    #     (1 / len(st.get_voxels_idx(org))) * (cp.sum(infMatrix[st.get_voxels_idx(org), :] @ w)) <=
+                    #     limit / num_fractions]
+
+                    # mean constraints using voxel weights
+                    constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
+                                    (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
+                                                                                      :] @ x)))) <= limit / num_fractions]
+        start = 0
+        for i in range(len(df)):
+            struct, limit, v, M = df.loc[i, 'structure'], df.loc[i, 'dose_gy'], df.loc[i, 'vol_perc'], df.loc[i, 'M']
+            end = start + len(st.get_opt_voxels_idx(struct))
+            constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b[start:end] * M]
+            constraints += [cp.sum(cp.multiply(b[start:end], st.get_opt_voxels_size(struct))) <= v / 100 * cp.sum(
+                st.get_opt_voxels_size(struct))]
+            start = end
+
+        # Step 1 and 2 constraint
+        constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
+        constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
+
+        ## Smoothness Constraint
+        # for b in range(len(my_plan.beams.beams_dict['ID'])):
+        #     startB = my_plan.beams.beams_dict['start_beamlet'][b]
+        #     endB = my_plan.beams.beams_dict['end_beamlet'][b]
+        #     constraints += [0.6 * cp.sum_squares(
+        #         Qx[startB:endB, startB:endB] @ x[startB:endB]) + 0.4 * cp.sum_squares(
+        #         Qy[startB:endB, startB:endB] @ x[startB:endB]) <= 0.5]
+
+        print('Constraints Done')
+
+        prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
+        # Defining the constraints
+        print('Problem loaded')
+        prob.solve(solver=solver, verbose=True)
+        print("optimal value with MOSEK:", prob.value)
+        elapsed = time.time() - t
+        print('Elapsed time {} seconds'.format(elapsed))
+
+        # saving optimal solution to my_plan
+        sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
+        # my_plan.opt_sol.append(opt_sol)
+
+        # saving optimal solution to the sub objects of my_plan
+        # sub_objects = ['beams', 'structures', 'inf_matrix']
+        # for obj in sub_objects:
+        #     exec(f'my_plan.{obj}.opt_sol = my_plan.opt_sol')
+        return sol
+
+    @staticmethod
     def get_smoothness_matrix(beamReq):
         sRow = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
         sCol = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
@@ -234,3 +404,14 @@ class Optimization(object):
         rinds = [rind for idx, rind in enumerate(plan_obj.structures.structures_dict['name']) if 'RIND' in rind]
         for rind in rinds:
             inf_matrix.set_opt_voxel_idx(plan_obj, structure_name=rind)
+
+    @staticmethod
+    def matching_keys(dictionary, search_string):
+        get_key = None
+        for key, val in dictionary.items():
+            if search_string in key:
+                get_key = key
+        if get_key is not None:
+            return get_key
+        else:
+            return ''
