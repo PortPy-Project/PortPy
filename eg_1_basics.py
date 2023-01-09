@@ -1,10 +1,13 @@
 """
 
 This example demonstrates performing the following tasks using portpy:
-    1- Query the existing patients in the database (you first need to download the patient database from the link provided in the GitHub page).
+    1- Query the existing patients in the database
+        (you first need to download the patient database from the link provided in the GitHub page).
     2- Query the data provided for a specified patient in the database.
-    3- Create a simple IMRT plan using CVXPy package. You can use different opensource/commercial optimization engines from CVXPy but you first need to download them and obtain an appropriate license.
-        Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email address
+    3- Create a simple IMRT plan using CVXPy package. You can call different opensource/commercial optimization engines
+        from CVXPy,but you first need to download them and obtain an appropriate license.
+        Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email
+        address
     4- Visualise the plan (dose distribution, fluence)
     5- Evaluate the plan based on some clinically relevant metrics
 
@@ -17,22 +20,31 @@ from portpy.optimization import Optimization as optimize
 
 def eg_1_basics():
 
-    # Enter patient name
+    # specify the patient data location
+    # (you first need to download the patient database from the link provided in the GitHub page)
+    data_dir = r'C:\Users\zarepism\Google Drive\Collaborations'
+    # display the existing patients
+    visualize.display_patients(data_dir=data_dir)
+
+    # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams, structures, )
     patient_name = 'Lung_Patient_1'
+    visualize.display_patient_metadata(patient_name, data_dir=data_dir)
 
-    # visualize patient metadata for beams and structures
-    visualize.display_patient_metadata(patient_name)
-
-    # display patients
-    visualize.display_patients()
 
     # create my_plan object for the planner beams
     # for the customized beams, you can pass the argument beam_ids
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    my_plan = Plan(patient_name)
+    my_plan = Plan(patient_name, data_folder=data_dir)
 
-    # run imrt fluence map optimization using cvxpy and save the optimal solution in sol
-    sol = optimize.run_IMRT_fluence_map_CVXPy(my_plan)
+    # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
+    # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
+    # For optimization problems with non-linear objective and/or constraints, MOSEK often performs well
+    # For mixed integer programs, GUROBI/CPLEX are good choices
+    # If you have .edu email address, you can get free academic license for commercial solvers
+    # we recommend the commercial solver MOSEK as your solver for the problems in this example,
+    # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
+    # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
+    sol = optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
 
     # # saving and loading plans and optimal solution
     # my_plan.save_plan(path=r'C:\temp')

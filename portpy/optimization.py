@@ -2,20 +2,20 @@ import numpy as np
 import cvxpy as cp
 import time
 
-
 class Optimization(object):
     """
     Optimization class for optimizing and creating the plan
     """
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=None, solver='MOSEK'):
+    def run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=None, solver: str = 'MOSEK'):
         """
-        :param inf_matrix: object of class InfluenceMatrix
+
         :param my_plan: object of class Plan
+        :param inf_matrix: object of class InfluenceMatrix
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
-        :return: save optimal solution to plan object called opt_sol
-        run IMRT fluence map optimization using cvxpy
+        :return:
         """
+
         t = time.time()
 
         # get data for optimization

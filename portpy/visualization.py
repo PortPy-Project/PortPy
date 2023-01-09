@@ -489,7 +489,18 @@ class Visualization:
         # 'seg', '=', 'slicer.util.loadSegmentation', '(','/home/oguzcan-bekar/Desktop/PyQt/mask.nii.gz', ');', 'seg.CreateClosedSurfaceRepresentation();'], shell=False)
 
     @staticmethod
-    def display_patient_metadata(pat_name, data_dir=None, show_beams=True, show_structs=True):
+    def display_patient_metadata(pat_name: str, data_dir: str = None, show_beams: bool = True, show_structs: bool = True) -> None:
+        """Displays the patient information in html format. It creates a temporary html file and lunches your browser
+
+        :param pat_name: the patient name
+        :param data_dir: the folder path where data located, defaults to None.
+                If data_dir = None, then it assumes the data is in sub-folder named Data in the current directory
+        :param show_beams: whether to show beam info or not
+        :param show_structs: whether to show structure (organs) info or not
+        :raises dataError: raises an exception
+
+        """
+
         if data_dir is None:
             data_dir = os.path.join(os.getcwd(), "..", 'Data')
             data_dir = os.path.join(data_dir, pat_name)
@@ -497,12 +508,14 @@ class Visualization:
             data_dir = os.path.join(data_dir, pat_name)
         options = {'loadInfluenceMatrixFull': 1}
         meta_data = load_metadata(data_dir, options=options)
-        if show_beams:
+        if show_beams:  # check if full and/or sparse influence matrices are provided.
+            # Sparse matrix is just a truncated version of the full matrix (zeroing out small elements)
+            # often used in the optimization for computational efficiency
             beams = meta_data['beams']
             del beams['beamlets']
-            df = pd.DataFrame.from_dict(beams)
-            is_full = df['influenceMatrixFull_File'].str.contains('full', na=False)
-            is_sparse = df['influenceMatrixSparse_File'].str.contains('sparse', na=False)
+            df = pd.DataFrame.from_dict(beams)  # using Pandas data structure
+            is_full = df['influenceMatrixFull_File'].str.contains('full', na=False) # does the data include the full influence matrix
+            is_sparse = df['influenceMatrixSparse_File'].str.contains('sparse', na=False) # does the data include the sparse influence matrix
             for ind, (sparse, full) in enumerate(zip(is_full, is_sparse)):
                 if sparse and full:
                     df.at[ind, 'influence_matrix(sparse/full)'] = 'Both'
@@ -510,7 +523,7 @@ class Visualization:
                     df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Sparse'
                 elif not sparse and full:
                     df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Full'
-
+            #  pick information to include in the table
             keep_columns = ['ID', 'gantry_angle', 'collimator_angle', 'couch_angle', 'beam_modality', 'energy_MV',
                             'influence_matrix(sparse/full)',
                             'iso_center', 'MLC_name',
@@ -525,7 +538,7 @@ class Visualization:
             keep_columns = ['name', 'volume_cc']
             struct_df = struct_df[keep_columns]
             # print(tabulate(df, headers='keys', tablefmt='psql'))
-        # OUTPUT AN HTML FILE
+        # Write the results in a temporary html file in the current directory and launch a browser to display
         html_string = '''
                 <html>
                   <head><title>Portpy MetaData</title></head>
@@ -545,14 +558,27 @@ class Visualization:
         webbrowser.open('file://' + os.path.realpath('temp.html'))
 
     @staticmethod
-    def display_patients(data_dir=None):
-        display_dict = {}
-        if data_dir is None:
+    def display_patients(data_dir: str = None) -> None:
+        """Displays the list of patients included in data_dir folder
+
+        :param data_dir: folder including patient data.
+            If it is None, then it assumes the data is in the current directory under sub-folder named "Data"
+        """
+        """
+        Displays the list of patients included in data_dir folder.
+
+        If data_dir not provided as an input, then it assumes the data is in the current directory under sub-folder named "Data"
+
+        Params:
+            data_dir (str): folder including patient data
+        """
+
+        display_dict = {}  # we add all the relevant information from meta_data to this dictionary
+        if data_dir is None:  # if data directory not provided, then use the subfolder named "Data" in the current directory
             data_dir = os.path.join(os.getcwd(), "..", 'Data')
-            # data_dir = os.path.join(data_dir, pat_name)
         pat_names = os.listdir(data_dir)
         for i, pat_name in enumerate(pat_names):
-            if pat_name == 'ECHO_PROST_1' or pat_name == 'Lung_Patient_1':
+            if "Patient" in pat_name:  # ignore irrelevant folders
                 display_dict.setdefault('patient_name', []).append(pat_name)
                 meta_data = load_metadata(os.path.join(data_dir, pat_name), options=None)
                 display_dict.setdefault('disease_site', []).append(meta_data['clinical_criteria']['disease_site'])

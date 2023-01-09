@@ -5,7 +5,18 @@ from scipy.sparse import csr_matrix
 import h5py
 
 
-def load_data(myData, folderPath):
+def load_data(myData: dict, folderPath: str) -> dict:
+    """
+    Takes meta_data and the location of the data as inputs and returns the full data.
+    The meta_data only includes light-weight data from the .json files (e.g., beam IDs, angles, structure names,..).
+    Large numeric data (e.g., influence matrix, voxel coordinates) are stored in .h5 files.
+    This recursive function loads the data from .h5 files and merge them with the meta_data and returns a dictionary
+    including all the data (meta_data+actual numeric data)
+
+    :param myData:
+    :param folderPath:
+    :return: a dict of data
+    """
     # fn = myData.keys()
     for key in myData.copy():
         item = myData[key]

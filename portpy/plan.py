@@ -1,4 +1,6 @@
 import numpy as np
+from typing import List
+
 from portpy import load_metadata, load_data
 from .beam import Beams
 from .structures import Structures
@@ -15,28 +17,56 @@ import pickle
 
 class Plan:
     """
-    A class representing plan.
+    A class representing a plan
+
+    - **Attributes** ::
+
+        :param arg1: description
+        :type arg1: type description
+
+    - **Methods** ::
+
+
     """
 
-    def __init__(self, patient_id, data_folder=None, beam_ids=None, opt_beamlets_PTV_margin_mm=None, options=None):
+    def __init__(self, patient_id: str, data_folder: str = None, beam_ids: List[int] = None,
+                 opt_beamlets_PTV_margin_mm: int = None, options=None) -> None:
+        """
+        Creates an object of Plan class for the specified patient
 
-        # super().__init__()
+        :param patient_id: the patient that we're creating a plan for (name of the folder)
+        :param data_folder: the name of the folder that includes all the patients' data.
+            If None, then ''current-folder\Data'' is used
+        :param beam_ids: the indices of the beams used for creating the plan object.
+            If None, the beams selected by an expert (human) physicist for the specified patient would be used
+        :param opt_beamlets_PTV_margin_mm: For each beam, we often only include the beamlets that are within
+            few millimetres of the projection of the PTV (tumor) into that beam. It is because the beamlets
+            that are far from the PTV projection mainly deliver radiation to the healthy tissues not PTV. Default is 3mm
+        :param options:
+        :Example:
+
+        >>> my_plan = Plan(patient_id = r"Lung_Patient_1", data_folder = r"c:\Data", beam_ids = [0,1,2,3,4,5,6], opt_beamlets_PTV_margin_mm=3)
+        """
+
         if data_folder is None:
             data_folder = os.path.join(os.getcwd(), "..", 'Data')
         patient_folder_path = os.path.join(data_folder, patient_id)
 
         if opt_beamlets_PTV_margin_mm is None:
             self.opt_beamlets_PTV_margin_mm = 3
-        # read all the meta data for the required patient
+        # read all the meta data for the specified patient
         meta_data = load_metadata(patient_folder_path, options=options)
 
         # options for loading requested data
         # if 1 then load the data. if 0 then skip loading the data
         # meta_data = self.load_options(options=options, meta_data=meta_data)
-        # filter metadata for the given beam_indices
+        # filter metadata for the given beam_indices.
+        # The meta_data originally includes all the beams.  get_plan_beams only keeps the requested beams
         meta_data = self.get_plan_beams(beam_ids=beam_ids, meta_data=meta_data)
-        # Load data
+        # Load all the data (e.g., influence matrix, voxel coordinates).
+        # meta_data does not include the large numeric data stored in .h5 files
         data = load_data(meta_data, patient_folder_path)
+
         self.beams = Beams(data['beams'], opt_beamlets_PTV_margin_mm=opt_beamlets_PTV_margin_mm)
         self.structures = Structures(data['structures'], data['opt_voxels'])
         self.ct = data['ct']
@@ -47,8 +77,21 @@ class Plan:
         # self.opt_sol = []
 
     @staticmethod
-    def get_plan_beams(beam_ids=None, meta_data=None):
-        if beam_ids is None:
+    def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:
+        """
+        Create and return a copy of meta_data with only including the requested beams (beam_ids)
+
+
+        :param beam_ids: the indices of the beams to be included. If None, the planner's beams are used
+        :param meta_data: the dictionary including all the beams
+        :return: returns the meta_data dictionary only including the requested beams in format of:
+            dict: {
+                   'structures': {'name': list(str), 'volume_cc': list(float), }
+                   'opt_voxels': {'ct_voxel_resolution_xyz_mm': list(float),}
+                  }
+        """
+        if beam_ids is None:  # if beam_ids not included, then the beams
+            # selected by an expert human planner would be used
             beam_ids = meta_data['planner_beam_ids']['IDs']
         meta_data_req = meta_data.copy()
         del meta_data_req['beams']
@@ -208,7 +251,8 @@ class Plan:
         return self.clinical_criteria.clinical_criteria_dict['num_of_fractions']
 
     def plot_dvh(self, sol=None, dose_1d=None, structs=None, options_norm=None, options_fig=None):
-        Visualization.plot_dvh(self, sol=sol, dose_1d=dose_1d, structs=structs, options_norm=options_norm, options_fig=options_fig)
+        Visualization.plot_dvh(self, sol=sol, dose_1d=dose_1d, structs=structs, options_norm=options_norm,
+                               options_fig=options_fig)
 
     def run_IMRT_fluence_map_CVXPy(self, inf_matrix=None, solver='MOSEK'):
         Optimization.run_IMRT_fluence_map_CVXPy(self, inf_matrix=inf_matrix, solver=solver)
