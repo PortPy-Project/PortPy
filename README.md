@@ -2,8 +2,9 @@
   <img src="./images/PortPy_logo.jpg" width="50%">
 </p>
 
-
 # What is PortPy?
+##Note:## The package is at its early stages (version 0.x) and we are now collecting feedbacks from reserachers to design the data structure and main functionalities. We are expecting to have a stable version 1 around March 2023. We love to hear your feedback. 
+
 PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop an open source python library to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code to promote *benchmarking*, *transparency*, *reproducibility* and *community-driven* development 
 2. Interface to an open-source optimization package [CVXPy](https://www.cvxpy.org/) for easy/quick prototyping and out-of-the-box access to commercial/open-source optimization engines (e.g., Mosek, Gorubi, CPLEX, IPOPT)
