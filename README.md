@@ -15,7 +15,7 @@ Data needed for optimization and algorithm development (e.g., a set of beams/bea
 
 You can download the sample patient data [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing).
 
-Create a directory named 'Data' in the current project directory and copy the downloaded file to it. e.g ./Data/Lung_Patient_1
+Create a directory named 'Data' in the current project directory and copy the downloaded file to it, e.g ./Data/Lung_Patient_1
 
 
 # Installing PortPy
@@ -26,7 +26,7 @@ Create a directory named 'Data' in the current project directory and copy the do
   cd portpy
   ```
 
-- You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment:
+- You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment are as follows:
 
   Install all the dependencies present in requirements.txt:
   ```bash
@@ -35,7 +35,7 @@ Create a directory named 'Data' in the current project directory and copy the do
   (venv) pip install -r requirements.txt
   ```
 
-In order to understand the functionality of PortPy in better way, we suggest you to navigate through example eg_1_basics.py to create a sample IMRT plan and visualize it.
+To better understand the PortPy functionality, we recommend running an example script eg_1_basics.py for creating and visualizing a sample IMRT plan.
 
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
