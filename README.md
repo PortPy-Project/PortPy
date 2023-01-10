@@ -3,9 +3,9 @@
 </p>
 
 # What is PortPy?
-##Note:## The package is at its early stages (version 0.x) and we are now collecting feedbacks from reserachers to design the data structure and main functionalities. We are expecting to have a stable version 1 around March 2023. We love to hear your feedback. 
+**Note:** The package is at its early stages (version 0.xx) and we are now collecting feedbacks from reserachers to design the data structure and main functionalities. We are expecting to have a stable version 1.xx around March 2023. We love to hear your feedback. 
 
-PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop an open source python library to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
+PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop the first open source python library to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code to promote *benchmarking*, *transparency*, *reproducibility* and *community-driven* development 
 2. Interface to an open-source optimization package [CVXPy](https://www.cvxpy.org/) for easy/quick prototyping and out-of-the-box access to commercial/open-source optimization engines (e.g., Mosek, Gorubi, CPLEX, IPOPT)
 3. Visualization modules to visualize relevant plan information (e.g, dose volume histograms, dose distribution, fluence map)
@@ -14,9 +14,7 @@ PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a co
 Data needed for optimization and algorithm development (e.g., a set of beams/beamlets/voxels, dose contribution of each beamlet to each voxel) are provided for a set of pre-specified machine parameters (e.g., beam/collimator/couch angles). We initially provide these data for a set of publicly available dataset from [TCIA](https://www.cancerimagingarchive.net/). We hope to expand our dataset in the future. The data needed for optimization is extracted from the research version of Eclipse<sup>TM</sup> treatment planning system ([Varian Medical Systems](https://www.varian.com/)) using its API. 
 
 You can download the sample patient data [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing).
-```bash
-tar -xjvf Lung_Patient_1.tar.bz2
-```
+
 Create a directory named 'Data' in the current project directory and copy the downloaded file to it. e.g ./Data/Lung_Patient_1
 
 
