@@ -1,19 +1,33 @@
+from __future__ import annotations
 import numpy as np
 import cvxpy as cp
 import time
+from typing import List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from portpy.plan import Plan
+    from portpy.influence_matrix import InfluenceMatrix
+
 
 class Optimization(object):
     """
     Optimization class for optimizing and creating the plan
     """
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=None, solver: str = 'MOSEK'):
+    def run_IMRT_fluence_map_CVXPy(my_plan: Plan, inf_matrix: InfluenceMatrix = None, solver: str = 'MOSEK') -> dict:
         """
+        It runs optimization to create optimal plan based upon clinical criteria
 
         :param my_plan: object of class Plan
         :param inf_matrix: object of class InfluenceMatrix
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
-        :return:
+        :return: returns the solution dictionary in format of:
+            dict: {
+                   'optimal_intensity': list(float),
+                   'dose_1d': list(float),
+                   'inf_matrix': Pointer to object of InfluenceMatrix }
+                  }
+        :Example:
+        >>> Optimization.run_IMRT_fluence_map_CVXPy(my_plan=my_plan, inf_matrix=inf_matrix, solver='MOSEK')
         """
 
         t = time.time()
@@ -37,7 +51,7 @@ class Optimization(object):
         else:
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
 
-        rind_max_dose_perc = [1.1, 1.0, 0.9, 0.7, 0.65]
+        rind_max_dose_perc = [1.1, 1.05, 0.9, 0.85, 0.75]
         for i, rind in enumerate(rinds):
             parameters = {'structure_name': rind}
             total_pres = cc_dict['pres_per_fraction_gy'] * cc_dict['num_of_fractions']
@@ -69,7 +83,7 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 1000
+        smoothness_weight = 100
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
 
@@ -77,12 +91,6 @@ class Optimization(object):
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
         # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
-
-        ##Step 1 objective
-
-        ##obj.append((1/sum(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]))*cp.sum_squares(cp.multiply(cp.sqrt(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]), infMatrix[getVoxels(myPlan,'PTV')-1, :] @ w + wMean*pars['alpha']*pars['delta'][getVoxels(myPlan,'PTV')-1] - pars['presPerFraction'])))
-
-        ##Smoothing objective function
 
         print('Objective done')
         print('Constraints Start')
@@ -99,10 +107,6 @@ class Optimization(object):
                 if 'limit_dose_gy' in criteria[i]['constraints']:
                     limit = criteria[i]['constraints']['limit_dose_gy']
                     org = criteria[i]['parameters']['structure_name']
-                    # constraints += [
-                    #     (1 / len(st.get_voxels_idx(org))) * (cp.sum(infMatrix[st.get_voxels_idx(org), :] @ w)) <=
-                    #     limit / num_fractions]
-
                     # mean constraints using voxel weights
                     constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
                                     (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
@@ -113,9 +117,9 @@ class Optimization(object):
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 
         ## Smoothness Constraint
-        # for b in range(len(my_plan.beams.beams_dict['ID'])):
-        #     startB = my_plan.beams.beams_dict['start_beamlet'][b]
-        #     endB = my_plan.beams.beams_dict['end_beamlet'][b]
+        # for b in range(len(my_plan.beams_dict.beams_dict['ID'])):
+        #     startB = my_plan.beams_dict.beams_dict['start_beamlet'][b]
+        #     endB = my_plan.beams_dict.beams_dict['end_beamlet'][b]
         #     constraints += [0.6 * cp.sum_squares(
         #         Qx[startB:endB, startB:endB] @ x[startB:endB]) + 0.4 * cp.sum_squares(
         #         Qy[startB:endB, startB:endB] @ x[startB:endB]) <= 0.5]
@@ -132,12 +136,7 @@ class Optimization(object):
 
         # saving optimal solution to my_plan
         sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
-        # my_plan.opt_sol.append(opt_sol)
 
-        # saving optimal solution to the sub objects of my_plan
-        # sub_objects = ['beams', 'structures', 'inf_matrix']
-        # for obj in sub_objects:
-        #     exec(f'my_plan.{obj}.opt_sol = my_plan.opt_sol')
         return sol
 
     @staticmethod
@@ -240,12 +239,6 @@ class Optimization(object):
                            smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
         # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
 
-        ##Step 1 objective
-
-        ##obj.append((1/sum(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]))*cp.sum_squares(cp.multiply(cp.sqrt(pars['points'][(getVoxels(myPlan,'PTV'))-1, 3]), infMatrix[getVoxels(myPlan,'PTV')-1, :] @ w + wMean*pars['alpha']*pars['delta'][getVoxels(myPlan,'PTV')-1] - pars['presPerFraction'])))
-
-        ##Smoothing objective function
-
         print('Objective done')
         print('Constraints Start')
         constraints = []
@@ -282,10 +275,10 @@ class Optimization(object):
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 
-        ## Smoothness Constraint
-        # for b in range(len(my_plan.beams.beams_dict['ID'])):
-        #     startB = my_plan.beams.beams_dict['start_beamlet'][b]
-        #     endB = my_plan.beams.beams_dict['end_beamlet'][b]
+        # Smoothness Constraint
+        # for b in range(len(my_plan.beams_dict.beams_dict['ID'])):
+        #     startB = my_plan.beams_dict.beams_dict['start_beamlet'][b]
+        #     endB = my_plan.beams_dict.beams_dict['end_beamlet'][b]
         #     constraints += [0.6 * cp.sum_squares(
         #         Qx[startB:endB, startB:endB] @ x[startB:endB]) + 0.4 * cp.sum_squares(
         #         Qy[startB:endB, startB:endB] @ x[startB:endB]) <= 0.5]
@@ -302,16 +295,25 @@ class Optimization(object):
 
         # saving optimal solution to my_plan
         sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
-        # my_plan.opt_sol.append(opt_sol)
 
-        # saving optimal solution to the sub objects of my_plan
-        # sub_objects = ['beams', 'structures', 'inf_matrix']
-        # for obj in sub_objects:
-        #     exec(f'my_plan.{obj}.opt_sol = my_plan.opt_sol')
         return sol
 
     @staticmethod
-    def get_smoothness_matrix(beamReq):
+    def get_smoothness_matrix(beamReq: List[dict]) -> (np.ndarray, np.ndarray):
+        """
+        Create smoothness matrix so that adjacent beamlets are smooth out to reduce MU
+
+        :param beamReq: beamlets dictionary from the object of influence matrix class
+        :returns: tuple(Qx, Qy) where
+            Qx: first matrix have values 1 and -1 for neighbouring beamlets in X direction
+            Qy: second matrix with values 1 and -1 for neighbouring beamlets in Y direction
+
+        :Example:
+        Qx = [[1 -1 0 0 0 0]
+              [0 0 1 -1 0 0]
+              [0 0 0 0 1 -1]]
+
+        """
         sRow = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
         sCol = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
         for b in range(len(beamReq)):
@@ -383,7 +385,7 @@ class Optimization(object):
             if ind == 0:
                 my_plan.structures.expand(base_structure, margin_mm=s, new_structure=dummy_name)
                 my_plan.structures.subtract(dummy_name, base_structure, str1_sub_str2=rind_name)
-                # inf_matrix.set_opt_voxel_idx(my_plan, structure_name=rind_name)
+                # inf_matrix.set_opt_voxel_idx(my_plan, struct=rind_name)
             else:
                 # prev_rind_name = 'RIND_{}'.format(ind - 1)
                 prev_dummy_name = 'dummy_{}'.format(ind-1)
@@ -396,11 +398,17 @@ class Optimization(object):
             my_plan.structures.intersect(rind_name, 'dose_mask', str1_and_str2=rind_name)
 
         my_plan.structures.delete_structure('dose_mask')
-                # inf_matrix.set_opt_voxel_idx(my_plan, structure_name=rind_name)
+                # inf_matrix.set_opt_voxel_idx(my_plan, struct=rind_name)
         print('rinds created!!')
 
     @staticmethod
-    def set_rinds_opt_voxel_idx(plan_obj, inf_matrix):
+    def set_rinds_opt_voxel_idx(plan_obj: Plan, inf_matrix: InfluenceMatrix):
+        """
+
+        :param plan_obj: object of class plan
+        :param inf_matrix: object of class influence matrix
+        :return: set rinds index based upon the influence matrix
+        """
         rinds = [rind for idx, rind in enumerate(plan_obj.structures.structures_dict['name']) if 'RIND' in rind]
         for rind in rinds:
             inf_matrix.set_opt_voxel_idx(plan_obj, structure_name=rind)

@@ -1,15 +1,20 @@
+from __future__ import annotations
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import random
 import numpy as np
 from skimage import measure
+from tabulate import tabulate
 from portpy.evaluation import Evaluation
 from matplotlib.lines import Line2D
 import os
-from portpy.load_metadata import load_metadata
+from portpy.utils import load_metadata
 import pandas as pd
 import webbrowser
+from pathlib import Path
+from typing import List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from portpy.plan import Plan
 try:
     from typing import Literal
 except ImportError:
@@ -95,7 +100,7 @@ class Visualization:
         plt.grid(b=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         if norm_flag:
-            x = my_plan.clinical_criteria['pres_per_fraction_gy'] * my_plan._clinical_criteria[
+            x = my_plan.clinical_criteria['pres_per_fraction_gy'] * my_plan.clinical_criteria[
                 'num_of_fractions'] * np.ones_like(y)
         else:
             x = my_plan.clinical_criteria['pres_per_fraction_gy'] * np.ones_like(y)
@@ -108,10 +113,11 @@ class Visualization:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
     @staticmethod
-    def plot_dvh(my_plan, sol: dict, dose_1d: np.ndarray = None, structs: list = None,
+    def plot_dvh(my_plan: Plan, sol: dict, dose_1d: np.ndarray = None, structs: List[str] = None,
                  dose_scale: dose_type = "Absolute(Gy)",
                  volume_scale: volume_type = "Relative(%)", **options):
         """
+        Create dvh plot for the selected structures
 
         :param my_plan: object of class Plan
         :param sol: optimal sol dictionary
@@ -132,10 +138,10 @@ class Visualization:
         :keyword norm_volume: Use to set normalization volume. default is 90 percentile.
         :return: dvh plot for the selected structures
 
-        Create dvh plot for the selected structures
+        :Example:
+        >>> Visualization.plot_dvh(my_plan, sol=sol, structs=['PTV', 'ESOPHAGUS'], dose_scale='Absolute(Gy)',volume_scale="Relative(%)", show=False, create_fig=True )
         """
-            # dose_1d = self.beams.get_influence_matrix() @ self.beams.optimal_intensity
-            # dose_1d = my_plan.structures.opt_voxels_dict['dose_1d']
+
         if dose_1d is None:
             if 'dose_1d' not in sol:
                 sol['dose_1d'] = sol['inf_matrix'].A * sol['optimal_intensity'] * my_plan.get_num_of_fractions()
@@ -165,7 +171,7 @@ class Visualization:
             else:
                 width = 2
         if colors is None:
-            colors = Visualization.get_colors(30)
+            colors = Visualization.get_colors()
         if structs is None:
             # orgs = []
             structs = my_plan.structures.structures_dict['name']
@@ -185,7 +191,7 @@ class Visualization:
                 continue
             # for dose_1d in dose_list:
             #
-            x, y = Evaluation.get_dvh(sol, dose_1d=dose_1d, struct=all_orgs[i])
+            x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
             if dose_scale == 'Absolute(Gy)':
                 max_dose = np.maximum(max_dose, x[-1])
                 plt.xlabel('Dose (Gy)')
@@ -232,36 +238,32 @@ class Visualization:
             plt.savefig(filename, bbox_inches="tight", dpi=300)
 
     @staticmethod
-    def plot_binary_mask_points(my_plan, structure, show=True, color=None):
+    def plot_binary_mask_points(my_plan, structure: str, show: bool = True, color: List[str] = None):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ind = my_plan.structures.structures_dict['name'].index(structure)
         mask_3d = my_plan.structures.structures_dict['structure_mask_3d'][ind]
         pos = np.where(mask_3d == 1)
         if color is None:
-            color = Visualization.get_colors(0)
+            color = Visualization.get_colors()
         ax.scatter(pos[0], pos[1], pos[2], c=color)
         if show:
             plt.show()
 
     @staticmethod
-    def get_colors(num):
-        # random.seed(42)
-        # colors = []
-        # for i in range(num):
-        #     color = (random.random(), random.random(), random.random())
-        #     colors.append(color)
+    def get_colors():
+        """
+
+        :return: return list of 20 colors
+        """
         colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4',
                   '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
                   '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
                   '#000075', '#808080', '#ffffff', '#000000']
         return colors
 
-    # @staticmethod
-    # def surface_plot(matrix, **kwargs):
-    #     return surface_plot(matrix, **kwargs)
     @staticmethod
-    def surface_plot(matrix, **kwargs):
+    def surface_plot(matrix: np.ndarray, **kwargs) -> None:
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
@@ -271,53 +273,65 @@ class Visualization:
         return fig, ax, surf
 
     @staticmethod
-    def plot_fluence_2d(beam_id: int, sol=None):
+    def plot_fluence_2d(beam_id: int, sol: dict) -> None:
         """
 
+        Displays fluence in 2d for the given beam_id
 
-        :param optimal_fluence_2d:
         :param beam_id: beam_id of the beam
         :param sol: solution dictionary after optimization
         :return: 2d optimal fluence plot
+
+        :Example:
+        >>> Visualization.plot_fluence_2d(beam_id=0, sol=sol)
         """
         sol['inf_matrix'].plot_fluence_2d(beam_id=beam_id, sol=sol)
 
     @staticmethod
-    def plot_fluence_3d(beam_id: int, sol=None):
+    def plot_fluence_3d(beam_id: int, sol: dict) -> None:
         """
+        Displays fluence in 3d for the given beam_id
 
-                :param sol: solution after optimization
-                :param optimal_fluence_2d: fluence in 2d (list of nd array)
-                :param beam_id: beam_id of the beam
-                :return: 3d optimal fluence plot
-                """
+        :param sol: solution after optimization
+        :param beam_id: beam_id of the beam
+        :return: 3d optimal fluence plot
+
+        :Example:
+        >>> Visualization.plot_fluence_3d(beam_id=0, sol=sol)
+        """
         sol['inf_matrix'].plot_fluence_3d(beam_id=beam_id, sol=sol)
 
     @staticmethod
-    def plot_2d_dose(my_plan, sol, slice_num=40, structs=None, show_dose=True, show_struct=True, show_isodose=True,
-                     dpi=100):
+    def plot_2d_dose(my_plan: Plan, sol: dict, slice_num: int = 40, structs: List[str] = None, show_dose: bool = True,
+                     show_struct: bool = True, show_isodose: bool = True,
+                     dpi: int = 100) -> None:
         """
+
+        Plot 2d view of ct, dose, isodose and structure contours
+
         :param sol: solution to optimization
         :param my_plan: object of class Plan
         :param slice_num: slice number
-        :param structs: structures
-        :param show_dose: view dose_1d on the slice
+        :param structs: structures for which contours to be displayed on the slice view. e.g. structs = ['PTV, ESOPHAGUS']
+        :param show_dose: view dose on the slice
         :param show_struct: view structure on the slice
         :param show_isodose: view isodose
         :param dpi: Default dpi=100 for figure
-        :return: plot 2d view of ct, dose_1d, isodose and structures
+        :return: plot 2d view of ct, dose, isodose and structure contours
+
+        :Example:
+        >>> Visualization.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'], show_isodose=False)
         """
         fig, ax = plt.subplots(dpi=dpi)
         plt.rcParams["figure.autolayout"] = True
         ct = my_plan.ct['ct_hu_3d'][0]
+
         # adjust the main plot to make room for the legends
         fig.subplots_adjust(left=0.2)
         dose_3d = []
         if show_dose:
             dose_3d = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
             ax.imshow(ct[slice_num, :, :], cmap='gray')
-            # im = ax.imshow(dose_3d[slice_num, :, :], alpha=0.4 * (dose_3d[slice_num, :, :] > 0), interpolation='none',
-            #                cmap='rainbow')
             masked = np.ma.masked_where(dose_3d[slice_num, :, :] <= 0, dose_3d[slice_num, :, :])
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
                            cmap='rainbow')
@@ -326,7 +340,7 @@ class Visualization:
 
         if show_isodose:
             if not show_dose:
-                dose_3d = my_plan.inf_matrix.dose_1d_to_3d(sol=sol)
+                dose_3d = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
             dose_legend = Visualization.legend_dose_storage(my_plan)
             ax.contour(dose_3d[slice_num, :, :], dose_legend['dose_1d value'],
                        colors=dose_legend['dose_1d color'],
@@ -338,39 +352,29 @@ class Visualization:
                                         lw=1,
                                         label=dose_legend['dose_1d name'][item]))
             ax.add_artist(ax.legend(handles=dose_list,
-                                    bbox_to_anchor=(1.25, 1), loc='upper left', borderaxespad=0.))
+                                    bbox_to_anchor=(1.15, 1), loc='upper left', borderaxespad=0.))
         ax.set_title('Axial View - Slice #: {}'.format(slice_num))
 
-        # create check box for structures
-        # rax = plt.axes()
         if show_struct:
-            # rax = plt.axes([0.05, 0.4, 0.2, 0.6])
             if structs is None:
                 structs = my_plan.structures.structures_dict['name']
             struct_masks = my_plan.structures.structures_dict['structure_mask_3d']
             all_mask = []
-            colors = Visualization.get_colors(30)
+            colors = Visualization.get_colors()
             for i in range(len(structs)):
                 ind = my_plan.structures.structures_dict['name'].index(structs[i])
                 cmap = mpl.colors.ListedColormap(colors[i])
-                # im = ax.imshow(struct_masks[ind][slice_num, :, :], alpha=0.6 * (struct_masks[ind][slice_num, :, :] > 0),
-                #                interpolation='none', cmap=cmap)
-                # masked = np.ma.masked_where(struct_masks[ind][slice_num, :, :] == 0, struct_masks[ind][slice_num, :, :])
-                # im = ax.imshow(masked, alpha=0.6,
-                #                interpolation='none', cmap=cmap)
                 contours = measure.find_contours(struct_masks[ind][slice_num, :, :], 0.5)
                 for contour in contours:
                     plt.plot(contour[:, 1], contour[:, 0], linewidth=2, color=colors[i])
             labels = [struct for struct in structs]
             # get the colors of the values, according to the
-            # colormap used by imshow
             import matplotlib.patches as mpatches
             patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
             # rax.labels = labels
             fig.legend(handles=patches, bbox_to_anchor=(0.1, 0.8), loc=2, borderaxespad=0.,
                        bbox_transform=fig.transFigure)
         plt.show()
-        # fig.show()
 
     @staticmethod
     def get_cmap_colors(n, name='hsv'):
@@ -379,7 +383,7 @@ class Visualization:
         return plt.cm.get_cmap(name, n)
 
     @staticmethod
-    def legend_dose_storage(my_plan):
+    def legend_dose_storage(my_plan: Plan) -> dict:
         # dose_color = [[0.55, 0, 1], [0, 0, 1], [0, 0.5, 1], [0, 1, 0],
         #               [1, 1, 0], [1, 0.65, 0], [1, 0, 0], [0.55, 0, 0]]
         dose_color = [[0.55, 0, 0], [0, 0, 1], [0.55, 0, 1], [0, 0.5, 1], [0, 1, 0], [1, 0, 0]]
@@ -396,254 +400,219 @@ class Visualization:
         return dose_storage_legend
 
     @staticmethod
-    def view_in_slicer(my_plan, slicer_path=None, img_dir=None):
+    def view_in_slicer(my_plan: Plan, slicer_path: str = None, data_dir: str = None) -> None:
         """
-        :param img_dir: directory where nrrd images are saved.
+
         :param my_plan: object of class Plan
         :param slicer_path: slicer executable path on your local machine
+        :param data_dir: the folder path where data located, defaults to None.
+                If path = None, then it assumes the data is in sub-folder named Data in the current directory
         :return: plot the images in 3d slicer
 
-        view ct, dose_1d and structure set images in 3d slicer
+        view ct, dose and structure set images in 3d slicer
+
+        :Example:
+        >>> Visualization.view_in_slicer(my_plan, slicer_path='C:/Slicer/Slicer.exe', data_dir='path/to/nrrd/image')
         """
         if slicer_path is None:
             slicer_path = r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe'
-        if img_dir is None:
-            img_dir = os.path.join(os.getcwd(), "..", 'Data', my_plan.patient_id)
-        slicer_script_dir = os.path.join(os.getcwd(), 'portpy', 'slicer_script.py')
-        # patient_folder_path = os.path.join(os.getcwd(), "..", 'Data', my_plan.patient_id)
-        # import SimpleITK as sitk
-
-        # ct_arr = self._ct['ct_hu_3D'][0]
-        # ct = sitk.GetImageFromArray(ct_arr)
-        # ct.SetOrigin(self._ct['origin_xyz_mm'])
-        # ct.SetSpacing(self._ct['resolution_xyz_mm'])
-        # ct.SetDirection(self._ct['direction'])
-        # sitk.WriteImage(ct, os.path.join(patient_folder_path, 'ct.nrrd'))
-        #
-        # dose_arr = self.create_3d_dose()
-        # dose_1d = sitk.GetImageFromArray(dose_arr)
-        # dose_1d.SetOrigin(self._ct['origin_xyz_mm'])
-        # dose_1d.SetSpacing(self._ct['resolution_xyz_mm'])
-        # dose_1d.SetDirection(self._ct['direction'])
-        # sitk.WriteImage(dose_1d, os.path.join(patient_folder_path, 'dose_1d.nrrd'))
-        #
-        # labels = self._structures.structures_dict['structure_mask_3d']
-        # mask_arr = np.array(labels).transpose((1, 2, 3, 0))
-        # mask = sitk.GetImageFromArray(mask_arr)
-        # mask.SetOrigin(self._ct['origin_xyz_mm'])
-        # mask.SetSpacing(self._ct['resolution_xyz_mm'])
-        # mask.SetDirection(self._ct['direction'])
-        # sitk.WriteImage(mask, os.path.join(patient_folder_path, 'rtss.seg.nrrd'), True)
-
-        # mask_3d = self._structures.structures_dict['structure_mask_3d']
-        # structs = self._structures.structures_dict['name']
-        # filename = os.path.join(patient_folder_path, 'tmp_data')
-        # np.savez(filename, ct=ct_arr, dose_1d=dose_arr, mask_3d=mask_3d)
-        # tmp_dict = {}
-        # tmp_dict['structs'] = structs
-        # tmp_dict['origin_xyz_mm'] = self._ct['origin_xyz_mm']
-        # # tmp_dict['resolution_xyz_mm'] = self._ct['resolution_xyz_mm']
-        # import json
-        # filename = os.path.join(patient_folder_path, 'tmp_dict.json')
-        # with open(filename, 'w') as fp:
-        #     json.dump(tmp_dict, fp)
-        # dose_1d = sitk.GetImageFromArray(dose_arr)
-        # dose_1d.SetOrigin(self._ct['origin_xyz_mm'])
-        # dose_1d.SetSpacing(self._ct['resolution_xyz_mm'])
-        # dose_1d.SetDirection(self._ct['direction'])
-        # sitk.WriteImage(dose_1d, os.path.join(patient_folder_path, 'dose_1d.nrrd'))
-        # plan_file = r'//pisidsmph/Treatplanapp/ECHO/Research/Data_newformat/Python-PORT/my_plan'
-        # slicer_script_file = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\Python-PORT\portpy\slicer_script.py'
+        if data_dir is None:
+            data_dir = os.path.join(Path(__file__).parents[1], 'Data', my_plan.patient_id)
+        if not os.path.exists(data_dir):  # check if valid directory
+            raise Exception("Invalid data directory. Please input valid directory")
+        slicer_script_dir = os.path.join(Path(__file__).parents[0], 'utils', 'slicer_script.py')
         import subprocess
-        # subprocess.run([slicer_path, ' --python-script', f' {slicer_script_file}'])
-        # subprocess.run(
-        #     [slicer_path, '--python-code',
-        #      'slicer.util.loadVolume', '(',
-        #      os.path.join(patient_folder_path, "CT.nrrd"), ')', ';',
-        #      'slicer.util.setSliceViewerLayers(background=CT);',
-        #      'slicer.util.loadVolume', '(',
-        #      os.path.join(patient_folder_path, "dose_1d.nrrd"), ')', ';',
-        #      'slicer.util.setSliceViewerLayers(foreground=dose_1d)', ';',
-        #      'slicer.util.setSliceViewerLayers(foregroundOpacity=0.4)',
-        #      'for color in [''Red'', ''Yellow'', ''Green'']:',
-        #      '  slicer.app.layoutManager().sliceWidget(color).sliceLogic().GetSliceCompositeNode().SetForegroundVolumeID(dose_1d.GetID());',
-        #      '  slicer.app.layoutManager().sliceWidget(color).sliceLogic().GetSliceCompositeNode().SetBackgroundVolumeID(scanList[-1].GetID());'
-        #      ], shell=False)
-        # subprocess.run([slicer_path, f'--python-script "{os.getcwd()}\portpy\slicer_script.py" --no-splash'], shell=False)
-        # subprocess.run(
-        #     r'{} --python-script .\portpy\slicer_script.py {}'.format(slicer_path, self.patient_name), shell=False)
-        # subprocess.run([slicer_path, f"--python-script", slicer_script_dir, img_dir,
-        #                 [name + ',' for name in my_plan.structures.structures_dict['name']]], shell=False)
-        subprocess.run([slicer_path, f"--python-script", slicer_script_dir, img_dir,
+        subprocess.run([slicer_path, f"--python-script", slicer_script_dir, data_dir,
                         ','.join(my_plan.structures.structures_dict['name'])], shell=False)
-        #         subprocess.run([slicer_path, '--python-code',
-        #                         f"""slicer.mrmlScene.AddNewNodeByClass('vtkMRMLScalarVolumeNode', 'ct');
-        # ct_node = slicer.util.getNode('ct');
-        # ct_node.SetOrigin({self._ct['origin_xyz_mm']});
-        # ct_node.SetSpacing({self._ct['resolution_xyz_mm']});
-        # slicer.util.updateVolumeFromArray(ct_node, {ct_arr});
-        # slicer.util.setSliceViewerLayers(foreground=ct_node);
-        # slicer.util.setSliceViewerLayers(foregroundOpacity=0.4);"""], shell=False)
         print('Done')
-        # doseNode.SetIJKToRASDirections(ijkMat)
-        # 'seg', '=', 'slicer.util.loadSegmentation', '(','/home/oguzcan-bekar/Desktop/PyQt/mask.nii.gz', ');', 'seg.CreateClosedSurfaceRepresentation();'], shell=False)
 
     @staticmethod
-    def display_patient_metadata(pat_name: str, data_dir: str = None, show_beams: bool = True, show_structs: bool = True) -> None:
-        """Displays the patient information in html format. It creates a temporary html file and lunches your browser
+    def display_patient_metadata(patient_id: str, data_dir: str = None,
+                                 in_browser: bool = False) -> None:
+        """Displays the patient information in console or html format. If in_browswer is enabled
+        it creates a temporary html file and lnunches your browser
 
-        :param pat_name: the patient name
+        :param patient_id: the patient id
         :param data_dir: the folder path where data located, defaults to None.
-                If data_dir = None, then it assumes the data is in sub-folder named Data in the current directory
-        :param show_beams: whether to show beam info or not
-        :param show_structs: whether to show structure (organs) info or not
-        :raises dataError: raises an exception
+                If path = None, then it assumes the data is in sub-folder named Data in the current directory
+        :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
+        :raises invalid directory error: raises an exception if invalid data directory
 
+        :Example:
+        >>> Visualization.display_patient_metadata(patient_id=patient_id, data_dir='path/to/data', in_browser=True)
         """
 
         if data_dir is None:
-            data_dir = os.path.join(os.getcwd(), "..", 'Data')
-            data_dir = os.path.join(data_dir, pat_name)
+            data_dir = os.path.join(Path(__file__).parents[1], 'Data')
+            data_dir = os.path.join(data_dir, patient_id)
         else:
-            data_dir = os.path.join(data_dir, pat_name)
-        options = {'loadInfluenceMatrixFull': 1}
-        meta_data = load_metadata(data_dir, options=options)
-        if show_beams:  # check if full and/or sparse influence matrices are provided.
-            # Sparse matrix is just a truncated version of the full matrix (zeroing out small elements)
-            # often used in the optimization for computational efficiency
-            beams = meta_data['beams']
-            del beams['beamlets']
-            df = pd.DataFrame.from_dict(beams)  # using Pandas data structure
-            is_full = df['influenceMatrixFull_File'].str.contains('full', na=False) # does the data include the full influence matrix
-            is_sparse = df['influenceMatrixSparse_File'].str.contains('sparse', na=False) # does the data include the sparse influence matrix
-            for ind, (sparse, full) in enumerate(zip(is_full, is_sparse)):
-                if sparse and full:
-                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Both'
-                elif sparse and not full:
-                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Sparse'
-                elif not sparse and full:
-                    df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Full'
-            #  pick information to include in the table
-            keep_columns = ['ID', 'gantry_angle', 'collimator_angle', 'couch_angle', 'beam_modality', 'energy_MV',
-                            'influence_matrix(sparse/full)',
-                            'iso_center', 'MLC_name',
-                            'machine_name']
-            df = df[keep_columns]
-            # # print('Beams table..')
-            # print(tabulate(df, headers='keys', tablefmt='psql'))
-        if show_structs:
-            print('\n\nStructures table..')
-            structures = meta_data['structures']
-            struct_df = pd.DataFrame.from_dict(structures)
-            keep_columns = ['name', 'volume_cc']
-            struct_df = struct_df[keep_columns]
-            # print(tabulate(df, headers='keys', tablefmt='psql'))
+            data_dir = os.path.join(data_dir, patient_id)
+        if not os.path.exists(data_dir):  # check if valid directory
+            raise Exception("Invalid data directory. Please input valid directory")
+
+        meta_data = load_metadata(data_dir)
+        # if show_beams:
+        # check if full and/or sparse influence matrices are provided.
+        # Sparse matrix is just a truncated version of the full matrix (zeroing out small elements)
+        # often used in the optimization for computational efficiency
+        beams = meta_data['beams_dict']  # get beams_dict metadata
+        beams_df = pd.DataFrame.from_dict(beams)  # using Pandas data structure
+        is_full = beams_df['influenceMatrixFull_File'].str.contains('full',
+                                                                    na=False)  # does the data include the full influence matrix
+        is_sparse = beams_df['influenceMatrixSparse_File'].str.contains('sparse',
+                                                                        na=False)  # does the data include the sparse influence matrix
+        for ind, (sparse, full) in enumerate(zip(is_full, is_sparse)):  # create column for sparse/full check
+            if sparse and full:
+                beams_df.at[ind, 'influence_matrix(sparse/full)'] = 'Both'
+            elif sparse and not full:
+                beams_df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Sparse'
+            elif not sparse and full:
+                beams_df.at[ind, 'influence_matrix(sparse/full)'] = 'Only Full'
+        #  pick information to include in the table
+        keep_columns = ['ID', 'gantry_angle', 'collimator_angle', 'couch_angle', 'beam_modality', 'energy_MV',
+                        'influence_matrix(sparse/full)',
+                        'iso_center', 'MLC_name',
+                        'machine_name']
+        beams_df = beams_df[keep_columns]
+
+        structures = meta_data['structures']
+        struct_df = pd.DataFrame.from_dict(structures)
+        keep_columns = ['name', 'volume_cc']  # discard the columns except this columns
+        struct_df = struct_df[keep_columns]
+
         # Write the results in a temporary html file in the current directory and launch a browser to display
-        html_string = '''
-                <html>
-                  <head><title>Portpy MetaData</title></head>
-                  <link rel="stylesheet" type="text/css" href="df_style.css"/>
-                  <body>
-                  <h1> PortPy Metadata </h1> 
-                  <h4> Beams Metadata </h4>
-                    {table_1}
-                  <h4> Structures Metadata </h4>
-                    {table_2}
-                  </body>
-                </html>.
-                '''
-        with open('temp.html', 'w') as f:
-            f.write(html_string.format(table_1=df.to_html(index=False, header=True, classes='mystyle'),
-                                       table_2=struct_df.to_html(index=False, header=True, classes='mystyle')))
-        webbrowser.open('file://' + os.path.realpath('temp.html'))
+        if in_browser:
+            style_file = os.path.join(Path(__file__).parents[1], 'df_style.css')
+            html_string = '''
+                    <html>
+                      <head><title>Portpy MetaData</title></head>
+                      <link rel="stylesheet" type="text/css" href="{style}"/>
+                      <body>
+                      <h1> PortPy Metadata </h1> 
+                      <h4> Beams Metadata </h4>
+                        {table_1}
+                      <h4> Structures Metadata </h4>
+                        {table_2}
+                      </body>
+                    </html>.
+                    '''  # create html body and append table to it
+            with open('temp.html', 'w') as f:
+                f.write(html_string.format(table_1=beams_df.to_html(index=False, header=True, classes='mystyle'),
+                                           table_2=struct_df.to_html(index=False, header=True, classes='mystyle'),
+                                           style=style_file))
+            webbrowser.open('file://' + os.path.realpath('temp.html'))
+        else:
+            print('Beams table..')
+            print(tabulate(beams_df, headers='keys', tablefmt='psql'))  # print the table in console using tabulate
+            print('\n\nStructures table..')
+            print(tabulate(struct_df, headers='keys', tablefmt='psql'))
 
     @staticmethod
-    def display_patients(data_dir: str = None) -> None:
+    def display_patients(data_dir: str = None, in_browser: bool = False) -> None:
         """Displays the list of patients included in data_dir folder
 
         :param data_dir: folder including patient data.
             If it is None, then it assumes the data is in the current directory under sub-folder named "Data"
-        """
-        """
-        Displays the list of patients included in data_dir folder.
-
-        If data_dir not provided as an input, then it assumes the data is in the current directory under sub-folder named "Data"
-
-        Params:
-            data_dir (str): folder including patient data
+        :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
+        :raises invalid directory error: raises an exception if invalid data directory
+        :return display patient information in table
         """
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
         if data_dir is None:  # if data directory not provided, then use the subfolder named "Data" in the current directory
-            data_dir = os.path.join(os.getcwd(), "..", 'Data')
-        pat_names = os.listdir(data_dir)
-        for i, pat_name in enumerate(pat_names):
-            if "Patient" in pat_name:  # ignore irrelevant folders
-                display_dict.setdefault('patient_name', []).append(pat_name)
-                meta_data = load_metadata(os.path.join(data_dir, pat_name), options=None)
+            data_dir = os.path.join(Path(__file__).parents[1], 'Data')
+        if not os.path.exists(data_dir):  # check if valid directory
+            raise Exception("Invalid data directory. Please input valid directory")
+        pat_ids = os.listdir(data_dir)
+        for i, pat_id in enumerate(pat_ids):  # Loop through patients in path
+            if "Patient" in pat_id:  # ignore irrelevant folders
+                display_dict.setdefault('patient_id', []).append(pat_id)
+                meta_data = load_metadata(os.path.join(data_dir, pat_id))  # load metadata for the patients
+                # set the keys and append to display dict
                 display_dict.setdefault('disease_site', []).append(meta_data['clinical_criteria']['disease_site'])
                 ind = meta_data['structures']['name'].index('PTV')
                 display_dict.setdefault('ptv_vol_cc', []).append(meta_data['structures']['volume_cc'][ind])
-                display_dict.setdefault('num_beams', []).append(len(meta_data['beams']['ID']))
-                res = all(ele == meta_data['beams']['iso_center'][0] for ele in meta_data['beams']['iso_center'])
+                display_dict.setdefault('num_beams', []).append(len(meta_data['beams_dict']['ID']))
+                # check if all the iso centers are same for beams_dict
+                res = all(
+                    ele == meta_data['beams_dict']['iso_center'][0] for ele in meta_data['beams_dict']['iso_center'])
                 if res:
                     display_dict.setdefault('iso_center_shift ', []).append('No')
                 else:
                     display_dict.setdefault('iso_center_shift ', []).append('Yes')
-        df = pd.DataFrame.from_dict(display_dict)
-        html_string = '''
-                <html>
-                  <head><title>Portpy MetaData</title></head>
-                  <link rel="stylesheet" type="text/css" href="df_style.css"/>
-                  <body>
-                  <h4> Patients Metadata </h4>
-                    {table}
-                  </body>
-                </html>.
-                '''
-        with open('temp.html', 'w') as f:
-            f.write(html_string.format(table=df.to_html(index=False, header=True, classes='mystyle')))
-        webbrowser.open('file://' + os.path.realpath('temp.html'))
-        # print(tabulate(df, headers='keys', tablefmt='psql'))
+        df = pd.DataFrame.from_dict(display_dict)  # convert dictionary to dataframe
+        if in_browser:
+            style_file = os.path.join(Path(__file__).parents[1], 'df_style.css')  # get style file path
+            html_string = '''
+                    <html>
+                      <head><title>Portpy MetaData</title></head>
+                      <link rel="stylesheet" type="text/css" href="{style}"/>
+                      <body>
+                      <h4> Patients Metadata </h4>
+                        {table}
+                      </body>
+                    </html>.
+                    '''  # create html body and append table to it
+            with open('temp.html', 'w') as f:
+                f.write(
+                    html_string.format(table=df.to_html(index=False, header=True, classes='mystyle'), style=style_file))
+            webbrowser.open('file://' + os.path.realpath('temp.html'))
+        else:
+            print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
-    def plan_metrics(my_plan, sol):
+    def plan_metrics(my_plan, sol: dict) -> None:
+        """
+        Visualize the plan metrics for clinical criteria in browser.
+        If plan value is green color. It meets all the Limits and Goals
+        If plan value is yellow color. It meets limits but not goals
+        If plan value is red color. It violates both limit and goals
+
+        :param my_plan: object of class Plan
+        :param sol: optimal solution dictionary
+        :return: plan metrics in browser
+        """
         # convert clinical criteria in dataframe
-        display_dict = {}
         df = pd.DataFrame.from_dict(my_plan.clinical_criteria.clinical_criteria_dict['criteria'])
-        for ind in range(len(df)):
+        for ind in range(len(df)):  # Loop through the clinical criteria
             if df.name[ind] == 'max_dose':
                 struct = df.parameters[ind]['structure_name']
-                max_dose = Evaluation.get_max_dose(sol, structure_name=struct)
+                max_dose = Evaluation.get_max_dose(sol, struct=struct)  # get max dose
                 if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
                     df.at[ind, 'Plan Value'] = max_dose
                 elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
                     df.at[ind, 'Plan Value'] = max_dose / (
-                                my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
+                            my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
             if df.name[ind] == 'mean_dose':
                 struct = df.parameters[ind]['structure_name']
-                mean_dose = Evaluation.get_mean_dose(sol, structure_name=struct)
+                mean_dose = Evaluation.get_mean_dose(sol, struct=struct)
                 df.at[ind, 'Plan Value'] = mean_dose
             if df.name[ind] == 'dose_volume_V':
                 struct = df.parameters[ind]['structure_name']
                 if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
                     dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, struct=struct, dose_value=dose)
+                    volume = Evaluation.get_volume(sol, struct=struct, dose_value_gy=dose)
                     df.at[ind, 'Plan Value'] = volume
                 elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
                     dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, struct=struct, dose_value=dose)
-                    vol_cc = my_plan.structures.get_volume_cc(structure_name=struct)*volume/100
+                    volume = Evaluation.get_volume(sol, struct=struct, dose_value_gy=dose)
+                    vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
                     df.at[ind, 'Plan Value'] = vol_cc
 
         def color_plan_value(row):
 
-            highlight = 'background-color: red;'
+            highlight_red = 'background-color: red;'
             highlight_green = 'background-color: green;'
-            highlight_brown = 'background-color: yellow;'
+            highlight_yellow = 'background-color: yellow;'
             default = ''
 
-            def matching_keys(dictionary, search_string):
+            def matching_keys(dictionary, search_string):  # method to find the key of only part of the key match
+                """
+
+                :param dictionary: dictionary to search the string
+                :param search_string: string to be searched in dictionary
+                :return: full key if found search string found else empty string
+                """
                 get_key = None
                 for key, val in dictionary.items():
                     if search_string in key:
@@ -656,22 +625,23 @@ class Visualization:
             limit_key = matching_keys(row['constraints'], 'limit')
             goal_key = matching_keys(row['constraints'], 'goal')
 
-            row_color = [default, default]
+            row_color = [default, default]  # default color for all rows initially
             # must return one string per cell in this row
             if limit_key in row['constraints']:
                 if row['Plan Value'] > row['constraints'][limit_key]:
-                    row_color = [highlight, default]
+                    row_color = [highlight_red, default]  # make plan value in red
                 else:
                     row_color = [highlight_green, default]
             if goal_key in row['constraints']:
                 if row['Plan Value'] > row['constraints'][goal_key]:
-                    row_color = [highlight_brown, default]
+                    row_color = [highlight_yellow, default]
                 else:
                     row_color = [highlight_green, default]
             return row_color
 
-        styled_df = df.style.apply(color_plan_value, subset=['Plan Value', 'constraints'], axis=1)
-        html = styled_df.render()
+        styled_df = df.style.apply(color_plan_value, subset=['Plan Value', 'constraints'], axis=1)  # apply
+        # color to dataframe using df.style method
+        html = styled_df.render()  # render to html
         html_string = '''
                         <html>
                           <head><title>Portpy Clinical Criteria Evaluation</title></head>
@@ -680,14 +650,14 @@ class Visualization:
                             th, td {{padding: 5px;}}
                           </style>
                           <body>
-                          <h4> Clinical Criteria</h4>
+                          <h1> Clinical Criteria</h1>
+                          <h4 style="color: green">Meets limit and goal</h4>
+                          <h4 style="color: yellow">Meets limit but not goal</h4>
+                          <h4 style="color: red">Violate both limit and goal</h4>
                             {table}
                           </body>
                         </html>.
                         '''
         with open('temp.html', 'w') as f:
             f.write(html_string.format(table=html))
-
-        # with open('cc.html', 'w') as f:
-        #     f.write(html)
         webbrowser.open('file://' + os.path.realpath('temp.html'))

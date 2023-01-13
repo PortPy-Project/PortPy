@@ -5,15 +5,21 @@ import numpy as np
 class Evaluation:
 
     @staticmethod
-    def get_dose(sol, dose=None, struct=None, volume_per=None, weight_flag=True):
+    def get_dose(sol: dict, struct: str, volume_per: float, dose: np.ndarray = None, weight_flag: bool = True) -> float:
         """
-        get dose_1d at volume per
+        Get dose_1d at volume percentage
+
         :param sol: solution dictionary
         :param dose: dose_1d in 1d
         :param struct: structure name for which to get the dose_1d
         :param volume_per: query the dose at percentage volume
         :param weight_flag: for non uniform voxels weight flag always True
         :return: dose_1d at volume_percentage
+
+        :Example:
+
+        >>> Evaluation.get_dose(sol=sol, struct='PTV', volume_per=90)
+
         """
         x, y = Evaluation.get_dvh(sol, dose_1d=dose, struct=struct, weight_flag=weight_flag)
         f = interpolate.interp1d(100 * y, x)
@@ -21,35 +27,47 @@ class Evaluation:
         return f(volume_per)
 
     @staticmethod
-    def get_volume(sol, dose=None, struct=None, dose_value=None, weight_flag=True):
+    def get_volume(sol: dict, struct: str, dose_value_gy: float, dose: np.ndarray = None, weight_flag: bool = True) -> float:
         """
-        get volume at dose_1d value
+        Get volume at dose value in Gy
+
         :param sol: solution dictionary
         :param dose: dose_1d in 1d
         :param struct: structure name for which to get the dose_1d
-        :param dose_value: query the volume at dose_value
+        :param dose_value_gy: query the volume at dose_value
         :param weight_flag: for non uniform voxels weight flag always True
         :return: dose_1d at volume_percentage
+
+        :Example:
+
+        >>> Evaluation.get_volume(sol=sol, struct='PTV', dose_value_gy=60)
+
         """
         x, y = Evaluation.get_dvh(sol, dose_1d=dose, struct=struct, weight_flag=weight_flag)
         x1, indices = np.unique(x, return_index=True)
         y1 = y[indices]
         f = interpolate.interp1d(x1, 100 * y1)
-        if dose_value > max(x1):
-            print('Warning: dose value {} is greater than max dose for {}'.format(dose_value, struct))
+        if dose_value_gy > max(x1):
+            print('Warning: dose value {} is greater than max dose for {}'.format(dose_value_gy, struct))
             return 0
         else:
-            return f(dose_value)
+            return f(dose_value_gy)
 
     @staticmethod
-    def get_dvh(sol, dose_1d=None, struct=None, weight_flag=True):
+    def get_dvh(sol: dict, struct: str, dose_1d: np.ndarray = None, weight_flag: bool = True):
         """
         Get dvh for the structure
+
         :param sol: optimal solution dictionary
         :param dose_1d: dose which is not in solution dictionary
         :param struct: structure name
         :param weight_flag: for non uniform voxels weight flag always True
         :return: x, y --> dvh for the structure
+
+        :Example:
+
+        >>> Evaluation.get_dvh(sol=sol, struct='PTV')
+
         """
         inf_matrix = sol['inf_matrix']
         vox = inf_matrix.get_opt_voxels_idx(struct)
@@ -60,7 +78,7 @@ class Evaluation:
         org_sort_dose = np.append(org_sort_dose, org_sort_dose[-1] + 0.01)
         x = org_sort_dose
         if weight_flag:
-            # org_points_sort_spacing = self._structures.opt_voxels_dict['dose_voxel_resolution_XYZ_mm']
+            # org_points_sort_spacing = my_plan._structures.opt_voxels_dict['dose_voxel_resolution_XYZ_mm']
             # org_points_sort_volume = org_points_sort_spacing[:, 0] * org_points_sort_spacing[:,
             #                                                          1] * org_points_sort_spacing[:, 2]
             # sum_weight = np.sum(org_points_sort_volume)
@@ -77,17 +95,35 @@ class Evaluation:
         return x, y
 
     @staticmethod
-    def get_max_dose(sol, structure_name, dose_1d=None):
+    def get_max_dose(sol: dict, struct: str, dose_1d=None) -> float:
+        """
+        Get maximum dose for the structure
+
+        :param sol: optimal solution dictionary
+        :param dose_1d: dose which is not in solution dictionary
+        :param struct: structure name
+
+        :return: maximum dose for the structure
+        """
         inf_matrix = sol['inf_matrix']
-        vox = inf_matrix.get_opt_voxels_idx(structure_name)
+        vox = inf_matrix.get_opt_voxels_idx(struct)
         if dose_1d is None:
             dose_1d = sol['dose_1d']
         return np.max(dose_1d[vox])
 
     @staticmethod
-    def get_mean_dose(sol, structure_name, dose_1d=None):
+    def get_mean_dose(sol: dict, struct: str, dose_1d=None) -> np.ndarray:
+        """
+                Get mean dose for the structure
+
+                :param sol: optimal solution dictionary
+                :param dose_1d: dose which is not in solution dictionary
+                :param struct: structure name
+
+                :return: mean dose for the structure
+                """
         inf_matrix = sol['inf_matrix']
-        vox = inf_matrix.get_opt_voxels_idx(structure_name)
+        vox = inf_matrix.get_opt_voxels_idx(struct)
         if dose_1d is None:
             dose_1d = sol['dose_1d']
         return np.mean(dose_1d[vox])

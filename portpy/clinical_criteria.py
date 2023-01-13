@@ -1,22 +1,71 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
-
 class ClinicalCriteria:
     """
     A class representing clinical criteria.
+
+    - **Attributes** ::
+
+        :param clinical_criteria_dict: dictionary containing metadata about clinical criteria
+
+        :Example
+                dict = {"disease_site": "Lung",
+                "protocol_name": "Lung_Default_2Gy_30Fr",
+                "pres_per_fraction_gy": 2,
+                "num_of_fractions": 30,
+                "criteria": [
+                    {
+                      "name": "max_dose",
+                      "parameters": {
+                        "struct": "GTV"
+                      }}
+
+    - **Methods** ::
+        :add_criterion(criterion:str, parameters:dict, constraints:dict)
+        :modify_criterion(criterion:str, parameters:dict, constraints:dict)
+
     """
 
     def __init__(self, clinical_criteria):
-        # self.optimal_intensity = None
-        self.optimal_intensity = None
-        self.clinical_criteria_dict = clinical_criteria
-        self.opt_sol = []
+        """
 
-    def add_criterion(self, criterion=None, parameters=None, constraints=None):
+        :param clinical_criteria: dictionary containing information about clinical criteria
+
+        """
+        self.clinical_criteria_dict = clinical_criteria
+
+    def add_criterion(self, criterion: str, parameters: dict, constraints: dict) -> None:
+        """
+        Add criterion to the clinical criteria dictionary
+
+        :param criterion: criterion name. e.g. max_dose
+        :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
+        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :return: add the criteria to clinical criteria dictionary
+
+        """
 
         self.clinical_criteria_dict['criteria'].append({'name': criterion})
         self.clinical_criteria_dict['criteria'][-1]['parameters'] = parameters
         self.clinical_criteria_dict['criteria'][-1]['constraints'] = constraints
+
+    def modify_criterion(self, criterion: str, parameters: dict, constraints: dict) -> None:
+        """
+
+        Modify the criterion in clinical criteria dictionary
+
+        :param criterion: criterion name. e.g. max_dose
+        :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
+        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :return: add the criteria to clinical criteria dictionary
+
+        """
+        criteria = self.clinical_criteria_dict['criteria']
+        ind = [criteria[i]['name'] for i in range(len(criteria)) if criteria[i]['name'] == criterion and
+               criteria[i]['parameters'] == parameters]
+        if len(ind) > 0:
+
+            criteria[ind[0]]['constraints'] = constraints
+        else:
+            raise Exception('No criteria  for name {}  and parameters {}'.format(criterion, parameters))
+
 
 
