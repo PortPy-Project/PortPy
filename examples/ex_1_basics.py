@@ -43,11 +43,11 @@ def ex_1_basics():
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
 
-    # # Comment/Uncomment these lines to save and load plans and optimal solution from the directory
-    # my_plan.save_plan(path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
-    # my_plan = pp.Plan.load_plan(path=r'C:\temp')
-    # sol = pp.Plan.load_optimal_sol(sol_name='sol', path=r'C:\temp')
+    # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
+    pp.save_plan(my_plan, plan_name='my_plan', path=r'C:\temp')
+    pp.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
+    my_plan = pp.load_plan(path=r'C:\temp')
+    sol = pp.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 
     # plot fluence 3d and 2d
     pp.Visualize.plot_fluence_3d(sol=sol, beam_id=0)
@@ -71,7 +71,7 @@ def ex_1_basics():
 
     # view ct, dose_1d and segmentations in 3d slicer. This requires downloading and installing 3d slicer
     # First save the Nrrd images in data_dir directory
-    my_plan.save_nrrd(sol=sol, data_dir=r'C:\temp')
+    pp.save_nrrd(my_plan, sol=sol, data_dir=r'C:\temp')
     pp.Visualize.view_in_slicer(my_plan, slicer_path=r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe',
                                 data_dir=r'C:\temp')
     print('Done!')

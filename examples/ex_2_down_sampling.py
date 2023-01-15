@@ -15,7 +15,7 @@
 import portpy as pp
 
 
-def eg_2_down_sampling():
+def ex_2_down_sampling():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
     data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
@@ -51,32 +51,35 @@ def eg_2_down_sampling():
     sol_3 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_3)
 
     # # Comment/Uncomment these lines to save & load plan and optimal solutions
-    my_plan.save_plan(path=r'C:\temp')
-    my_plan.save_optimal_sol(sol_3, sol_name='sol_3', path=r'C:\temp')
-    my_plan.save_optimal_sol(sol_2, sol_name='sol_2', path=r'C:\temp')
-    my_plan.save_optimal_sol(sol_1, sol_name='sol_1', path=r'C:\temp')
+    # my_plan.save_plan(path=r'C:\temp')
+    # my_plan.save_optimal_sol(sol_3, sol_name='sol_3', path=r'C:\temp')
+    # my_plan.save_optimal_sol(sol_2, sol_name='sol_2', path=r'C:\temp')
+    # my_plan.save_optimal_sol(sol_1, sol_name='sol_1', path=r'C:\temp')
     # my_plan = pp.Plan.load_plan(path=r'C:\temp')
-    # sol_1 = pp.Plan.load_optimal_sol('sol_1', path=r'C:\temp')
-    # sol_2 = pp.Plan.load_optimal_sol('sol_2', path=r'C:\temp')
-    # sol_3 = pp.Plan.load_optimal_sol('sol_3', path=r'C:\temp')
+    # sol_1 = pp.load_optimal_sol('sol_1', path=r'C:\temp')
+    # sol_2 = pp.load_optimal_sol('sol_2', path=r'C:\temp')
+    # sol_3 = pp.load_optimal_sol('sol_3', path=r'C:\temp')
 
-    # # plot fluence
+    # plot fluence in 3d and 2d using the arguments beam id and sol generated using optimization
     pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_1)
     pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_2)
     pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_3)
     pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_1)
     pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_2)
     pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_3)
-    #
 
-    # plot dvh dvh for all the cases
+    # To know real effect of sampling we have to change the basis of solution. It can be done using sol_change_inf_matrix method.
+    sol_2_1 = pp.sol_change_inf_matrix(sol_2, inf_matrix=sol_1['inf_matrix'])
+    sol_3_1 = pp.sol_change_inf_matrix(sol_3, inf_matrix=sol_1['inf_matrix'])
+
+    # plot dvh for all the cases
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
     pp.Visualize.plot_dvh(my_plan, sol=sol_1, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_2, structs=structs, style='dotted', create_fig=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_3, structs=structs, style='dashed', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_2_1, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_3_1, structs=structs, style='dashed', create_fig=False)
 
-    # Visualize 2d dose for both the cases
+    # Visualize 2d dose for all the cases
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_1)
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_2)
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_3)
@@ -85,4 +88,4 @@ def eg_2_down_sampling():
 
 
 if __name__ == "__main__":
-    eg_2_down_sampling()
+    ex_2_down_sampling()

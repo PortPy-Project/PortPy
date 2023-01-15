@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
 
-from portpy.utils import load_metadata, load_data, save_nrrd
+from portpy.utils import *
 from portpy.beam import Beams
 from portpy.structures import Structures
 import os
@@ -92,10 +92,11 @@ class Plan:
         self.ct = data['ct']  # create ct attribute containing ct information as dictionary
         self.patient_id = patient_id
         self.clinical_criteria = ClinicalCriteria(data['clinical_criteria'])  # create clinical criteria object
-        if 'load_inf_matrix_full' in options and options['load_inf_matrix_full']:  # check if full influence matrix is requested
-            is_sparse = False
-        else:
-            is_sparse = True
+        is_sparse = True
+        if options is not None:
+            if 'load_inf_matrix_full' in options and options['load_inf_matrix_full']:  # check if full influence matrix is requested
+                is_sparse = False
+
         self.inf_matrix = InfluenceMatrix(self, is_sparse=is_sparse)  # create influence matrix object
 
     @staticmethod
@@ -140,16 +141,7 @@ class Plan:
         :Example:
         >>> my_plan.save_plan(plan_name='my_plan', path=r"path/to/save_plan")
         """
-        if path is None:
-            path = os.path.join(Path(__file__).parents[1])
-        elif not os.path.exists(path):
-            os.makedirs(path)
-
-        if plan_name is None:
-            plan_name = 'my_plan'
-        with open(os.path.join(path, plan_name), 'wb') as pickle_file:
-            # pickle the dictionary and write it to file
-            pickle.dump(self, pickle_file)
+        save_plan(self, plan_name=plan_name, path=path)
 
     @staticmethod
     def load_plan(plan_name: str = None, path: str = None):
@@ -163,16 +155,8 @@ class Plan:
         :Example:
         >>> Plan.load_plan(plan_name='my_plan', path=r"path/for/loading_plan")
         """
-        if path is None:
-            path = os.path.join(Path(__file__).parents[1])
-        elif not os.path.exists(path):
-            os.makedirs(path)
 
-        if plan_name is None:
-            plan_name = 'my_plan'
-        with open(os.path.join(path, plan_name), 'rb') as pickle_file:
-            my_plan = pickle.load(pickle_file)
-        return my_plan
+        return load_plan(plan_name=plan_name, path=path)
 
     @staticmethod
     def load_optimal_sol(sol_name: str, path: str = None) -> dict:
@@ -187,12 +171,7 @@ class Plan:
         :Example:
         >>> sol = Plan.load_optimal_sol(sol_name='sol', path=r'path/for/loading_sol')
         """
-        if path is None:
-            path = os.path.join(Path(__file__).parents[1])
-
-        with open(os.path.join(path, sol_name), 'rb') as pickle_file:
-            sol = pickle.load(pickle_file)
-        return sol
+        return load_optimal_sol(sol_name=sol_name, path=path)
 
     @staticmethod
     def save_optimal_sol(sol: dict, sol_name: str, path: str = None) -> None:
@@ -207,12 +186,7 @@ class Plan:
         :Example:
         >>> my_plan.save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
         """
-        if path is None:
-            path = os.path.join(Path(__file__).parents[1])
-        elif not os.path.exists(path):
-            os.makedirs(path)
-        with open(os.path.join(path, sol_name), 'wb') as pickle_file:
-            pickle.dump(sol, pickle_file)
+        save_optimal_sol(sol=sol, sol_name=sol_name, path=path)
 
     def create_inf_matrix(self, beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5,
                           down_sample_xyz: List[int] = None,

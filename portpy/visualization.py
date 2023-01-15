@@ -509,13 +509,16 @@ class Visualization:
 
     @staticmethod
     def display_patients(data_dir: str = None, in_browser: bool = False) -> None:
-        """Displays the list of patients included in data_dir folder
+        """
+        Displays the list of patients included in data_dir folder
 
         :param data_dir: folder including patient data.
             If it is None, then it assumes the data is in the current directory under sub-folder named "Data"
         :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
-        :raises invalid directory error: raises an exception if invalid data directory
+        :raises invalid directory error: raises an exception if invalid data directory.
+
         :return display patient information in table
+
         """
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
@@ -564,6 +567,8 @@ class Visualization:
     def plan_metrics(my_plan, sol: dict) -> None:
         """
         Visualize the plan metrics for clinical criteria in browser.
+        It evaluate the plan by comparing the metrics against required criteria.
+
         If plan value is green color. It meets all the Limits and Goals
         If plan value is yellow color. It meets limits but not goals
         If plan value is red color. It violates both limit and goals
