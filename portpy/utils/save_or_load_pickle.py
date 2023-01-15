@@ -8,6 +8,7 @@ def save_plan(my_plan, plan_name: str = None, path: str = None) -> None:
 
     Save pickled file for plan object
 
+    :param my_plan: object fo class Plan
     :param plan_name: create the name of the pickled file of plan object. If none, it will save with the name as 'my_plan'
     :param path: if path is set, plan object will be pickled and saved in path directory else it will save current project directory
     :return: save pickled object of class Plan
@@ -80,7 +81,7 @@ def save_optimal_sol(sol: dict, sol_name: str, path: str = None) -> None:
     :return: save pickled file of optimal solution dictionary
 
     :Example:
-    >>> my_plan.save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
+    >>> save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
     """
     if path is None:
         path = os.path.join(Path(__file__).parents[2])

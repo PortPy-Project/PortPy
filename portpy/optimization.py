@@ -45,21 +45,21 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict['name']:
+        if rinds[0] not in my_plan.structures.structures_dict['name']: # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
         else:
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
 
         rind_max_dose_perc = [1.1, 1.05, 0.9, 0.85, 0.75]
-        for i, rind in enumerate(rinds):
+        for i, rind in enumerate(rinds):  # Add rind constraints
             parameters = {'structure_name': rind}
             total_pres = cc_dict['pres_per_fraction_gy'] * cc_dict['num_of_fractions']
             constraints = {'limit_dose_gy': total_pres * rind_max_dose_perc[i]}
             my_plan.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
                                                     constraints=constraints)
 
-        # voxel weights for oar objectives
+        # weights for oar objectives
         all_vox = np.arange(A.shape[0])
         oar_voxels = all_vox[~np.isin(np.arange(A.shape[0]), st.get_opt_voxels_idx('PTV'))]
         oar_weights = np.ones(A[oar_voxels, :].shape[0])
@@ -116,7 +116,7 @@ class Optimization(object):
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 
-        ## Smoothness Constraint
+        # Smoothness Constraint
         # for b in range(len(my_plan.beams_dict.beams_dict['ID'])):
         #     startB = my_plan.beams_dict.beams_dict['start_beamlet'][b]
         #     endB = my_plan.beams_dict.beams_dict['end_beamlet'][b]
@@ -127,14 +127,14 @@ class Optimization(object):
         print('Constraints Done')
 
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
-        # Defining the constraints
+
         print('Problem loaded')
         prob.solve(solver=solver, verbose=True)
         print("optimal value with MOSEK:", prob.value)
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
 
-        # saving optimal solution to my_plan
+        # saving optimal solution to the solution dictionary
         sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
 
         return sol
@@ -163,7 +163,7 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict['name']:
+        if rinds[0] not in my_plan.structures.structures_dict['name']:  # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
             Optimization.set_rinds_opt_voxel_idx(my_plan,
                                                  inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
