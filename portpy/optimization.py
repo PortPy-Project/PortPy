@@ -45,7 +45,7 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict['name']: # check if rind is already created. If yes, skip rind creation
+        if rinds[0] not in my_plan.structures.structures_dict['name']:  # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
         else:
@@ -59,7 +59,7 @@ class Optimization(object):
             my_plan.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
                                                     constraints=constraints)
 
-        # weights for oar objectives
+        # # setting weights for oar objectives
         all_vox = np.arange(A.shape[0])
         oar_voxels = all_vox[~np.isin(np.arange(A.shape[0]), st.get_opt_voxels_idx('PTV'))]
         oar_weights = np.ones(A[oar_voxels, :].shape[0])
@@ -142,11 +142,14 @@ class Optimization(object):
     @staticmethod
     def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
         """
+        Add dvh constraints and solve the optimization for getting ground truth solution
+
         :param inf_matrix: object of class InfluenceMatrix
         :param my_plan: object of class Plan
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
         :return: save optimal solution to plan object called opt_sol
-        run IMRT fluence map optimization using cvxpy
+
+
         """
         t = time.time()
 
@@ -170,7 +173,7 @@ class Optimization(object):
         else:
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
 
-        rind_max_dose_perc = [1.1, 1.0, 0.9, 0.7, 0.65]
+        rind_max_dose_perc = [1.1, 1.0, 0.9, 0.7, 0.65]  # add rind constraints to the problem
         for i, rind in enumerate(rinds):
             parameters = {'structure_name': rind}
             total_pres = cc_dict['pres_per_fraction_gy'] * cc_dict['num_of_fractions']
@@ -178,7 +181,7 @@ class Optimization(object):
             my_plan.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
                                                     constraints=constraints)
 
-        # voxel weights for oar objectives
+        # setting weights for oar objectives
         all_vox = np.arange(A.shape[0])
         oar_voxels = all_vox[~np.isin(np.arange(A.shape[0]), st.get_opt_voxels_idx('PTV'))]
         oar_weights = np.ones(A[oar_voxels, :].shape[0])

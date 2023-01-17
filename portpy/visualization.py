@@ -564,7 +564,7 @@ class Visualization:
             print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
-    def plan_metrics(my_plan, sol: dict) -> None:
+    def plan_metrics(my_plan: Plan, sol: dict) -> None:
         """
         Visualize the plan metrics for clinical criteria in browser.
         It evaluate the plan by comparing the metrics against required criteria.

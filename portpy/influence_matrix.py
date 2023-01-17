@@ -192,7 +192,7 @@ class InfluenceMatrix:
     def get_influence_matrix(self, plan, is_sparse=True):
         """
         Load influence matrix based on the beamlets and voxels.
-        :param plan:
+        :param plan: object of class Plan
         :param is_sparse: get full or sparse matrix. Default to True.
         :return: full or sparse matrix
         """
@@ -548,9 +548,9 @@ class InfluenceMatrix:
         """
 
         vox_3d = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-        dose_to_ct_int = np.round(np.array(self.opt_voxels_dict['dose_voxel_resolution_xyz_mm']) /
-                                  np.array(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']))
-        dose_to_ct_int = dose_to_ct_int.astype(int)
+        # dose_to_ct_int = np.round(np.array(self.opt_voxels_dict['dose_voxel_resolution_xyz_mm']) /
+        #                           np.array(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']))
+        # dose_to_ct_int = dose_to_ct_int.astype(int)
 
         # using patchify
         use_patchify = True

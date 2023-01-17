@@ -56,14 +56,14 @@ def ex_1_basics():
     # plot dvh for the structures in the given list. Default dose is in Gy and volume is in relative scale(%).
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
-    # plot methods are exposed using two ways:
+    # visualization methods are exposed using two ways:
     # 1. using visualization class
     pp.Visualize.plot_dvh(my_plan, sol=sol, structs=structs)
 
-    # 2. Using object of class Plan
+    # 2. Using object of class Plan. In this case, one doesnt need to pass the plan object as an argument
     my_plan.plot_dvh(sol=sol, structs=structs)
 
-    # plot 2d axial slice for the given structures
+    # plot 2d axial slice for the given solution and display the structures on the slice
     pp.Visualize.plot_2d_dose(my_plan, sol=sol, slice_num=40, structs=['PTV'])
 
     # visualize plan metrics based upon clinical criteria

@@ -32,10 +32,13 @@ def ex_2_down_sampling():
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
     my_plan = pp.Plan(patient_name)
 
-    # create a influence matrix down sampled beamlets of width and height 5mm
+    # PortPy can down-sample beamlets as factor 2.5mm, the finest beamlet resolution. e.g. it can be 2.5, 5, 7.5, 10mm..
+    # Example create a influence matrix down sampled beamlets of width and height 5mm
     inf_matrix_2 = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
 
-    # create another influence matrix for down sampled voxels combining 5 ct voxels in x,y direction and 1 ct voxel in z direction
+    # PortPy can down-sample optimization voxels as factor of ct voxels.
+    # Example: create another influence matrix for down sampled voxels combining 5 ct voxels in x,y direction and 1 ct voxel in z direction.
+    # It can be done by passing the argument down_sample_xyz = [5,5,1]
     inf_matrix_3 = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol

@@ -56,7 +56,7 @@ def load_file(meta_data: dict, pat_dir: str):
         item = meta_data[key]
         if type(item) is dict:
             meta_data[key] = load_file(item, pat_dir)
-        elif key == 'beamlets':  # added this part to check if there are beamlets since beamlet is list of dictionary
+        elif key == 'beamlets':  # added this part to check if there are beamlets since beamlets are list of dictionary
             if type(item[0]) is dict:
                 for ls in range(len(item)):
                     load_file(item[ls], pat_dir)

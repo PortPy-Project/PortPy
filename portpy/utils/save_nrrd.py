@@ -1,9 +1,13 @@
+from __future__ import annotations
 import SimpleITK as sitk
 from pathlib import Path
 import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from portpy.plan import Plan
 
 
-def save_nrrd(my_plan, sol: dict, data_dir: str = None):
+def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None) -> None:
     """
     save nrrd in the path directory else save in patient data directory
 

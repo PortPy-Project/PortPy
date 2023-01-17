@@ -1,16 +1,20 @@
+from __future__ import annotations
 import os
 import pickle
 from pathlib import Path
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from portpy.plan import Plan
 
 
-def save_plan(my_plan, plan_name: str = None, path: str = None) -> None:
+def save_plan(my_plan: Plan, plan_name: str = None, path: str = None) -> None:
     """
 
     Save pickled file for plan object
 
     :param my_plan: object fo class Plan
     :param plan_name: create the name of the pickled file of plan object. If none, it will save with the name as 'my_plan'
-    :param path: if path is set, plan object will be pickled and saved in path directory else it will save current project directory
+    :param path: if path is set, plan object will be pickled and saved in path directory else it will save in current project directory
     :return: save pickled object of class Plan
 
     :Example:
