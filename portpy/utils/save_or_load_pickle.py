@@ -92,4 +92,4 @@ def save_optimal_sol(sol: dict, sol_name: str, path: str = None) -> None:
     elif not os.path.exists(path):
         os.makedirs(path)
     with open(os.path.join(path, sol_name), 'wb') as pickle_file:
-        pickle.dump(sol, pickle_file)
+        pickle.dump(sol, pickle_file, protocol=4)

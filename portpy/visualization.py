@@ -144,7 +144,7 @@ class Visualization:
 
         if dose_1d is None:
             if 'dose_1d' not in sol:
-                dose_1d = sol['inf_matrix'].A * sol['optimal_intensity'].astype('float32') * my_plan.get_num_of_fractions()
+                dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())
             else:
                 dose_1d = sol['dose_1d']
         # getting options_fig:
