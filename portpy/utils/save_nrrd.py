@@ -27,14 +27,15 @@ def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None) -> None:
     sitk.WriteImage(ct, os.path.join(data_dir, 'ct.nrrd'))
 
     if sol['inf_matrix'].dose_3d is None:
-        dose_arr = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
+        dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']*my_plan.get_num_of_fractions()
+        dose_arr = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
     else:
         dose_arr = sol['inf_matrix'].dose_3d
     dose = sitk.GetImageFromArray(dose_arr)
     dose.SetOrigin(my_plan.ct['origin_xyz_mm'])
     dose.SetSpacing(my_plan.ct['resolution_xyz_mm'])
     dose.SetDirection(my_plan.ct['direction'])
-    sitk.WriteImage(dose, os.path.join(data_dir, 'dose.nrrd'))
+    sitk.WriteImage(dose, os.path.join(data_dir, 'dose_1d.nrrd'))
 
     labels = my_plan.structures.structures_dict['structure_mask_3d']
     mask_arr = np.array(labels).transpose((1, 2, 3, 0))

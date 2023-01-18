@@ -52,7 +52,7 @@ class Plan:
     """
 
     def __init__(self, patient_id: str, data_dir: str = None, beam_ids: List[int] = None,
-                 opt_beamlets_PTV_margin_mm: int = 3, options: dict = None) -> None:
+                 opt_beamlets_PTV_margin_mm: int = 3, load_inf_matrix_full: bool = False) -> None:
         """
         Creates an object of Plan class for the specified patient
 
@@ -64,7 +64,8 @@ class Plan:
         :param opt_beamlets_PTV_margin_mm: For each beam, we often only include the beamlets that are within
             few millimetres of the projection of the PTV (tumor) into that beam. It is because the beamlets
             that are far from the PTV projection mainly deliver radiation to the healthy tissues not PTV. Default is 3mm
-        :param options: it is a dictionary of options that may be used in the loading section of the data.
+        :param load_inf_matrix_full: If set to true, it will load full influence matrix from the data
+
         :Example:
 
         >>> my_plan = Plan(patient_id = r"Lung_Patient_1", path = r"c:\Data", beam_ids = [0,1,2,3,4,5,6], opt_beamlets_PTV_margin_mm=3)
@@ -85,19 +86,19 @@ class Plan:
         meta_data = self.get_plan_beams(beam_ids=beam_ids, meta_data=meta_data)
         # Load all the data (e.g., influence matrix, voxel coordinates).
         # meta_data does not include the large numeric data stored in .h5 files
-        data = load_data(meta_data, pat_dir=patient_folder_path, options=options)
+        data = load_data(meta_data=meta_data, pat_dir=patient_folder_path, load_inf_matrix_full=load_inf_matrix_full)
         self.opt_beamlets_PTV_margin_mm = opt_beamlets_PTV_margin_mm
         self.beams = Beams(data['beams_dict'])  # create beams_dict object
         self.structures = Structures(data['structures'], data['opt_voxels'])  # create structures object
         self.ct = data['ct']  # create ct attribute containing ct information as dictionary
         self.patient_id = patient_id
         self.clinical_criteria = ClinicalCriteria(data['clinical_criteria'])  # create clinical criteria object
-        is_sparse = True
-        if options is not None:
-            if 'load_inf_matrix_full' in options and options['load_inf_matrix_full']:  # check if full influence matrix is requested
-                is_sparse = False
+        # is_sparse = True
+        # if options is not None:
+        #     if 'load_inf_matrix_full' in options and options['load_inf_matrix_full']:  # check if full influence matrix is requested
+        #         is_sparse = False
 
-        self.inf_matrix = InfluenceMatrix(self, is_sparse=is_sparse)  # create influence matrix object
+        self.inf_matrix = InfluenceMatrix(self)  # create influence matrix object
 
     @staticmethod
     def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:
@@ -195,7 +196,6 @@ class Plan:
                 Create a influence matrix object for Influence Matrix class
 
                 :param is_sparse: Defaults to True. If False, it will create both full and sparse matrix
-                :param plan_obj: plan object
                 :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5
                 :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5
                 :param structure: target structure for creating BEV beamlets, defaults to 'PTV'
@@ -233,7 +233,7 @@ class Plan:
                 Create dvh plot for the selected structures
 
                 :param sol: optimal sol dictionary
-                :param dose_1d: dose in 1d voxels
+                :param dose_1d: dose_1d in 1d voxels
                 :param structs: structures to be included in dvh plot
                 :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = "Absolute(cc)" or volume_scale = "Relative(%)"
                 :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = "Absolute(Gy)" or dose_scale = "Relative(%)"
@@ -288,7 +288,7 @@ class Plan:
 
     def view_in_slicer(self, slicer_path=None, img_dir=None):
         """
-        view ct, dose and structures in slicer
+        view ct, dose_1d and structures in slicer
         :param slicer_path:
         :param img_dir:
         :return:

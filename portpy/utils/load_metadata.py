@@ -37,7 +37,7 @@ def load_metadata(pat_dir: str) -> dict:
     4- PlannerBeams.json
         including the indices of the beams_dict selected by an expert planner based on the geometry/shape/location of tumor/healthy-tissues
     5- ClinicalCriteria_MetaData.json
-        including clinically relevant metrics used to evaluate a plan (e.g., Kidney mean dose <= 20Gy, Cord max dose <= 10 Gy)
+        including clinically relevant metrics used to evaluate a plan (e.g., Kidney mean dose_1d <= 20Gy, Cord max dose_1d <= 10 Gy)
     6- Beams.json
         including beam information (e.g., gantry angle, collimator angle)
 

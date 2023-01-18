@@ -121,7 +121,7 @@ class Visualization:
 
         :param my_plan: object of class Plan
         :param sol: optimal sol dictionary
-        :param dose_1d: dose in 1d voxels
+        :param dose_1d: dose_1d in 1d voxels
         :param structs: structures to be included in dvh plot
         :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = "Absolute(cc)" or volume_scale = "Relative(%)"
         :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = "Absolute(Gy)" or dose_scale = "Relative(%)"
@@ -144,8 +144,7 @@ class Visualization:
 
         if dose_1d is None:
             if 'dose_1d' not in sol:
-                sol['dose_1d'] = sol['inf_matrix'].A * sol['optimal_intensity'] * my_plan.get_num_of_fractions()
-                dose_1d = sol['dose_1d']
+                dose_1d = sol['inf_matrix'].A * sol['optimal_intensity'].astype('float32') * my_plan.get_num_of_fractions()
             else:
                 dose_1d = sol['dose_1d']
         # getting options_fig:
@@ -307,17 +306,17 @@ class Visualization:
                      dpi: int = 100) -> None:
         """
 
-        Plot 2d view of ct, dose, isodose and structure contours
+        Plot 2d view of ct, dose_1d, isodose and structure contours
 
         :param sol: solution to optimization
         :param my_plan: object of class Plan
         :param slice_num: slice number
         :param structs: structures for which contours to be displayed on the slice view. e.g. structs = ['PTV, ESOPHAGUS']
-        :param show_dose: view dose on the slice
+        :param show_dose: view dose_1d on the slice
         :param show_struct: view structure on the slice
         :param show_isodose: view isodose
         :param dpi: Default dpi=100 for figure
-        :return: plot 2d view of ct, dose, isodose and structure contours
+        :return: plot 2d view of ct, dose_1d, isodose and structure contours
 
         :Example:
         >>> Visualization.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'], show_isodose=False)
@@ -330,7 +329,8 @@ class Visualization:
         fig.subplots_adjust(left=0.2)
         dose_3d = []
         if show_dose:
-            dose_3d = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
+            dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']*my_plan.get_num_of_fractions()
+            dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
             ax.imshow(ct[slice_num, :, :], cmap='gray')
             masked = np.ma.masked_where(dose_3d[slice_num, :, :] <= 0, dose_3d[slice_num, :, :])
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
@@ -340,7 +340,8 @@ class Visualization:
 
         if show_isodose:
             if not show_dose:
-                dose_3d = sol['inf_matrix'].dose_1d_to_3d(sol=sol)
+                dose_1d = sol['inf_matrix'].A * sol['optimal_intensity'] * my_plan.get_num_of_fractions()
+                dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
             dose_legend = Visualization.legend_dose_storage(my_plan)
             ax.contour(dose_3d[slice_num, :, :], dose_legend['dose_1d value'],
                        colors=dose_legend['dose_1d color'],
@@ -409,7 +410,7 @@ class Visualization:
                 If path = None, then it assumes the data is in sub-folder named Data in the current directory
         :return: plot the images in 3d slicer
 
-        view ct, dose and structure set images in 3d slicer
+        view ct, dose_1d and structure set images in 3d slicer
 
         :Example:
         >>> Visualization.view_in_slicer(my_plan, slicer_path='C:/Slicer/Slicer.exe', data_dir='path/to/nrrd/image')
@@ -577,12 +578,15 @@ class Visualization:
         :param sol: optimal solution dictionary
         :return: plan metrics in browser
         """
+
+        dose_1d = sol['inf_matrix'].A * sol['optimal_intensity'] * my_plan.get_num_of_fractions()
+
         # convert clinical criteria in dataframe
         df = pd.DataFrame.from_dict(my_plan.clinical_criteria.clinical_criteria_dict['criteria'])
         for ind in range(len(df)):  # Loop through the clinical criteria
             if df.name[ind] == 'max_dose':
                 struct = df.parameters[ind]['structure_name']
-                max_dose = Evaluation.get_max_dose(sol, struct=struct)  # get max dose
+                max_dose = Evaluation.get_max_dose(sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
                 if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
                     df.at[ind, 'Plan Value'] = max_dose
                 elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
@@ -590,17 +594,17 @@ class Visualization:
                             my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
             if df.name[ind] == 'mean_dose':
                 struct = df.parameters[ind]['structure_name']
-                mean_dose = Evaluation.get_mean_dose(sol, struct=struct)
+                mean_dose = Evaluation.get_mean_dose(sol, dose_1d=dose_1d, struct=struct)
                 df.at[ind, 'Plan Value'] = mean_dose
             if df.name[ind] == 'dose_volume_V':
                 struct = df.parameters[ind]['structure_name']
                 if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
                     dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, struct=struct, dose_value_gy=dose)
+                    volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
                     df.at[ind, 'Plan Value'] = volume
                 elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
                     dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, struct=struct, dose_value_gy=dose)
+                    volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
                     vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
                     df.at[ind, 'Plan Value'] = vol_cc
 

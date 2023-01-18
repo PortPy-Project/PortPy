@@ -135,7 +135,7 @@ class Optimization(object):
         print('Elapsed time {} seconds'.format(elapsed))
 
         # saving optimal solution to the solution dictionary
-        sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
+        sol = {'optimal_intensity': x.value.astype('float32'), 'inf_matrix': inf_matrix}
 
         return sol
 
@@ -208,7 +208,7 @@ class Optimization(object):
                     df.at[count, 'structure'] = criteria[i]['parameters']['structure_name']
                     df.at[count, 'dose_gy'] = criteria[i]['parameters']['dose_gy']
 
-                    # getting max dose for the same structure
+                    # getting max dose_1d for the same structure
                     max_dose_struct = 1000
                     for j in range(len(criteria)):
                         if 'max_dose' in criteria[j]['name']:

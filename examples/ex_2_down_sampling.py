@@ -7,7 +7,7 @@
         from CVXPy,but you first need to download them and obtain an appropriate license.
         Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email
         address
-    4- Visualise the plan based on down sampled beamlets and voxels (dose distribution, fluence)
+    4- Visualise the plan based on down sampled beamlets and voxels (dose_1d distribution, fluence)
     5- Evaluate the plan based on down sampled beamlets and voxels
 
 """
@@ -34,12 +34,12 @@ def ex_2_down_sampling():
 
     # PortPy can down-sample beamlets as factor 2.5mm, the finest beamlet resolution. e.g. it can be 2.5, 5, 7.5, 10mm..
     # Example create a influence matrix down sampled beamlets of width and height 5mm
-    inf_matrix_2 = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
+    inf_matrix_beam_sample_55 = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
 
     # PortPy can down-sample optimization voxels as factor of ct voxels.
     # Example: create another influence matrix for down sampled voxels combining 5 ct voxels in x,y direction and 1 ct voxel in z direction.
     # It can be done by passing the argument down_sample_xyz = [5,5,1]
-    inf_matrix_3 = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
+    inf_matrix_vox_sample_551 = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -49,9 +49,10 @@ def ex_2_down_sampling():
     # we recommend the commercial solver MOSEK as your solver for the problems in this example,
     # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
-    sol_1 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
-    sol_2 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_2)
-    sol_3 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_3)
+    # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
+    sol_orig = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
+    sol_beam_sample_55 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_beam_sample_55)
+    sol_vox_sample_551 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_vox_sample_551)
 
     # # Comment/Uncomment these lines to save & load plan and optimal solutions
     # my_plan.save_plan(path=r'C:\temp')
@@ -64,28 +65,28 @@ def ex_2_down_sampling():
     # sol_3 = pp.load_optimal_sol('sol_3', path=r'C:\temp')
 
     # plot fluence in 3d and 2d using the arguments beam id and sol generated using optimization
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_1)
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_2)
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_3)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_1)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_2)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_3)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_orig)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_beam_sample_55)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_vox_sample_551)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_orig)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_beam_sample_55)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_vox_sample_551)
 
     # To know real effect of sampling we have to change the basis of solution. It can be done using sol_change_inf_matrix method.
-    sol_2_1 = pp.sol_change_inf_matrix(sol_2, inf_matrix=sol_1['inf_matrix'])
-    sol_3_1 = pp.sol_change_inf_matrix(sol_3, inf_matrix=sol_1['inf_matrix'])
+    sol_beam_sample_55_new = pp.sol_change_inf_matrix(sol_beam_sample_55, inf_matrix=sol_orig['inf_matrix'])
+    sol_vox_sample_551_new = pp.sol_change_inf_matrix(sol_vox_sample_551, inf_matrix=sol_orig['inf_matrix'])
 
     # plot dvh for all the cases
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
-    pp.Visualize.plot_dvh(my_plan, sol=sol_1, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_2_1, structs=structs, style='dotted', create_fig=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_3_1, structs=structs, style='dashed', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_beam_sample_55_new, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_vox_sample_551_new, structs=structs, style='dashed', create_fig=False)
 
-    # Visualize 2d dose for all the cases
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_1)
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_2)
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_3)
+    # Visualize 2d dose_1d for all the cases
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol_orig)
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol_beam_sample_55)
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol_vox_sample_551)
 
     print('Done!')
 

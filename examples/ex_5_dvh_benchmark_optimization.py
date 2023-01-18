@@ -55,7 +55,7 @@ def eg_4_dvh_benchmark_optimization():
     pp.Visualize.plot_dvh(my_plan, sol=sol_1, structs=structs, style='solid', show=False)
     pp.Visualize.plot_dvh(my_plan, sol=sol_55_772, structs=structs, style='dotted', create_fig=False)
 
-    # visualize 2d dose for both the cases
+    # visualize 2d dose_1d for both the cases
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_1)
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_55_772)
 

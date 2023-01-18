@@ -8,7 +8,7 @@ This example demonstrates performing the following tasks using portpy:
         from CVXPy,but you first need to download them and obtain an appropriate license.
         Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email
         address
-    4- Visualise the plan (dose distribution, fluence)
+    4- Visualise the plan (dose_1d distribution, fluence)
     5- Evaluate the plan based on some clinically relevant metrics
 
 
@@ -53,7 +53,7 @@ def ex_1_basics():
     pp.Visualize.plot_fluence_3d(sol=sol, beam_id=0)
     pp.Visualize.plot_fluence_2d(sol=sol, beam_id=0)
 
-    # plot dvh for the structures in the given list. Default dose is in Gy and volume is in relative scale(%).
+    # plot dvh for the structures in the given list. Default dose_1d is in Gy and volume is in relative scale(%).
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
     # visualization methods are exposed using two ways:
@@ -63,7 +63,7 @@ def ex_1_basics():
     # 2. Using object of class Plan. In this case, one doesnt need to pass the plan object as an argument
     my_plan.plot_dvh(sol=sol, structs=structs)
 
-    # plot 2d axial slice for the given solution and display the structures on the slice
+    # plot 2d axial slice for the given solution and display the structures contours on the slice
     pp.Visualize.plot_2d_dose(my_plan, sol=sol, slice_num=40, structs=['PTV'])
 
     # visualize plan metrics based upon clinical criteria

@@ -14,8 +14,8 @@ ct_node = slicer.util.getNode('ct')
 slicer.util.setSliceViewerLayers(background=ct_node)
 
 # slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", 'dose_1d')
-slicer.util.loadVolume(os.path.join(img_dir, "dose.nrrd"))
-doseNode = slicer.util.getNode('dose')
+slicer.util.loadVolume(os.path.join(img_dir, "dose_1d.nrrd"))
+doseNode = slicer.util.getNode('dose_1d')
 slicer.util.setSliceViewerLayers(foreground=doseNode)
 slicer.util.setSliceViewerLayers(foregroundOpacity=0.4)
 
