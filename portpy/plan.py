@@ -93,12 +93,11 @@ class Plan:
         self.ct = data['ct']  # create ct attribute containing ct information as dictionary
         self.patient_id = patient_id
         self.clinical_criteria = ClinicalCriteria(data['clinical_criteria'])  # create clinical criteria object
-        # is_sparse = True
-        # if options is not None:
-        #     if 'load_inf_matrix_full' in options and options['load_inf_matrix_full']:  # check if full influence matrix is requested
-        #         is_sparse = False
+        is_full = False
+        if load_inf_matrix_full:  # check if full influence matrix is requested
+            is_full = True
 
-        self.inf_matrix = InfluenceMatrix(self)  # create influence matrix object
+        self.inf_matrix = InfluenceMatrix(self, is_full=is_full)  # create influence matrix object
 
     @staticmethod
     def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:
@@ -191,11 +190,11 @@ class Plan:
 
     def create_inf_matrix(self, beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5,
                           down_sample_xyz: List[int] = None,
-                          structure: str = 'PTV', is_sparse: bool = True) -> InfluenceMatrix:
+                          structure: str = 'PTV', is_full: bool = False) -> InfluenceMatrix:
         """
                 Create a influence matrix object for Influence Matrix class
 
-                :param is_sparse: Defaults to True. If False, it will create both full and sparse matrix
+                :param is_full: Defaults to True. If False, it will create both full and sparse matrix
                 :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5
                 :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5
                 :param structure: target structure for creating BEV beamlets, defaults to 'PTV'
@@ -208,7 +207,7 @@ class Plan:
                 >>> inf_matrix = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, down_sample_xyz=[5,5,1], structure=structure)
                 """
         return InfluenceMatrix(self, beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
-                               down_sample_xyz=down_sample_xyz, is_sparse=is_sparse)
+                               down_sample_xyz=down_sample_xyz, is_full=is_full)
 
     def get_prescription(self) -> float:
         """

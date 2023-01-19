@@ -113,7 +113,7 @@ class Visualization:
             fig.savefig(filename, bbox_inches="tight", dpi=300)
 
     @staticmethod
-    def plot_dvh(my_plan: Plan, sol: dict, dose_1d: np.ndarray = None, structs: List[str] = None,
+    def plot_dvh(my_plan: Plan, sol: dict = None, dose_1d: np.ndarray = None, structs: List[str] = None,
                  dose_scale: dose_type = "Absolute(Gy)",
                  volume_scale: volume_type = "Relative(%)", **options):
         """
@@ -147,6 +147,10 @@ class Visualization:
                 dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())
             else:
                 dose_1d = sol['dose_1d']
+
+        if sol is None:
+            sol['inf_matrix'] = my_plan.inf_matrix  # create temporary solution
+
         # getting options_fig:
         style = options['style'] if 'style' in options else 'solid'
         width = options['width'] if 'width' in options else None
@@ -183,7 +187,7 @@ class Visualization:
         if create_fig:
             plt.figure(figsize=figsize)
         if norm_flag:
-            norm_factor = Evaluation.get_dose(sol, struct=norm_struct, volume_per=norm_volume) / pres
+            norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
         for i in range(np.size(all_orgs)):
             if all_orgs[i] not in structs:

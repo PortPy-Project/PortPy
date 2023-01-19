@@ -34,12 +34,15 @@ def ex_2_down_sampling():
 
     # PortPy can down-sample beamlets as factor 2.5mm, the finest beamlet resolution. e.g. it can be 2.5, 5, 7.5, 10mm..
     # Example create a influence matrix down sampled beamlets of width and height 5mm
-    inf_matrix_beam_sample_55 = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
+    inf_matrix_db = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
 
     # PortPy can down-sample optimization voxels as factor of ct voxels.
     # Example: create another influence matrix for down sampled voxels combining 5 ct voxels in x,y direction and 1 ct voxel in z direction.
     # It can be done by passing the argument down_sample_xyz = [5,5,1]
-    inf_matrix_vox_sample_551 = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
+    inf_matrix_dv = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
+
+    # Now, let us also down sample both voxels and beamlets
+    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, down_sample_xyz=[5, 5, 1])
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -51,14 +54,16 @@ def ex_2_down_sampling():
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol_orig = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
-    sol_beam_sample_55 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_beam_sample_55)
-    sol_vox_sample_551 = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_vox_sample_551)
+    sol_db = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_db)
+    sol_dv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dv)
+    sol_dbv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)
 
     # # Comment/Uncomment these lines to save & load plan and optimal solutions
-    # my_plan.save_plan(path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_3, sol_name='sol_3', path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_2, sol_name='sol_2', path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_1, sol_name='sol_1', path=r'C:\temp')
+    my_plan.save_plan(path=r'C:\temp')
+    my_plan.save_optimal_sol(sol_orig, sol_name='sol_orig', path=r'C:\temp')
+    my_plan.save_optimal_sol(sol_db, sol_name='sol_db', path=r'C:\temp')
+    my_plan.save_optimal_sol(sol_dv, sol_name='sol_dv', path=r'C:\temp')
+    my_plan.save_optimal_sol(sol_dbv, sol_name='sol_dbv', path=r'C:\temp')
     # my_plan = pp.Plan.load_plan(path=r'C:\temp')
     # sol_1 = pp.load_optimal_sol('sol_1', path=r'C:\temp')
     # sol_2 = pp.load_optimal_sol('sol_2', path=r'C:\temp')
@@ -66,27 +71,50 @@ def ex_2_down_sampling():
 
     # plot fluence in 3d and 2d using the arguments beam id and sol generated using optimization
     pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_orig)
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_beam_sample_55)
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_vox_sample_551)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_db)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_dv)
+    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_dbv)
+
     pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_orig)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_beam_sample_55)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_vox_sample_551)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_db)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_dv)
+    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_dbv)
 
-    # To know real effect of sampling we have to change the basis of solution. It can be done using sol_change_inf_matrix method.
-    sol_beam_sample_55_new = pp.sol_change_inf_matrix(sol_beam_sample_55, inf_matrix=sol_orig['inf_matrix'])
-    sol_vox_sample_551_new = pp.sol_change_inf_matrix(sol_vox_sample_551, inf_matrix=sol_orig['inf_matrix'])
-
-    # plot dvh for all the cases
+    # To know the cost of down sampling beamlets, lets compare the dvh of down sampled beamlets with original
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-
     pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_beam_sample_55_new, structs=structs, style='dotted', create_fig=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_vox_sample_551_new, structs=structs, style='dashed', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_db, structs=structs, style='dotted', create_fig=False)
 
-    # Visualize 2d dose_1d for all the cases
+    # To get the discrepancy due to down sampling beamlets
+    sol_db_new = pp.sol_change_inf_matrix(sol_db, inf_matrix=sol_orig['inf_matrix'])
+    pp.Visualize.plot_dvh(my_plan, sol=sol_db_new, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_db, structs=structs, style='dotted', create_fig=False)
+
+    # Similarly to analyze the cost of down sampling voxels, lets compare the dvh of down sampled voxels with original
+    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dv, structs=structs, style='dotted', create_fig=False)
+
+    # To get the discrepancy due to down sampling voxels
+    sol_dv_new = pp.sol_change_inf_matrix(sol_dv, inf_matrix=sol_orig['inf_matrix'])
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dv_new, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dv, structs=structs, style='dotted', create_fig=False)
+
+    # Now let us plot dvh for analyzing the combined cost of down-sampling beamlets and voxels
+    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dbv, structs=structs, style='dotted', create_fig=False)
+
+    # Similarly let us plot dvh for analyzing the combined discrepancy of down-sampling beamlets and voxels
+    sol_dbv_new = pp.sol_change_inf_matrix(sol_dbv, inf_matrix=sol_orig['inf_matrix'])
+    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dbv_new, structs=structs, style='dotted', create_fig=False)
+
+    # Visualize dose in 2d axial slice for all the cases
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_orig)
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_beam_sample_55)
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_vox_sample_551)
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol_db)
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol_dv)
 
     print('Done!')
 

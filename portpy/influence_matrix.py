@@ -40,7 +40,7 @@ class InfluenceMatrix:
 
     def __init__(self, plan_obj,
                  beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5, down_sample_xyz: List[int] = None,
-                 is_sparse: bool = True, structure: str = 'PTV') -> None:
+                 is_full: bool = False, structure: str = 'PTV') -> None:
         """
         Create a influence matrix object for Influence Matrix class based upon beamlet resolution and down-sampling_xyz ratio
 
@@ -51,7 +51,7 @@ class InfluenceMatrix:
         :param down_sample_xyz: It down-samples optimization voxels as factor of ct resolution
                 e.g. down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
                 defaults to None. When None it will use the original optimization voxel resolution.
-        :param is_sparse: Load full or sparse matrix. defaults to True. If false, will load full matrix
+        :param is_full: Load full or sparse matrix. defaults to False. If True, will load full matrix
 
         """
 
@@ -61,7 +61,7 @@ class InfluenceMatrix:
         else:
             raise ValueError('beamlet_width_mm and beamlet_height_mm should be multiple of 2.5')
         self.down_sample_xyz = down_sample_xyz
-        self.is_sparse = is_sparse
+        self.is_full = is_full
         # create deepcopy of the object or else it will modify the my_plan object
         if hasattr(plan_obj.structures, 'opt_voxels_dict'):
             self.opt_voxels_dict = deepcopy(plan_obj.structures.opt_voxels_dict)
@@ -84,13 +84,13 @@ class InfluenceMatrix:
             self.pre_process_voxels(
                 plan_obj=plan_obj)  # create new optimization voxel indices based on down-sample resolution
 
-        if self.is_sparse:
+        if not self.is_full:
             print('Loading sparse influence matrix...')
             self.A = self.get_influence_matrix(plan_obj)  # create sparse influence matrix
             self.sparse_tol = float(plan_obj.beams.beams_dict['influenceMatrixSparse_tol'][0])
         else:
             print('Loading full influence matrix..')
-            self.A = self.get_influence_matrix(plan_obj, self.is_sparse)  # create full matrix
+            self.A = self.get_influence_matrix(plan_obj, self.is_full)  # create full matrix
         self.dose_3d = None
         self._vox_map = None
         self._vox_weights = None
@@ -190,14 +190,14 @@ class InfluenceMatrix:
 
         return wMaps
 
-    def get_influence_matrix(self, plan, is_sparse=True):
+    def get_influence_matrix(self, plan, is_full=False):
         """
         Load influence matrix based on the beamlets and voxels.
         :param plan: object of class Plan
-        :param is_sparse: get full or sparse matrix. Default to True.
+        :param is_full: get full or sparse matrix. Default to True.
         :return: full or sparse matrix
         """
-        if is_sparse:
+        if not is_full:
             if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5 or self.down_sample_xyz is not None:
                 inf_matrix_sparse = plan.inf_matrix.A
             else:
