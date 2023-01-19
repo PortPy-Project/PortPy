@@ -16,7 +16,7 @@ This example demonstrates performing the following tasks using portpy:
 import portpy as pp
 
 
-def ex_1_basics():
+def ex_1_introduction():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
     data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
@@ -78,4 +78,4 @@ def ex_1_basics():
 
 
 if __name__ == "__main__":
-    ex_1_basics()
+    ex_1_introduction()

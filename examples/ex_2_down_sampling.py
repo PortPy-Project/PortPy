@@ -32,17 +32,22 @@ def ex_2_down_sampling():
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
     my_plan = pp.Plan(patient_name)
 
-    # PortPy can down-sample beamlets as factor 2.5mm, the finest beamlet resolution. e.g. it can be 2.5, 5, 7.5, 10mm..
+    # PortPy can down-sample beamlets as factor of original finest resolution.
+    # e.g if the finest beamlet resolution is 2.5mm then down sampled beamlet resolution can be 5, 7.5, 10mm..
     # Example create a influence matrix down sampled beamlets of width and height 5mm
-    inf_matrix_db = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5)
+    beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * 2
+    beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * 2
+    inf_matrix_db = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm)
 
     # PortPy can down-sample optimization voxels as factor of ct voxels.
     # Example: create another influence matrix for down sampled voxels combining 5 ct voxels in x,y direction and 1 ct voxel in z direction.
-    # It can be done by passing the argument down_sample_xyz = [5,5,1]
-    inf_matrix_dv = my_plan.create_inf_matrix(down_sample_xyz=[5, 5, 1])
+    # It can be done by passing the argument opt_vox_xyz_res_mm = ct_res_xyz * down_sample_factor
+    down_sample_factor = [5, 5, 1]
+    opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), down_sample_factor)]
+    inf_matrix_dv = my_plan.create_inf_matrix(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # Now, let us also down sample both voxels and beamlets
-    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, down_sample_xyz=[5, 5, 1])
+    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)

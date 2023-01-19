@@ -39,7 +39,7 @@ class InfluenceMatrix:
     """
 
     def __init__(self, plan_obj,
-                 beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5, down_sample_xyz: List[int] = None,
+                 beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5, opt_vox_xyz_res_mm: List[float] = None,
                  is_full: bool = False, structure: str = 'PTV') -> None:
         """
         Create a influence matrix object for Influence Matrix class based upon beamlet resolution and down-sampling_xyz ratio
@@ -48,8 +48,8 @@ class InfluenceMatrix:
         :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5
         :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5
         :param structure: target structure for creating BEV beamlets, defaults to 'PTV'
-        :param down_sample_xyz: It down-samples optimization voxels as factor of ct resolution
-                e.g. down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
+        :param opt_vox_xyz_res_mm: It down-samples optimization voxels as factor of ct resolution
+                e.g. opt_vox_xyz_res = [5*ct.res.x,5*ct.res.y,1*ct.res.z]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
                 defaults to None. When None it will use the original optimization voxel resolution.
         :param is_full: Load full or sparse matrix. defaults to False. If True, will load full matrix
 
@@ -60,6 +60,13 @@ class InfluenceMatrix:
             self.beamlet_height_mm = beamlet_height_mm
         else:
             raise ValueError('beamlet_width_mm and beamlet_height_mm should be multiple of 2.5')
+
+        down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
+        if opt_vox_xyz_res_mm is not None:
+            down_sample_xyz = [round(i / j) for i, j in zip(opt_vox_xyz_res_mm, plan_obj.ct['resolution_xyz_mm'])]
+            if np.all(np.array(down_sample_xyz) == 1):  # if all are 1 then no down sample
+                down_sample_xyz = None
+
         self.down_sample_xyz = down_sample_xyz
         self.is_full = is_full
         # create deepcopy of the object or else it will modify the my_plan object

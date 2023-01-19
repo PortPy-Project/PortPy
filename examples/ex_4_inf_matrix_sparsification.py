@@ -3,7 +3,7 @@ import numpy as np
 from copy import deepcopy
 
 
-def ex_5_inf_matrix_sparsification():
+def ex_4_inf_matrix_sparsification():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
     data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
@@ -24,7 +24,6 @@ def ex_5_inf_matrix_sparsification():
     A_sparse = A_sparse.todense()  # convert sparse to dense
 
     # Creating sparse from full influence matrix
-    # inf_matrix_full =   # creating object with full influence matrix
     A_full = deepcopy(plan_full.inf_matrix.A)  # deepcopy so it doesnt modify the object
     sparse_tol = plan_sparse.inf_matrix.sparse_tol
     A_full[A_full <= sparse_tol] = 0  # set all the values in full matrix to zero which are less than sparse_tol
@@ -56,11 +55,11 @@ def ex_5_inf_matrix_sparsification():
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
     dose_sparse_1d = plan_sparse.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_sparse.get_num_of_fractions())  # getting dose in 1d for sparse matrix
-    dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())  # getting dose in 1d for sparse matrix
-    pp.Visualize.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=structs, style='solid', show=False, norm_flag=True)
+    dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())  # getting dose in 1d for full matrix
+    pp.Visualize.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=structs, style='solid', show=False, norm_flag=True) # plot dvh using the above dose
     pp.Visualize.plot_dvh(plan_full, dose_1d=dose_full_1d, structs=structs, style='dotted', create_fig=False, norm_flag=True)
     print('Done')
 
 
 if __name__ == "__main__":
-    ex_5_inf_matrix_sparsification()
+    ex_4_inf_matrix_sparsification()

@@ -189,25 +189,25 @@ class Plan:
         save_optimal_sol(sol=sol, sol_name=sol_name, path=path)
 
     def create_inf_matrix(self, beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5,
-                          down_sample_xyz: List[int] = None,
+                          opt_vox_xyz_res_mm: List[float] = None,
                           structure: str = 'PTV', is_full: bool = False) -> InfluenceMatrix:
         """
                 Create a influence matrix object for Influence Matrix class
 
-                :param is_full: Defaults to True. If False, it will create both full and sparse matrix
+                :param is_full: Defaults to False. If True, it will create full influence matrix
                 :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5
                 :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5
                 :param structure: target structure for creating BEV beamlets, defaults to 'PTV'
-                :param down_sample_xyz: It down-samples optimization voxels as factor of ct resolution
-                        e.g. down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
-                        defaults to None. When None it will use the original optimization voxel resolution.
+                :param opt_vox_xyz_res_mm: It down-samples optimization voxels as factor of ct resolution
+                    e.g. opt_vox_xyz_res = [5*ct.res.x,5*ct.res.y,1*ct.res.z]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
+                    defaults to None. When None it will use the original optimization voxel resolution.
                 :returns: object of influence Matrix class
 
                 :Example:
-                >>> inf_matrix = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, down_sample_xyz=[5,5,1], structure=structure)
+                >>> inf_matrix = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, opt_vox_xyz_res_mm=[5,5,1], structure=structure)
                 """
         return InfluenceMatrix(self, beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
-                               down_sample_xyz=down_sample_xyz, is_full=is_full)
+                               opt_vox_xyz_res_mm=opt_vox_xyz_res_mm, is_full=is_full)
 
     def get_prescription(self) -> float:
         """
@@ -225,6 +225,13 @@ class Plan:
         :return: number of fractions to be delivered
         """
         return self.clinical_criteria.clinical_criteria_dict['num_of_fractions']
+
+    def get_ct_res_xyz_mm(self) -> List[float]:
+        """
+
+        :return: number of fractions to be delivered
+        """
+        return self.ct['resolution_xyz_mm']
 
     def plot_dvh(self, sol, dose_1d=None, structs=None, dose_scale: Visualization.dose_type = "Absolute(Gy)",
                  volume_scale: Visualization.volume_type = "Relative(%)", **options):
@@ -253,7 +260,7 @@ class Plan:
         Visualization.plot_dvh(self, sol=sol, dose_1d=dose_1d, structs=structs, dose_scale=dose_scale,
                                volume_scale=volume_scale, **options)
 
-    def run_IMRT_fluence_map_CVXPy(self, inf_matrix=None, solver='MOSEK'):
+    def run_IMRT_fluence_map_CVXPy(self, inf_matrix: InfluenceMatrix = None, solver='MOSEK'):
         Optimization.run_IMRT_fluence_map_CVXPy(self, inf_matrix=inf_matrix, solver=solver)
 
     @staticmethod

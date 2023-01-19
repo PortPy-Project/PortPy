@@ -5,7 +5,7 @@
 import portpy as pp
 
 
-def eg_4_dvh_benchmark_optimization():
+def ex_5_dvh_benchmark_optimization():
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 
@@ -63,4 +63,4 @@ def eg_4_dvh_benchmark_optimization():
 
 
 if __name__ == "__main__":
-    eg_4_dvh_benchmark_optimization()
+    ex_5_dvh_benchmark_optimization()

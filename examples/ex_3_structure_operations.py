@@ -6,7 +6,7 @@
 import portpy as pp
 
 
-def eg_3_structure_transformations():
+def ex_3_structure_operations():
     # Enter patient name
     patient_name = 'Lung_Patient_1'
 
@@ -29,4 +29,4 @@ def eg_3_structure_transformations():
 
 
 if __name__ == "__main__":
-    eg_3_structure_transformations()
+    ex_3_structure_operations()
