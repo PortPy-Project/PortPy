@@ -32,7 +32,7 @@ def ex_2_down_sampling():
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
     my_plan = pp.Plan(patient_name)
 
-    # PortPy can down-sample beamlets as factor of original finest resolution.
+    # PortPy can down-sample beamlets as factor of original finest beamlet resolution.
     # e.g if the finest beamlet resolution is 2.5mm then down sampled beamlet resolution can be 5, 7.5, 10mm..
     # Example create a influence matrix down sampled beamlets of width and height 5mm
     beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * 2
@@ -59,9 +59,9 @@ def ex_2_down_sampling():
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol_orig = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
-    sol_db = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_db)
-    sol_dv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dv)
-    sol_dbv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)
+    sol_db = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_db)  # optimize using downsampled beamlets
+    sol_dv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dv)  # optimize using downsampled voxels
+    sol_dbv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)  # optimize using downsampled beamlets and voxels
 
     # # Comment/Uncomment these lines to save & load plan and optimal solutions
     my_plan.save_plan(path=r'C:\temp')

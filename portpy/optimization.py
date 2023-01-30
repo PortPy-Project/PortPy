@@ -3,6 +3,7 @@ import numpy as np
 import cvxpy as cp
 import time
 from typing import List, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from portpy.plan import Plan
     from portpy.influence_matrix import InfluenceMatrix
@@ -12,6 +13,7 @@ class Optimization(object):
     """
     Optimization class for optimizing and creating the plan
     """
+
     @staticmethod
     def run_IMRT_fluence_map_CVXPy(my_plan: Plan, inf_matrix: InfluenceMatrix = None, solver: str = 'MOSEK') -> dict:
         """
@@ -45,9 +47,11 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict['name']:  # check if rind is already created. If yes, skip rind creation
+        if rinds[0] not in my_plan.structures.structures_dict[
+            'name']:  # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
-            Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
+            Optimization.set_rinds_opt_voxel_idx(my_plan,
+                                                 inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
         else:
             Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
 
@@ -88,8 +92,10 @@ class Optimization(object):
         smoothness_Y_weight = 0.4
 
         print('Objective Start')
-        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
-               smoothness_weight * (smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
+        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                    cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+               smoothness_weight * (
+                           smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
         # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
 
         print('Objective done')
@@ -110,7 +116,7 @@ class Optimization(object):
                     # mean constraints using voxel weights
                     constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
                                     (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
-                                                                                     :] @ x)))) <= limit / num_fractions]
+                                                                                      :] @ x)))) <= limit / num_fractions]
 
         # Step 1 and 2 constraint
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
@@ -130,7 +136,7 @@ class Optimization(object):
 
         print('Problem loaded')
         prob.solve(solver=solver, verbose=True)
-        print("optimal value with MOSEK:", prob.value)
+        print("optimal value with {}:{}".format(solver, prob.value))
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
 
@@ -166,7 +172,8 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict['name']:  # check if rind is already created. If yes, skip rind creation
+        if rinds[0] not in my_plan.structures.structures_dict[
+            'name']:  # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
             Optimization.set_rinds_opt_voxel_idx(my_plan,
                                                  inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
@@ -204,7 +211,8 @@ class Optimization(object):
         for i in range(len(criteria)):
             if 'dose_volume' in criteria[i]['name']:
                 limit_key = Optimization.matching_keys(criteria[i]['constraints'], 'limit')
-                if limit_key in criteria[i]['constraints']:
+                if limit_key in criteria[i]['constraints'] and criteria[i]['parameters'][
+                    'structure_name'] == 'ESOPHAGUS':
                     df.at[count, 'structure'] = criteria[i]['parameters']['structure_name']
                     df.at[count, 'dose_gy'] = criteria[i]['parameters']['dose_gy']
 
@@ -220,6 +228,7 @@ class Optimization(object):
                     if 'perc' in limit_key:
                         df.at[count, 'vol_perc'] = criteria[i]['constraints'][limit_key]
                     count = count + 1
+
         # Construct the problem.
         x = cp.Variable(A.shape[1], pos=True)
         dO = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
@@ -231,15 +240,15 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 1000
+        smoothness_weight = 100
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
 
         print('Objective Start')
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
-                    cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                           smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
+                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
         # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
 
         print('Objective done')
@@ -257,10 +266,6 @@ class Optimization(object):
                 if 'limit_dose_gy' in criteria[i]['constraints']:
                     limit = criteria[i]['constraints']['limit_dose_gy']
                     org = criteria[i]['parameters']['structure_name']
-                    # constraints += [
-                    #     (1 / len(st.get_voxels_idx(org))) * (cp.sum(infMatrix[st.get_voxels_idx(org), :] @ w)) <=
-                    #     limit / num_fractions]
-
                     # mean constraints using voxel weights
                     constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
                                     (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
@@ -269,8 +274,9 @@ class Optimization(object):
         for i in range(len(df)):
             struct, limit, v, M = df.loc[i, 'structure'], df.loc[i, 'dose_gy'], df.loc[i, 'vol_perc'], df.loc[i, 'M']
             end = start + len(st.get_opt_voxels_idx(struct))
-            constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b[start:end] * M]
-            constraints += [cp.sum(cp.multiply(b[start:end], st.get_opt_voxels_size(struct))) <= v / 100 * cp.sum(
+            frac = my_plan.structures.get_fraction_of_vol_in_calc_box(struct)
+            constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b * M / num_fractions]
+            constraints += [b @ st.get_opt_voxels_size(struct) <= (v / frac) / 100 * sum(
                 st.get_opt_voxels_size(struct))]
             start = end
 
@@ -278,26 +284,18 @@ class Optimization(object):
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 
-        # Smoothness Constraint
-        # for b in range(len(my_plan.beams_dict.beams_dict['ID'])):
-        #     startB = my_plan.beams_dict.beams_dict['start_beamlet'][b]
-        #     endB = my_plan.beams_dict.beams_dict['end_beamlet'][b]
-        #     constraints += [0.6 * cp.sum_squares(
-        #         Qx[startB:endB, startB:endB] @ x[startB:endB]) + 0.4 * cp.sum_squares(
-        #         Qy[startB:endB, startB:endB] @ x[startB:endB]) <= 0.5]
-
         print('Constraints Done')
 
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
         # Defining the constraints
         print('Problem loaded')
         prob.solve(solver=solver, verbose=True)
-        print("optimal value with MOSEK:", prob.value)
+        print("optimal value with {}:{}".format(solver, prob.value))
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
 
         # saving optimal solution to my_plan
-        sol = {'optimal_intensity': x.value, 'dose_1d': A * x.value * num_fractions, 'inf_matrix': inf_matrix}
+        sol = {'optimal_intensity': x.value, 'inf_matrix': inf_matrix}
 
         return sol
 
@@ -391,7 +389,7 @@ class Optimization(object):
                 # inf_matrix.set_opt_voxel_idx(my_plan, struct=rind_name)
             else:
                 # prev_rind_name = 'RIND_{}'.format(ind - 1)
-                prev_dummy_name = 'dummy_{}'.format(ind-1)
+                prev_dummy_name = 'dummy_{}'.format(ind - 1)
                 my_plan.structures.expand(prev_dummy_name, margin_mm=s, new_structure=dummy_name)
                 my_plan.structures.subtract(dummy_name, prev_dummy_name, str1_sub_str2=rind_name)
                 my_plan.structures.delete_structure(prev_dummy_name)
@@ -401,7 +399,7 @@ class Optimization(object):
             my_plan.structures.intersect(rind_name, 'dose_mask', str1_and_str2=rind_name)
 
         my_plan.structures.delete_structure('dose_mask')
-                # inf_matrix.set_opt_voxel_idx(my_plan, struct=rind_name)
+        # inf_matrix.set_opt_voxel_idx(my_plan, struct=rind_name)
         print('rinds created!!')
 
     @staticmethod

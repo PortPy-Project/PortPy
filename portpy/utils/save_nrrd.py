@@ -35,7 +35,7 @@ def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None) -> None:
     dose.SetOrigin(my_plan.ct['origin_xyz_mm'])
     dose.SetSpacing(my_plan.ct['resolution_xyz_mm'])
     dose.SetDirection(my_plan.ct['direction'])
-    sitk.WriteImage(dose, os.path.join(data_dir, 'dose_1d.nrrd'))
+    sitk.WriteImage(dose, os.path.join(data_dir, 'dose.nrrd'))
 
     labels = my_plan.structures.structures_dict['structure_mask_3d']
     mask_arr = np.array(labels).transpose((1, 2, 3, 0))

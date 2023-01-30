@@ -52,6 +52,16 @@ class Structures:
         ind = self.structures_dict['name'].index(structure_name)
         return self.structures_dict['volume_cc'][ind]
 
+    def get_fraction_of_vol_in_calc_box(self, structure_name: str):
+        """
+        Get fraction of volume in calc box for the structure
+
+         :param structure_name: name of the structure in plan
+         :return: volume of the structure
+         """
+        ind = self.structures_dict['name'].index(structure_name)
+        return self.structures_dict['fraction_of_vol_in_calc_box'][ind]
+
     def preprocess_structures(self):
         """
         preprocess structures to create optimization voxel indices for the structure
@@ -65,7 +75,8 @@ class Structures:
             # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
             vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
             self.opt_voxels_dict['voxel_idx'][i] = vox
-            self.opt_voxels_dict['voxel_size'][i] = counts / np.max(counts)  # calculate weight for each voxel
+            self.opt_voxels_dict['voxel_size'][i] = counts * np.prod(self._ct_voxel_resolution_xyz_mm)  # calculate weight for each voxel
+            # self.opt_voxels_dict['voxel_size'][i] = counts / np.max(counts)  # calculate weight for each voxel
 
     def create_structure(self, new_structure: str, mask_3d: np.ndarray) -> None:
         """

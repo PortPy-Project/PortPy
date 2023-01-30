@@ -653,7 +653,8 @@ class InfluenceMatrix:
                 # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
                 vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
                 self.opt_voxels_dict['voxel_idx'][ind] = vox
-                self.opt_voxels_dict['voxel_size'][ind] = counts / np.max(counts)  # calculate weight for each voxel
+                self.opt_voxels_dict['voxel_size'][ind] = counts * np.prod(plan_obj.get_ct_res_xyz_mm())  # calculate weight for each voxel
+                # self.opt_voxels_dict['voxel_size'][ind] = counts / np.max(counts)  # calculate weight for each voxel
 
     @staticmethod
     def sort_beamlets(b_map):
@@ -682,7 +683,8 @@ class InfluenceMatrix:
         # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
         vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
         self.opt_voxels_dict['voxel_idx'].append(vox)
-        self.opt_voxels_dict['voxel_size'].append(counts / np.max(counts))  # calculate weight for each voxel
+        # self.opt_voxels_dict['voxel_size'].append(counts / np.max(counts))  # calculate weight for each voxel
+        self.opt_voxels_dict['voxel_size'].append(counts * np.prod(plan_obj.get_ct_res_xyz_mm()))  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(structure_name)
 
     def get_opt_voxels_idx(self, structure_name: str) -> np.ndarray:
