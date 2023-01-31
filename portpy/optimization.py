@@ -300,6 +300,135 @@ class Optimization(object):
         return sol
 
     @staticmethod
+    def run_IMRT_fluence_map_CVXPy_BAO_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
+        """
+        Creates MIP problem for selecting optimal beam angles
+
+        :param inf_matrix: object of class InfluenceMatrix
+        :param my_plan: object of class Plan
+        :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
+        :return: save optimal solution to plan object called opt_sol
+
+
+        """
+        t = time.time()
+
+        # get data for optimization
+        if inf_matrix is None:
+            inf_matrix = my_plan.inf_matrix
+        A = inf_matrix.A
+        cc_dict = my_plan.clinical_criteria.clinical_criteria_dict
+        criteria = cc_dict['criteria']
+        pres = cc_dict['pres_per_fraction_gy']
+        num_fractions = cc_dict['num_of_fractions']
+        [Qx, Qy] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
+        st = inf_matrix
+
+        # create and add rind constraints
+        rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
+        if rinds[0] not in my_plan.structures.structures_dict[
+            'name']:  # check if rind is already created. If yes, skip rind creation
+            Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
+            Optimization.set_rinds_opt_voxel_idx(my_plan,
+                                                 inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
+        else:
+            Optimization.set_rinds_opt_voxel_idx(my_plan, inf_matrix=inf_matrix)
+
+        rind_max_dose_perc = [1.1, 1.0, 0.9, 0.7, 0.65]  # add rind constraints to the problem
+        for i, rind in enumerate(rinds):
+            parameters = {'structure_name': rind}
+            total_pres = cc_dict['pres_per_fraction_gy'] * cc_dict['num_of_fractions']
+            constraints = {'limit_dose_gy': total_pres * rind_max_dose_perc[i]}
+            my_plan.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
+                                                    constraints=constraints)
+
+        # setting weights for oar objectives
+        all_vox = np.arange(A.shape[0])
+        oar_voxels = all_vox[~np.isin(np.arange(A.shape[0]), st.get_opt_voxels_idx('PTV'))]
+        oar_weights = np.ones(A[oar_voxels, :].shape[0])
+        if cc_dict['disease_site'] == 'Prostate':
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RECT_WALL')))] = 20
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('BLAD_WALL')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
+        elif cc_dict['disease_site'] == 'Lung':
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
+
+        # Construct the problem.
+        x = cp.Variable(A.shape[1], pos=True)
+        dO = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
+        dU = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
+
+        # binary variable for selecting beams
+        b = cp.Variable(len(inf_matrix.beamlets_dict), boolean=True)
+
+        # Form objective.
+        ptv_overdose_weight = 10000
+        ptv_underdose_weight = 10  # number of times of the ptv overdose weight
+        smoothness_weight = 100
+        smoothness_X_weight = 0.6
+        smoothness_Y_weight = 0.4
+        num_beams = 7  # num of beams to select
+
+        print('Objective Start')
+        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+               smoothness_weight * (
+                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
+        # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+
+        print('Objective done')
+        print('Constraints Start')
+        constraints = []
+        # constraints += [wMean == cp.sum(w)/w.shape[0]]
+        for i in range(len(criteria)):
+            if 'max_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
+                    if org != 'GTV' or org != 'CTV':
+                        constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
+            elif 'mean_dose' in criteria[i]['name']:
+                if 'limit_dose_gy' in criteria[i]['constraints']:
+                    limit = criteria[i]['constraints']['limit_dose_gy']
+                    org = criteria[i]['parameters']['structure_name']
+                    # mean constraints using voxel weights
+                    constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
+                                    (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
+                                                                                      :] @ x)))) <= limit / num_fractions]
+
+        #  Constraints for selecting beams
+        constraints += [cp.sum(b) <= num_beams]
+        for i in range(len(inf_matrix.beamlets_dict)):
+            start_beamlet = inf_matrix.beamlets_dict[i]['start_beamlet']
+            end_beamlet = inf_matrix.beamlets_dict[i]['end_beamlet']
+            M = 1000  # upper bound on the beamlet intensity
+            constraints += [x[start_beamlet:end_beamlet] <= b[i] * M]
+
+        # Step 1 and 2 constraint
+        constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
+        constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
+
+        print('Constraints Done')
+
+        prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
+        # Defining the constraints
+        print('Problem loaded')
+        prob.solve(solver=solver, verbose=True)
+        print("optimal value with {}:{}".format(solver, prob.value))
+        elapsed = time.time() - t
+        print('Elapsed time {} seconds'.format(elapsed))
+
+        # saving optimal solution to my_plan
+        sol = {'optimal_intensity': x.value, 'optimal_beams': b.value, 'inf_matrix': inf_matrix}
+
+        return sol
+
+    @staticmethod
     def get_smoothness_matrix(beamReq: List[dict]) -> (np.ndarray, np.ndarray):
         """
         Create smoothness matrix so that adjacent beamlets are smooth out to reduce MU

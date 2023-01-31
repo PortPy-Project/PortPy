@@ -8,10 +8,10 @@ import portpy as pp
 
 def ex_3_structure_operations():
     # Enter patient name
-    patient_name = 'Lung_Patient_1'
+    patient_id = 'Lung_Patient_1'
 
     # visualize patient metadata for beams_dict and structures
-    pp.Visualize.display_patient_metadata(patient_name)
+    pp.Visualize.display_patient_metadata(patient_id)
 
     # display patients
     pp.Visualize.display_patients()
@@ -19,7 +19,7 @@ def ex_3_structure_operations():
     # create my_plan object for the planner beams_dict
     # for the customized beams_dict, you can pass the argument beam_ids
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    my_plan = pp.Plan(patient_name)
+    my_plan = pp.Plan(patient_id)
 
     # boolean or create margin_mm around structures
     my_plan.structures.union(str_1='PTV', str_2='GTV', str1_or_str2='dummy')

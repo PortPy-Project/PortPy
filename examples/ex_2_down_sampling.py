@@ -24,13 +24,13 @@ def ex_2_down_sampling():
     pp.Visualize.display_patients(data_dir=data_dir)
 
     # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams_dict, structures, )
-    patient_name = 'Lung_Patient_1'
-    pp.Visualize.display_patient_metadata(patient_name, data_dir=data_dir)
+    patient_id = 'Lung_Patient_1'
+    pp.Visualize.display_patient_metadata(patient_id, data_dir=data_dir)
 
     # create my_plan object for the planner beams_dict
     # for the customized beams_dict, you can pass the argument beam_ids
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    my_plan = pp.Plan(patient_name)
+    my_plan = pp.Plan(patient_id)
 
     # PortPy can down-sample beamlets as factor of original finest beamlet resolution.
     # e.g if the finest beamlet resolution is 2.5mm then down sampled beamlet resolution can be 5, 7.5, 10mm..

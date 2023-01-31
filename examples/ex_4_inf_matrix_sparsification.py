@@ -11,15 +11,15 @@ def ex_4_inf_matrix_sparsification():
     pp.Visualize.display_patients(data_dir=data_dir)
 
     # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams_dict, structures, )
-    patient_name = 'Lung_Patient_1'
-    pp.Visualize.display_patient_metadata(patient_name, data_dir=data_dir)
+    patient_id = 'Lung_Patient_1'
+    pp.Visualize.display_patient_metadata(patient_id, data_dir=data_dir)
 
     # create my_plan object with full influence matrix for the planner beams
     # for the customized beams_dict, you can pass the argument beam_ids
     # e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    plan_full = pp.Plan(patient_name, load_inf_matrix_full=True)
+    plan_full = pp.Plan(patient_id, load_inf_matrix_full=True)
 
-    plan_sparse = pp.Plan(patient_name)  # create plan with sparse matrix
+    plan_sparse = pp.Plan(patient_id)  # create plan with sparse matrix
     A_sparse = deepcopy(plan_sparse.inf_matrix.A)  # deepcopy so it doesnt modify the object
     A_sparse = A_sparse.todense()  # convert sparse to dense
 

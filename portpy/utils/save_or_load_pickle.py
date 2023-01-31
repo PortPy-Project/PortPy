@@ -93,3 +93,51 @@ def save_optimal_sol(sol: dict, sol_name: str, path: str = None) -> None:
         os.makedirs(path)
     with open(os.path.join(path, sol_name), 'wb') as pickle_file:
         pickle.dump(sol, pickle_file, protocol=4)
+
+
+def save_inf_matrix(inf_matrix, inf_name: str = None, path: str = None) -> None:
+    """
+
+    Save pickled file for plan object
+
+    :param inf_matrix: object fo class Infuence matrix
+    :param inf_name: create the name of the pickled file of InfluenceMatrix object. If none, it will save with the name as 'inf_matrix'
+    :param path: if path is set, plan object will be pickled and saved in path directory else it will save in current project directory
+    :return: save pickled object of class Plan
+
+    :Example:
+    >>> save_inf_matrix(inf_matrix=inf_matrix, inf_name='inf_matrix', path=r"path/to/save_inf_matrix")
+    """
+    if path is None:
+        path = os.path.join(Path(__file__).parents[2])
+    elif not os.path.exists(path):
+        os.makedirs(path)
+
+    if inf_name is None:
+        inf_matrix = 'inf_matrix'
+    with open(os.path.join(path, inf_name), 'wb') as pickle_file:
+        # pickle the dictionary and write it to file
+        pickle.dump(inf_matrix, pickle_file)
+
+
+def load_inf_matrix(inf_name: str = None, path: str = None):
+    """
+    Load pickle file of the plan object.
+
+    :param inf_name: influence matrix name of the object of class InfleunceMatrix.
+    :param path: if path is set, plan object will be load from path directory else current project directory
+    :return: load pickled object of class Plan
+
+    :Example:
+    >>> load_plan(plan_name='my_plan', path=r"path/for/loading_inf_matrix")
+    """
+    if path is None:
+        path = os.path.join(Path(__file__).parents[2])
+    elif not os.path.exists(path):
+        os.makedirs(path)
+
+    if inf_name is None:
+        inf_name = 'inf_matrix'
+    with open(os.path.join(path, inf_name), 'rb') as pickle_file:
+        inf_matrix = pickle.load(pickle_file)
+    return inf_matrix
