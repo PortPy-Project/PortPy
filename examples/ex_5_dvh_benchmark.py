@@ -21,9 +21,13 @@ def ex_5_dvh_benchmark():
     my_plan = pp.Plan(patient_id)
 
     # create a influence matrix down sampled beamlets of width and height 5mm
-    down_sample_factor = [5, 5, 1]
-    opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), down_sample_factor)]
-    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
+    opt_vox_down_sample_factor = [7, 7, 2]
+    opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), opt_vox_down_sample_factor)]
+    beamlet_down_sample_factor = 2
+    beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * beamlet_down_sample_factor
+    beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * beamlet_down_sample_factor
+    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
+                                               opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -36,8 +40,11 @@ def ex_5_dvh_benchmark():
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol_no_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)
 
-    # optimize with downscaled influence matrix and exact dvh constraint
-    sol_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=inf_matrix_dbv)
+    # optimize with downscaled influence matrix and the dvh constraint created below
+    eso_dvh = my_plan.clinical_criteria.create_criterion(criterion='dose_volume_V',
+                                                         parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
+                                                         constraints={'limit_volume_perc': 17})
+    sol_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=sol_no_dvh['inf_matrix'], dvh_criteria=eso_dvh)
 
     # Comment/Uncomment these lines to save & load plan and optimal solutions
     # my_plan.save_plan(path=r'C:\temp')
@@ -47,19 +54,11 @@ def ex_5_dvh_benchmark():
     # sol_no_dvh = Plan.load_optimal_sol('sol_no_dvh', path=r'C:\temp')
     # sol_dvh = Plan.load_optimal_sol('sol_dvh', path=r'C:\temp')
 
-    # plot fluence in 3d
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_no_dvh)
-    pp.Visualize.plot_fluence_3d(beam_id=0, sol=sol_dvh)
-
-    # plot fluence in 2d
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_no_dvh)
-    pp.Visualize.plot_fluence_2d(beam_id=0, sol=sol_dvh)
-
     # plot dvh dvh for both the cases
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
     pp.Visualize.plot_dvh(my_plan, sol=sol_no_dvh, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_dvh, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dvh, structs=structs, style='dotted', show_criteria=eso_dvh, create_fig=False)
 
     # visualize 2d dose_1d for both the cases
     pp.Visualize.plot_2d_dose(my_plan, sol=sol_no_dvh)

@@ -35,8 +35,9 @@ def ex_2_down_sampling():
     # PortPy can down-sample beamlets as factor of original finest beamlet resolution.
     # e.g if the finest beamlet resolution is 2.5mm then down sampled beamlet resolution can be 5, 7.5, 10mm..
     # Example create a influence matrix down sampled beamlets of width and height 5mm
-    beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * 2
-    beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * 2
+    beamlet_down_sample_factor = 2
+    beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * beamlet_down_sample_factor
+    beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * beamlet_down_sample_factor
     inf_matrix_db = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm)
 
     # PortPy can down-sample optimization voxels as factor of ct voxels.
@@ -47,7 +48,7 @@ def ex_2_down_sampling():
     inf_matrix_dv = my_plan.create_inf_matrix(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # Now, let us also down sample both voxels and beamlets
-    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
+    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm, opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)

@@ -67,5 +67,18 @@ class ClinicalCriteria:
         else:
             raise Exception('No criteria  for name {}  and parameters {}'.format(criterion, parameters))
 
+    @staticmethod
+    def create_criterion(criterion: str, parameters: dict, constraints: dict):
+        """
+        Create criterion and return list
 
+        :param criterion: criterion name. e.g. max_dose
+        :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
+        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :return: add the criteria to clinical criteria dictionary
+
+        """
+
+        criterion = [{'name': criterion, 'parameters': parameters, 'constraints': constraints}]
+        return criterion
 

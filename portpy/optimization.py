@@ -87,16 +87,17 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 100
+        smoothness_weight = 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
 
         print('Objective Start')
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
-                    cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                           smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
-        # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
+               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                   cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
         print('Constraints Start')
@@ -146,13 +147,15 @@ class Optimization(object):
         return sol
 
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
+    def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan: Plan, inf_matrix: InfluenceMatrix = None, dvh_criteria: List[dict] = None, solver='MOSEK') -> dict:
         """
         Add dvh constraints and solve the optimization for getting ground truth solution
 
         :param inf_matrix: object of class InfluenceMatrix
         :param my_plan: object of class Plan
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
+        :param dvh_criteria: dvh criteria to be met in optimization. Defaults to None.
+        If None, it will optimize for all the dvh criteria in clinical criteria. If
         :return: save optimal solution to plan object called opt_sol
 
 
@@ -206,15 +209,17 @@ class Optimization(object):
 
         # get volume constraint in V(Gy) <= v% format
         import pandas as pd
-        df = pd.DataFrame()
+        df_dvh_criteria = pd.DataFrame()
         count = 0
-        for i in range(len(criteria)):
-            if 'dose_volume' in criteria[i]['name']:
-                limit_key = Optimization.matching_keys(criteria[i]['constraints'], 'limit')
-                if limit_key in criteria[i]['constraints'] and criteria[i]['parameters'][
-                    'structure_name'] == 'ESOPHAGUS':
-                    df.at[count, 'structure'] = criteria[i]['parameters']['structure_name']
-                    df.at[count, 'dose_gy'] = criteria[i]['parameters']['dose_gy']
+        if dvh_criteria is None:
+            dvh_criteria = criteria
+
+        for i in range(len(dvh_criteria)):
+            if 'dose_volume' in dvh_criteria[i]['name']:
+                limit_key = Optimization.matching_keys(dvh_criteria[i]['constraints'], 'limit')
+                if limit_key in dvh_criteria[i]['constraints']:
+                    df_dvh_criteria.at[count, 'structure'] = dvh_criteria[i]['parameters']['structure_name']
+                    df_dvh_criteria.at[count, 'dose_gy'] = dvh_criteria[i]['parameters']['dose_gy']
 
                     # getting max dose_1d for the same structure
                     max_dose_struct = 1000
@@ -222,11 +227,11 @@ class Optimization(object):
                         if 'max_dose' in criteria[j]['name']:
                             if 'limit_dose_gy' in criteria[j]['constraints']:
                                 org = criteria[j]['parameters']['structure_name']
-                                if org == criteria[i]['parameters']['structure_name']:
+                                if org == dvh_criteria[i]['parameters']['structure_name']:
                                     max_dose_struct = criteria[j]['constraints']['limit_dose_gy']
-                    df.at[count, 'M'] = max_dose_struct - criteria[i]['parameters']['dose_gy']
+                    df_dvh_criteria.at[count, 'M'] = max_dose_struct - dvh_criteria[i]['parameters']['dose_gy']
                     if 'perc' in limit_key:
-                        df.at[count, 'vol_perc'] = criteria[i]['constraints'][limit_key]
+                        df_dvh_criteria.at[count, 'vol_perc'] = dvh_criteria[i]['constraints'][limit_key]
                     count = count + 1
 
         # Construct the problem.
@@ -235,12 +240,12 @@ class Optimization(object):
         dU = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
 
         # binary variable for dvh constraint
-        b = cp.Variable(len(np.concatenate([st.get_opt_voxels_idx(org) for org in df.structure.to_list()])),
+        b = cp.Variable(len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure.to_list()])),
                         boolean=True)
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 100
+        smoothness_weight = 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
 
@@ -248,8 +253,9 @@ class Optimization(object):
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
-        # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
+               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                   cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
         print('Constraints Start')
@@ -271,8 +277,8 @@ class Optimization(object):
                                     (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
                                                                                       :] @ x)))) <= limit / num_fractions]
         start = 0
-        for i in range(len(df)):
-            struct, limit, v, M = df.loc[i, 'structure'], df.loc[i, 'dose_gy'], df.loc[i, 'vol_perc'], df.loc[i, 'M']
+        for i in range(len(df_dvh_criteria)):
+            struct, limit, v, M = df_dvh_criteria.loc[i, 'structure'], df_dvh_criteria.loc[i, 'dose_gy'], df_dvh_criteria.loc[i, 'vol_perc'], df_dvh_criteria.loc[i, 'M']
             end = start + len(st.get_opt_voxels_idx(struct))
             frac = my_plan.structures.get_fraction_of_vol_in_calc_box(struct)
             constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b * M / num_fractions]
@@ -300,7 +306,7 @@ class Optimization(object):
         return sol
 
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy_BAO_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
+    def run_IMRT_fluence_map_CVXPy_BOO_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
         """
         Creates MIP problem for selecting optimal beam angles
 
@@ -369,7 +375,7 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 100
+        smoothness_weight = 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
         num_beams = 7  # num of beams to select
@@ -378,8 +384,9 @@ class Optimization(object):
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x))]
-        # 10 * (1/infMatrix[oar_voxels, :].shape[0])*cp.sum_squares(cp.multiply(cp.sqrt(oar_weights), infMatrix[oar_voxels, :] @ w))]
+                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
+               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                   cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
         print('Constraints Start')

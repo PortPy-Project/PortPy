@@ -93,6 +93,22 @@ class Beams:
         beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
         return beam_map
 
+    def get_beamlet_width(self) -> float:
+        """
+        
+        :return: beamlet width in the original beam
+        """
+        beamlets = self.beams_dict['beamlets'][0]
+        return beamlets['width_mm'][0][0][0]
+
+    def get_beamlet_height(self) -> float:
+        """
+        
+        :return: beamlet height in the original beam
+        """
+        beamlets = self.beams_dict['beamlets'][0]
+        return beamlets['height_mm'][0][0][0]
+
     def create_beamlet_idx_2d_grid(self, beam_id: int) -> np.ndarray:
         """
         Create 2d grid for the beamlets where each element is 2.5mm*2.5mm for the given beam id from x and y coordinates of beamlets.

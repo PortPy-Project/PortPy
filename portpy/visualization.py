@@ -149,6 +149,7 @@ class Visualization:
                 dose_1d = sol['dose_1d']
 
         if sol is None:
+            sol = dict()
             sol['inf_matrix'] = my_plan.inf_matrix  # create temporary solution
 
         # getting options_fig:
@@ -161,6 +162,7 @@ class Visualization:
         filename = options['filename'] if 'filename' in options else None
         show = options['show'] if 'show' in options else True
         create_fig = options['create_fig'] if 'create_fig' in options else True
+        show_criteria = options['show_criteria'] if 'show_criteria' in options else None
 
         # getting norm options
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
@@ -213,6 +215,12 @@ class Visualization:
             plt.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[i])
             legend.append(all_orgs[i])
 
+        if show_criteria is not None:
+            for s in range(len(show_criteria)):
+                if 'dose_volume' in show_criteria[s]['name']:
+                    x = show_criteria[s]['parameters']['dose_gy']
+                    y = show_criteria[s]['constraints']['limit_volume_perc']
+                    plt.plot(x, y, marker='x', color='red', markersize=20)
         # plt.xlabel('Dose (Gy)')
         # plt.ylabel('Volume Fraction (%)')
         plt.xlim(0, max_dose * 1.1)
