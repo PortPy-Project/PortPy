@@ -1,9 +1,9 @@
 """
 
-    This example shows creating and modification of structures using portpy
+    This example shows creating and modification of structures using portpy_photon
 """
 
-import portpy as pp
+import portpy_photon as pp
 
 
 def ex_3_structure_operations():

@@ -1,18 +1,17 @@
 import numpy as np
 from typing import List
 
-from portpy.utils import *
-from portpy.beam import Beams
-from portpy.structures import Structures
+from portpy_photon.utils import *
+from portpy_photon.beam import Beams
+from portpy_photon.structures import Structures
 import os
-from portpy.clinical_criteria import ClinicalCriteria
-from portpy.influence_matrix import InfluenceMatrix
-from portpy.visualization import Visualization
-from portpy.optimization import Optimization
+from portpy_photon.clinical_criteria import ClinicalCriteria
+from portpy_photon.influence_matrix import InfluenceMatrix
+from portpy_photon.visualization import Visualization
+from portpy_photon.optimization import Optimization
 from pathlib import Path
 # from typing import Dict, List, Optional, Union
 # from functools import wraps
-import pickle
 
 
 class Plan:
@@ -72,7 +71,7 @@ class Plan:
         """
 
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'Data')
+            data_dir = os.path.join(Path(__file__).parents[1], 'data')
         patient_folder_path = os.path.join(data_dir, patient_id)
 
         # read all the meta data for the specified patient

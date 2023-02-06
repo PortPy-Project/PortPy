@@ -86,7 +86,7 @@ def load_file(meta_data: dict, pat_dir: str):
                                     (infMatrixSparseForBeam[:, 2], (infMatrixSparseForBeam[:, 0].astype(int),
                                                                     infMatrixSparseForBeam[:, 1].astype(int))))
                         else:
-                            print('Problem reading Data: {}'.format(meta_data[key][i]))
+                            print('Problem reading data: {}'.format(meta_data[key][i]))
                             success = 0
             if success:
                 del meta_data[key]

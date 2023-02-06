@@ -5,8 +5,8 @@ import time
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from portpy.plan import Plan
-    from portpy.influence_matrix import InfluenceMatrix
+    from portpy_photon.plan import Plan
+    from portpy_photon.influence_matrix import InfluenceMatrix
 
 
 class Optimization(object):
@@ -42,7 +42,7 @@ class Optimization(object):
         criteria = cc_dict['criteria']
         pres = cc_dict['pres_per_fraction_gy']
         num_fractions = cc_dict['num_of_fractions']
-        [Qx, Qy] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
+        [Qx, Qy, num_rows, num_cols] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
         st = inf_matrix
 
         # create and add rind constraints
@@ -73,9 +73,9 @@ class Optimization(object):
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
         elif cc_dict['disease_site'] == 'Lung':
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
@@ -87,16 +87,16 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 10
+        smoothness_weight = 1000
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
-
+        total_oar_weight = 10
         print('Objective Start')
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
-               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+               total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
@@ -170,7 +170,7 @@ class Optimization(object):
         criteria = cc_dict['criteria']
         pres = cc_dict['pres_per_fraction_gy']
         num_fractions = cc_dict['num_of_fractions']
-        [Qx, Qy] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
+        [Qx, Qy, num_rows, num_cols] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
         st = inf_matrix
 
         # create and add rind constraints
@@ -201,9 +201,9 @@ class Optimization(object):
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
         elif cc_dict['disease_site'] == 'Lung':
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
@@ -245,16 +245,17 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 10
+        smoothness_weight = 1000
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
+        total_oar_weight = 10
 
         print('Objective Start')
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
-               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+               total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
@@ -327,7 +328,7 @@ class Optimization(object):
         criteria = cc_dict['criteria']
         pres = cc_dict['pres_per_fraction_gy']
         num_fractions = cc_dict['num_of_fractions']
-        [Qx, Qy] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
+        [Qx, Qy, num_rows, num_cols] = Optimization.get_smoothness_matrix(inf_matrix.beamlets_dict)
         st = inf_matrix
 
         # create and add rind constraints
@@ -358,9 +359,9 @@ class Optimization(object):
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
         elif cc_dict['disease_site'] == 'Lung':
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 5
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 5
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
+            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
@@ -375,17 +376,18 @@ class Optimization(object):
         # Form objective.
         ptv_overdose_weight = 10000
         ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 10
+        smoothness_weight = 1000
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
-        num_beams = 7  # num of beams to select
+        num_beams = 7  # maximum number of beams to select
+        total_oar_weight = 10
 
         print('Objective Start')
         obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * cp.sum_squares(Qx @ x) + smoothness_Y_weight * cp.sum_squares(Qy @ x)),
-               10 * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
+                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+               total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
         print('Objective done')
@@ -436,7 +438,7 @@ class Optimization(object):
         return sol
 
     @staticmethod
-    def get_smoothness_matrix(beamReq: List[dict]) -> (np.ndarray, np.ndarray):
+    def get_smoothness_matrix(beamReq: List[dict]) -> (np.ndarray, np.ndarray, int, int):
         """
         Create smoothness matrix so that adjacent beamlets are smooth out to reduce MU
 
@@ -453,6 +455,8 @@ class Optimization(object):
         """
         sRow = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
         sCol = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
+        num_rows = 0
+        num_cols = 0
         for b in range(len(beamReq)):
             beam_map = beamReq[b]['beamlet_idx_2dgrid']
 
@@ -465,6 +469,8 @@ class Optimization(object):
                 if (beam_map[:, j] != beam_map[:, colsNoRepeat[-1]]).any():
                     colsNoRepeat.append(j)
             beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
+            num_rows = num_rows + beam_map.shape[0]
+            num_cols = num_cols + beam_map.shape[1]
             for r in range(np.size(beam_map, 0)):
                 startCol = 0
                 endCol = np.size(beam_map, 1) - 2
@@ -493,7 +499,7 @@ class Optimization(object):
                     if ind * DN >= 0:
                         sCol[ind, ind] = int(1)
                         sCol[ind, DN] = int(-1)
-        return sRow, sCol
+        return sRow, sCol, num_rows, num_cols
 
     @staticmethod
     def create_rinds(my_plan, inf_matrix=None, size_mm: list = None, base_structure='PTV'):

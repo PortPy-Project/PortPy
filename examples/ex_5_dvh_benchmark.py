@@ -1,8 +1,8 @@
 """
-    This example demonstrates the use of portpy to create down sampled influence matrix and
+    This example demonstrates the use of portpy_photon to create down sampled influence matrix and
     optimize it with exact dvh constraints for benchmarking
 """
-import portpy as pp
+import portpy_photon as pp
 
 
 def ex_5_dvh_benchmark():

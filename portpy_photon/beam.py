@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List, Union
 
 
 class Beams:
@@ -18,7 +19,7 @@ class Beams:
 
     - **Methods** ::
 
-        :get_gantry_angle(beam_id):
+        :get_gantry_angle(beam_id: Optional(int, List[int]):
             Get gantry angle in degrees
         :get_collimator_angle(beam_id):
             Get collimator angle in degrees
@@ -43,25 +44,31 @@ class Beams:
         ind = self.beams_dict['ID'].index(beam_id)
         return self.beams_dict['beamlet_idx_2dgrid'][ind]
 
-    def get_gantry_angle(self, beam_id: int) -> float:
+    def get_gantry_angle(self, beam_id: Union[int, List[int]]) -> Union[int, List[int]]:
         """
         Get gantry angle
 
         :param beam_id: beam_id for the beam
         :return: gantry angle for the beam_id
         """
-        ind = self.beams_dict['ID'].index(beam_id)
-        return self.beams_dict['gantry_angle'][ind]
+        if isinstance(beam_id, int):
+            ind = self.beams_dict['ID'].index(beam_id)
+            return self.beams_dict['gantry_angle'][ind]
+        elif isinstance(beam_id, list):
+            return [self.beams_dict['gantry_angle'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
-    def get_collimator_angle(self, beam_id: int) -> float:
+    def get_collimator_angle(self, beam_id: Union[int, List[int]]) -> Union[int, List[int]]:
         """
         Get collimator angle
 
         :param beam_id: beam_id for the beam
         :return: collimator angle for the beam_id
         """
-        ind = self.beams_dict['ID'].index(beam_id)
-        return self.beams_dict['collimator_angle'][ind]
+        if isinstance(beam_id, int):
+            ind = self.beams_dict['ID'].index(beam_id)
+            return self.beams_dict['collimator_angle'][ind]
+        elif isinstance(beam_id, list):
+            return [self.beams_dict['collimator_angle'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
     @staticmethod
     def sort_beamlets(b_map):

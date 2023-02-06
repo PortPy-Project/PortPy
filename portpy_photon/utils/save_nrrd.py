@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from portpy.plan import Plan
+    from portpy_photon.plan import Plan
 
 
 def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None) -> None:
@@ -18,7 +18,7 @@ def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None) -> None:
     """
     import os
     if data_dir is None:
-        data_dir = os.path.join(Path(__file__).parents[2], 'Data', my_plan.patient_id)
+        data_dir = os.path.join(Path(__file__).parents[2], 'data', my_plan.patient_id)
     ct_arr = my_plan.ct['ct_hu_3d'][0]
     ct = sitk.GetImageFromArray(ct_arr)
     ct.SetOrigin(my_plan.ct['origin_xyz_mm'])

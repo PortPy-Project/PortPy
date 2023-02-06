@@ -1,0 +1,40 @@
+from setuptools import setup, find_packages
+
+setup(
+    name='portpy-photon',
+    version="0.0.1",
+    url='https://github.com/PortPy-Project/PortPy-Photon',
+    license='Apache License, Version 2.0',
+    packages=find_packages(exclude=["examples*"]),
+    author='Gourav Jhanwar, Mojtaba Tefagh, Vicki Taasti, Seppo Tuomaala, Saad Nadeem, Masoud Zarepisheh',
+    author_email="jhanwarg@mskcc.org, mtefagh@acm.org, vicki.taasti@maastro.nl, tuomaals@mskcc.org, nadeems@mskcc.org, zarepism@mskcc.org",
+    description='First open-source radiation treatment planning system in Python',
+    long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
+    python_requires='>=3.7',
+    install_requires=[
+        "cvxpy>=1.1.18",
+        "ecos>=2.0.10",
+        "h5py>=3.6.0",
+        "Mosek>=9.3.14",
+        "natsort>=8.1.0",
+        "numpy>=1.15",
+        "osqp>=0.4.1",
+        "pandas>=1.1.5"
+        "python-dateutil>=2.8.2",
+        "pytz>=2022.1",
+        "qdldl>=0.1.5",
+        "scipy>=1.5.4",
+        "scs>=3.2.0",
+        "six>=1.16.0",
+        "matplotlib>=3.5.3",
+        "Shapely>=1.8.4",
+        "SimpleITK>=2.0.2",
+        "tabulate>=0.9.0",
+        "typing>=3.7.4.3",
+        "typing-extensions>=3.10.0.0",
+        "scikit-image>=0.17.2",
+        "patchify>=0.2.3",
+    ],
+
+)

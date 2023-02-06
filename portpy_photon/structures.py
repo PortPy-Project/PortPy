@@ -203,8 +203,8 @@ class Structures:
 
         kernel = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
         # creating different iterations along z and xy directions
-        num_iterations = np.int(num_voxels[0] / num_voxels[2])
-        iterations_in_one_step = np.int(np.round(num_voxels[0] / num_iterations))
+        num_iterations = int(num_voxels[0] / num_voxels[2])
+        iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
         if margin_mm > 0:
             # margin_mask_3d = ndimage.binary_dilation(mask_3d, structure=struct).astype(mask_3d.dtype)
             for i in range(num_iterations):
@@ -241,8 +241,8 @@ class Structures:
         num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
         struct = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
         # creating different iterations along z and xy directions
-        num_iterations = np.int(num_voxels[0] / num_voxels[2])
-        iterations_in_one_step = np.int(np.round(num_voxels[0] / num_iterations))
+        num_iterations = int(num_voxels[0] / num_voxels[2])
+        iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
         for i in range(num_iterations):
             if i == 0:
                 margin_mask_3d = ndimage.binary_erosion(mask_3d, structure=struct,

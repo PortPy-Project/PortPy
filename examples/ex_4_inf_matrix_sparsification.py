@@ -1,4 +1,4 @@
-import portpy as pp
+import portpy_photon as pp
 import numpy as np
 from copy import deepcopy
 
@@ -6,7 +6,7 @@ from copy import deepcopy
 def ex_4_inf_matrix_sparsification():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
-    data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
+    data_dir = r'../data'
     # display the existing patients. To display it in browser rather than console, turn on in_browser=True
     pp.Visualize.display_patients(data_dir=data_dir)
 

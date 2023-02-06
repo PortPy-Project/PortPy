@@ -1,5 +1,5 @@
 """
-    This example demonstrates performing the following tasks using portpy:
+    This example demonstrates performing the following tasks using portpy_photon:
     1- Query the existing patients in the database
         (you first need to download the patient database from the link provided in the GitHub page).
     2- Query the data provided for a specified patient in the database.
@@ -12,13 +12,13 @@
 
 """
 
-import portpy as pp
+import portpy_photon as pp
 
 
 def ex_2_down_sampling():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
-    data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
+    data_dir = r'../data'
 
     # display the existing patients
     pp.Visualize.display_patients(data_dir=data_dir)

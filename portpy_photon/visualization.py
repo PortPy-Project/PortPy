@@ -4,17 +4,17 @@ import matplotlib as mpl
 import numpy as np
 from skimage import measure
 from tabulate import tabulate
-from portpy.evaluation import Evaluation
+from portpy_photon.evaluation import Evaluation
 from matplotlib.lines import Line2D
 import os
-from portpy.utils import load_metadata
+from portpy_photon.utils import load_metadata
 import pandas as pd
 import webbrowser
 from pathlib import Path
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from portpy.plan import Plan
+    from portpy_photon.plan import Plan
 try:
     from typing import Literal
 except ImportError:
@@ -333,7 +333,7 @@ class Visualization:
         :Example:
         >>> Visualization.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'], show_isodose=False)
         """
-        fig, ax = plt.subplots(dpi=dpi)
+        fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi)
         plt.rcParams["figure.autolayout"] = True
         ct = my_plan.ct['ct_hu_3d'][0]
 
@@ -391,8 +391,8 @@ class Visualization:
 
     @staticmethod
     def get_cmap_colors(n, name='hsv'):
-        '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
-        RGB color; the keyword argument name must be a standard mpl colormap name.'''
+        """Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+        RGB color; the keyword argument name must be a standard mpl colormap name."""
         return plt.cm.get_cmap(name, n)
 
     @staticmethod
@@ -419,7 +419,7 @@ class Visualization:
         :param my_plan: object of class Plan
         :param slicer_path: slicer executable path on your local machine
         :param data_dir: the folder path where data located, defaults to None.
-                If path = None, then it assumes the data is in sub-folder named Data in the current directory
+                If path = None, then it assumes the data is in sub-folder named data in the current directory
         :return: plot the images in 3d slicer
 
         view ct, dose_1d and structure set images in 3d slicer
@@ -430,7 +430,7 @@ class Visualization:
         if slicer_path is None:
             slicer_path = r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe'
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'Data', my_plan.patient_id)
+            data_dir = os.path.join(Path(__file__).parents[1], 'data', my_plan.patient_id)
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         slicer_script_dir = os.path.join(Path(__file__).parents[0], 'utils', 'slicer_script.py')
@@ -447,7 +447,7 @@ class Visualization:
 
         :param patient_id: the patient id
         :param data_dir: the folder path where data located, defaults to None.
-                If path = None, then it assumes the data is in sub-folder named Data in the current directory
+                If path = None, then it assumes the data is in sub-folder named data in the current directory
         :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
         :raises invalid directory error: raises an exception if invalid data directory
 
@@ -456,7 +456,7 @@ class Visualization:
         """
 
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'Data')
+            data_dir = os.path.join(Path(__file__).parents[1], 'data')
             data_dir = os.path.join(data_dir, patient_id)
         else:
             data_dir = os.path.join(data_dir, patient_id)
@@ -515,10 +515,29 @@ class Visualization:
                                            style=style_file))
             webbrowser.open('file://' + os.path.realpath('temp.html'))
         else:
-            print('Beams table..')
-            print(tabulate(beams_df, headers='keys', tablefmt='psql'))  # print the table in console using tabulate
-            print('\n\nStructures table..')
-            print(tabulate(struct_df, headers='keys', tablefmt='psql'))
+            if Visualization.is_notebook():
+                from IPython.display import display
+                print('Beams table..')
+                with pd.option_context('display.max_rows', None,
+                                       'display.max_columns', None,
+                                       'display.precision', 3,
+                                       'display.colheader_justify', 'center',
+                                       ):
+                    beams_df = beams_df.style.set_properties(**{'text-align': 'center'})
+                    display(beams_df)
+                print('Structure table..')
+                with pd.option_context('display.max_rows', None,
+                                       'display.max_columns', None,
+                                       'display.precision', 3,
+                                       'display.colheader_justify', 'center',
+                                       ):
+                    struct_df = struct_df.style.set_properties(**{'text-align': 'center'})
+                    display(struct_df)
+            else:
+                print('Beams table..')
+                print(tabulate(beams_df, headers='keys', tablefmt='psql'))  # print the table in console using tabulate
+                print('\n\nStructures table..')
+                print(tabulate(struct_df, headers='keys', tablefmt='psql'))
 
     @staticmethod
     def display_patients(data_dir: str = None, in_browser: bool = False) -> None:
@@ -526,7 +545,7 @@ class Visualization:
         Displays the list of patients included in data_dir folder
 
         :param data_dir: folder including patient data.
-            If it is None, then it assumes the data is in the current directory under sub-folder named "Data"
+            If it is None, then it assumes the data is in the current directory under sub-folder named "data"
         :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
         :raises invalid directory error: raises an exception if invalid data directory.
 
@@ -535,8 +554,8 @@ class Visualization:
         """
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
-        if data_dir is None:  # if data directory not provided, then use the subfolder named "Data" in the current directory
-            data_dir = os.path.join(Path(__file__).parents[1], 'Data')
+        if data_dir is None:  # if data directory not provided, then use the subfolder named "data" in the current directory
+            data_dir = os.path.join(Path(__file__).parents[1], 'data')
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         pat_ids = os.listdir(data_dir)
@@ -574,7 +593,16 @@ class Visualization:
                     html_string.format(table=df.to_html(index=False, header=True, classes='mystyle'), style=style_file))
             webbrowser.open('file://' + os.path.realpath('temp.html'))
         else:
-            print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
+            if Visualization.is_notebook():
+                from IPython.display import display
+                with pd.option_context('display.max_rows', None,
+                                       'display.max_columns', None,
+                                       'display.precision', 3,
+                                       ):
+
+                    display(df)
+            else:
+                print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
     def plan_metrics(my_plan: Plan, sol: dict) -> None:
@@ -682,3 +710,17 @@ class Visualization:
         with open('temp.html', 'w') as f:
             f.write(html_string.format(table=html))
         webbrowser.open('file://' + os.path.realpath('temp.html'))
+
+    @staticmethod
+    def is_notebook() -> bool:
+        try:
+            from IPython import get_ipython
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return True  # Jupyter notebook or qtconsole
+            elif shell == 'TerminalInteractiveShell':
+                return False  # Terminal running IPython
+            else:
+                return False  # Other type (?)
+        except NameError:
+            return False  # Probably standard Python interpreter

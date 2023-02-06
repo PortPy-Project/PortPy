@@ -1,6 +1,6 @@
 """
 
-This example demonstrates performing the following tasks using portpy:
+This example demonstrates performing the following tasks using portpy_photon:
     1- Query the existing patients in the database
         (you first need to download the patient database from the link provided in the GitHub page).
     2- Query the data provided for a specified patient in the database.
@@ -13,13 +13,13 @@ This example demonstrates performing the following tasks using portpy:
 
 
 """
-import portpy as pp
+import portpy_photon as pp
 
 
 def ex_1_introduction():
     # specify the patient data location
     # (you first need to download the patient database from the link provided in the GitHub page)
-    data_dir = r'F:\Research\Data_newformat\Python-PORT\Data'
+    data_dir = r'../data'
     # display the existing patients. To display it in browser rather than console, turn on in_browser=True
     pp.Visualize.display_patients(data_dir=data_dir)
 
@@ -30,7 +30,7 @@ def ex_1_introduction():
     # create my_plan object for the planner beams_dict
     # for the customized beams_dict, you can pass the argument beam_ids
     # e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    my_plan = pp.Plan(patient_id)
+    # my_plan = pp.Plan(patient_id)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -41,11 +41,11 @@ def ex_1_introduction():
     # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
-    sol = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
+    # sol = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
 
     # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    pp.save_plan(my_plan, plan_name='my_plan', path=r'C:\temp')
-    pp.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
+    # pp.save_plan(my_plan, plan_name='my_plan', path=r'C:\temp')
+    # pp.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
     my_plan = pp.load_plan(path=r'C:\temp')
     sol = pp.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 

@@ -380,7 +380,7 @@ class InfluenceMatrix:
             # creating beam_map of original resolution so that mask can be multiplied with it
             beam_map = self.get_orig_res_2d_grid(ind)
             beam_map = np.multiply((beam_map + int(1)), mask)  # add and subtract one to maintain 0th beamlet
-            beam_map = beam_map - np.int(1)  # subtract one again to get original beamlets
+            beam_map = beam_map - int(1)  # subtract one again to get original beamlets
 
             # get mask and beam_map in 2.5mm resolution
             beamlet_ind = np.unique(beam_map.flatten())
@@ -427,7 +427,7 @@ class InfluenceMatrix:
             if ind == 0:
                 beam_map = std_map
             else:
-                beam_map = std_map + np.int(
+                beam_map = std_map + int(
                     np.amax(self.beamlets_dict[ind - 1]['beamlet_idx_2dgrid']) + 1) * mask_2d_grid
             standInd = np.unique(np.sort(beam_map.flatten()))
             self.beamlets_dict[ind]['beamlet_idx_2dgrid'] = beam_map
@@ -538,10 +538,10 @@ class InfluenceMatrix:
         for row in range(XX.shape[0]):
             for col in range(XX.shape[1]):
                 b_ind = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
-                # beam_map[row, col] = beamlets[ind]['id']+np.int(1)# adding one so that 0th beamlet is retained
-                beam_map[row, col] = b_ind  # + np.int(1)  # adding one so that 0th beamlet is retained
+                # beam_map[row, col] = beamlets[ind]['id']+int(1)# adding one so that 0th beamlet is retained
+                beam_map[row, col] = b_ind  # + int(1)  # adding one so that 0th beamlet is retained
         # beam_map = np.multiply(beam_map, mask)
-        # beam_map = beam_map - np.int(1)  # subtract one again to get original beamlets
+        # beam_map = beam_map - int(1)  # subtract one again to get original beamlets
         return beam_map
 
     def down_sample_voxels(self, down_sample_xyz: List[int] = None):
@@ -713,6 +713,7 @@ class InfluenceMatrix:
 
                 Displays fluence in 2d for the given beam_id
 
+                :param optimal_fluence_2d:
                 :param beam_id: beam_id of the beam
                 :param sol: solution dictionary after optimization
                 :return: 2d optimal fluence plot
@@ -725,7 +726,8 @@ class InfluenceMatrix:
             raise IndexError('invalid beam id {}'.format(beam_id))
         if sol is not None:
             optimal_fluence_2d = self.fluence_1d_to_2d(sol)
-        mat = plt.matshow(optimal_fluence_2d[ind[0]])
+        fig, ax = plt.subplots(figsize=(8, 8))
+        mat = ax.matshow(optimal_fluence_2d[ind[0]])
         plt.xlabel('x-axis (beamlets column)')
         plt.ylabel('y-axis (beamlets row)')
         plt.colorbar(mat)
@@ -734,6 +736,7 @@ class InfluenceMatrix:
         """
                 Displays fluence in 3d for the given beam_id
 
+                :param optimal_fluence_2d:
                 :param sol: solution after optimization
                 :param beam_id: beam_id of the beam
                 :return: 3d optimal fluence plot
@@ -750,7 +753,7 @@ class InfluenceMatrix:
         ax.set_zlabel('Fluence Intensity')
         ax.set_xlabel('x-axis (beamlets column)')
         ax.set_ylabel('y-axis (beamlets row)')
-        fig.colorbar(surf)
+        fig.colorbar(surf, pad=0.2)
         plt.show()
 
     @staticmethod
@@ -758,7 +761,7 @@ class InfluenceMatrix:
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
         return fig, ax, surf
