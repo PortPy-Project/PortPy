@@ -1,8 +1,30 @@
 from setuptools import setup, find_packages
 
+
+def _get_portpy_photon_version():
+    with open('portpy_photon/__init__.py') as fp:
+        for line in fp:
+            if line.startswith('__version__'):
+                g = {}
+                exec(line, g)  # pylint: disable=exec-used
+                return g['__version__']
+        raise ValueError('`__version__` not defined in `portpy_photon/__init__.py`')
+
+
+_VERSION = _get_portpy_photon_version()
+STATUSES = [
+    "1 - Planning",
+    "2 - Pre-Alpha",
+    "3 - Alpha",
+    "4 - Beta",
+    "5 - Production/Stable",
+    "6 - Mature",
+    "7 - Inactive"
+]
+
 setup(
     name='portpy-photon',
-    version="0.0.1",
+    version=_VERSION,
     url='https://github.com/PortPy-Project/PortPy-Photon',
     license='Apache License, Version 2.0',
     packages=find_packages(exclude=["examples*"]),
@@ -12,6 +34,19 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     python_requires='>=3.7',
+    classifiers=[
+        'Development Status :: 1 - Planning',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Software Development :: Libraries',
+    ],
     install_requires=[
         "cvxpy>=1.1.18",
         "ecos>=2.0.10",
