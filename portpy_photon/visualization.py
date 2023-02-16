@@ -93,11 +93,11 @@ class Visualization:
         plt.xlim(0, max_dose * 1.1)
         plt.ylim(0, 100)
         plt.legend(prop={'size': legend_font_size}, loc="upper right")
-        plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        plt.grid(visible=True, which='major', color='#666666', linestyle='-')
 
         # Show the minor grid lines with very faint and almost transparent grey lines
         plt.minorticks_on()
-        plt.grid(b=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
+        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         if norm_flag:
             x = my_plan.clinical_criteria['pres_per_fraction_gy'] * my_plan.clinical_criteria[
@@ -226,11 +226,11 @@ class Visualization:
         plt.xlim(0, max_dose * 1.1)
         plt.ylim(0, max_vol)
         plt.legend(legend, prop={'size': legend_font_size}, loc="upper right")
-        plt.grid(b=True, which='major', color='#666666', linestyle='-')
+        plt.grid(visible=True, which='major', color='#666666', linestyle='-')
 
         # Show the minor grid lines with very faint and almost transparent grey lines
         plt.minorticks_on()
-        plt.grid(b=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
+        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         # if norm_flag:
         #     x = pres * np.ones_like(y)
@@ -430,7 +430,7 @@ class Visualization:
         if slicer_path is None:
             slicer_path = r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe'
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'data', my_plan.patient_id)
+            data_dir = os.path.join('..', 'data', my_plan.patient_id)
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         slicer_script_dir = os.path.join(Path(__file__).parents[0], 'utils', 'slicer_script.py')
@@ -456,7 +456,7 @@ class Visualization:
         """
 
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'data')
+            data_dir = os.path.join('..', 'data')
             data_dir = os.path.join(data_dir, patient_id)
         else:
             data_dir = os.path.join(data_dir, patient_id)
@@ -495,7 +495,7 @@ class Visualization:
 
         # Write the results in a temporary html file in the current directory and launch a browser to display
         if in_browser:
-            style_file = os.path.join(Path(__file__).parents[1], 'df_style.css')
+            style_file = os.path.join('..', 'df_style.css')
             html_string = '''
                     <html>
                       <head><title>Portpy MetaData</title></head>
@@ -555,7 +555,7 @@ class Visualization:
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
         if data_dir is None:  # if data directory not provided, then use the subfolder named "data" in the current directory
-            data_dir = os.path.join(Path(__file__).parents[1], 'data')
+            data_dir = os.path.join('..', 'data')
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         pat_ids = os.listdir(data_dir)
@@ -577,7 +577,7 @@ class Visualization:
                     display_dict.setdefault('iso_center_shift ', []).append('Yes')
         df = pd.DataFrame.from_dict(display_dict)  # convert dictionary to dataframe
         if in_browser:
-            style_file = os.path.join(Path(__file__).parents[1], 'df_style.css')  # get style file path
+            style_file = os.path.join('..', 'df_style.css')  # get style file path
             html_string = '''
                     <html>
                       <head><title>Portpy MetaData</title></head>

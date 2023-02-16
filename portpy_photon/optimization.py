@@ -15,13 +15,17 @@ class Optimization(object):
     """
 
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy(my_plan: Plan, inf_matrix: InfluenceMatrix = None, solver: str = 'MOSEK') -> dict:
+    def run_IMRT_fluence_map_CVXPy(my_plan: Plan, inf_matrix: InfluenceMatrix = None, solver: str = 'MOSEK',
+                                   verbose: bool = True, cvxpy_options: dict = None, **opt_params) -> dict:
         """
         It runs optimization to create optimal plan based upon clinical criteria
 
         :param my_plan: object of class Plan
         :param inf_matrix: object of class InfluenceMatrix
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
+        :param verbose: Default to True. If set to False, it will not print the solver iterations.
+        :param cvxpy_options: cvxpy and the solver settings
+        :param opt_params: optimization parameters for modifying parameters of problem statement
         :return: returns the solution dictionary in format of:
             dict: {
                    'optimal_intensity': list(float),
@@ -32,6 +36,8 @@ class Optimization(object):
         >>> Optimization.run_IMRT_fluence_map_CVXPy(my_plan=my_plan, inf_matrix=inf_matrix, solver='MOSEK')
         """
 
+        if cvxpy_options is None:
+            cvxpy_options = {}
         t = time.time()
 
         # get data for optimization
@@ -85,15 +91,16 @@ class Optimization(object):
         dU = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
 
         # Form objective.
-        ptv_overdose_weight = 10000
-        ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 1000
+        ptv_overdose_weight = opt_params['ptv_overdose_weight'] if 'ptv_overdose_weight' in opt_params else 10000
+        ptv_underdose_weight = opt_params['ptv_underdose_weight'] if 'ptv_underdose_weight' in opt_params else 100000
+        smoothness_weight = opt_params['smoothness_weight'] if 'smoothness_weight' in opt_params else 10
+        total_oar_weight = opt_params['total_oar_weight'] if 'total_oar_weight' in opt_params else 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
-        total_oar_weight = 10
+
         print('Objective Start')
-        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
-                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+        obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
                        smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
@@ -136,7 +143,7 @@ class Optimization(object):
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
 
         print('Problem loaded')
-        prob.solve(solver=solver, verbose=True)
+        prob.solve(solver=solver, verbose=verbose, **cvxpy_options)
         print("optimal value with {}:{}".format(solver, prob.value))
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
@@ -147,7 +154,9 @@ class Optimization(object):
         return sol
 
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan: Plan, inf_matrix: InfluenceMatrix = None, dvh_criteria: List[dict] = None, solver='MOSEK') -> dict:
+    def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan: Plan, inf_matrix: InfluenceMatrix = None,
+                                                 dvh_criteria: List[dict] = None, solver='MOSEK',
+                                                 verbose: bool = True, cvxpy_options: dict = None, **opt_params) -> dict:
         """
         Add dvh constraints and solve the optimization for getting ground truth solution
 
@@ -155,7 +164,9 @@ class Optimization(object):
         :param my_plan: object of class Plan
         :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
         :param dvh_criteria: dvh criteria to be met in optimization. Defaults to None.
-        If None, it will optimize for all the dvh criteria in clinical criteria. If
+        If None, it will optimize for all the dvh criteria in clinical criteria.
+        :param verbose: Default to True. If set to False, it will not print the solver iterations.
+        :param cvxpy_options: cvxpy and the solver settings
         :return: save optimal solution to plan object called opt_sol
 
 
@@ -243,16 +254,16 @@ class Optimization(object):
         b = cp.Variable(len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure.to_list()])),
                         boolean=True)
         # Form objective.
-        ptv_overdose_weight = 10000
-        ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 1000
+        ptv_overdose_weight = opt_params['ptv_overdose_weight'] if 'ptv_overdose_weight' in opt_params else 10000
+        ptv_underdose_weight = opt_params['ptv_underdose_weight'] if 'ptv_underdose_weight' in opt_params else 100000
+        smoothness_weight = opt_params['smoothness_weight'] if 'smoothness_weight' in opt_params else 10
+        total_oar_weight = opt_params['total_oar_weight'] if 'total_oar_weight' in opt_params else 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
-        total_oar_weight = 10
 
         print('Objective Start')
-        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
-                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+        obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
                        smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
@@ -296,7 +307,7 @@ class Optimization(object):
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
         # Defining the constraints
         print('Problem loaded')
-        prob.solve(solver=solver, verbose=True)
+        prob.solve(solver=solver, verbose=verbose, **cvxpy_options)
         print("optimal value with {}:{}".format(solver, prob.value))
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))
@@ -307,13 +318,17 @@ class Optimization(object):
         return sol
 
     @staticmethod
-    def run_IMRT_fluence_map_CVXPy_BOO_benchmark(my_plan, inf_matrix=None, solver='MOSEK'):
+    def run_IMRT_fluence_map_CVXPy_BOO_benchmark(my_plan, inf_matrix=None, num_beams: int = 7, solver: str = 'MOSEK',
+                                                 verbose: bool = True, cvxpy_options: dict = None, **opt_params):
         """
         Creates MIP problem for selecting optimal beam angles
 
         :param inf_matrix: object of class InfluenceMatrix
         :param my_plan: object of class Plan
-        :param solver: default solver 'MOSEK'. check cvxpy website for available solvers
+        :param solver: default solver 'MOSEK'. check cvxpy website for available solvers.
+        :param num_beams: Default to 7. Numbers of beams to be selected from the pool of beams
+        :param verbose: Default to True. If set to False, it will not print the solver iterations.
+        :param cvxpy_options: cvxpy and the solver settings
         :return: save optimal solution to plan object called opt_sol
 
 
@@ -374,17 +389,16 @@ class Optimization(object):
         b = cp.Variable(len(inf_matrix.beamlets_dict), boolean=True)
 
         # Form objective.
-        ptv_overdose_weight = 10000
-        ptv_underdose_weight = 10  # number of times of the ptv overdose weight
-        smoothness_weight = 1000
+        ptv_overdose_weight = opt_params['ptv_overdose_weight'] if 'ptv_overdose_weight' in opt_params else 10000
+        ptv_underdose_weight = opt_params['ptv_underdose_weight'] if 'ptv_underdose_weight' in opt_params else 100000
+        smoothness_weight = opt_params['smoothness_weight'] if 'smoothness_weight' in opt_params else 10
+        total_oar_weight = opt_params['total_oar_weight'] if 'total_oar_weight' in opt_params else 10
         smoothness_X_weight = 0.6
         smoothness_Y_weight = 0.4
-        num_beams = 7  # maximum number of beams to select
-        total_oar_weight = 10
 
         print('Objective Start')
-        obj = [ptv_overdose_weight * (1 / len(st.get_opt_voxels_idx('PTV'))) * (
-                cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
+        obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
+                ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
                        smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
@@ -415,7 +429,7 @@ class Optimization(object):
         for i in range(len(inf_matrix.beamlets_dict)):
             start_beamlet = inf_matrix.beamlets_dict[i]['start_beamlet']
             end_beamlet = inf_matrix.beamlets_dict[i]['end_beamlet']
-            M = 1000  # upper bound on the beamlet intensity
+            M = 40  # upper bound on the beamlet intensity
             constraints += [x[start_beamlet:end_beamlet] <= b[i] * M]
 
         # Step 1 and 2 constraint
@@ -427,7 +441,7 @@ class Optimization(object):
         prob = cp.Problem(cp.Minimize(sum(obj)), constraints)
         # Defining the constraints
         print('Problem loaded')
-        prob.solve(solver=solver, verbose=True)
+        prob.solve(solver=solver, verbose=verbose, **cvxpy_options)
         print("optimal value with {}:{}".format(solver, prob.value))
         elapsed = time.time() - t
         print('Elapsed time {} seconds'.format(elapsed))

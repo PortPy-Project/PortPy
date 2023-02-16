@@ -21,7 +21,7 @@ def ex_6_boo_benchmark():
     # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
     # creating plan and select among the beams which are 30 degrees apart
     # beam_ids = [0, 37, 42, 48, 54, 60, 66]
-    beam_ids = [0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66]
+    beam_ids = [0, 6, 12, 18, 24, 30, 37, 42, 48, 54, 60, 66]
     plan_boo = pp.Plan(patient_id, beam_ids=beam_ids)
 
     # create a influence matrix down sampled beamlets of width and height 5mm
@@ -47,7 +47,7 @@ def ex_6_boo_benchmark():
 
     # Comment/Uncomment these lines to save & load plan and optimal solutions
     # plan_boo = pp.load_plan(plan_name='plan_boo', path=r'C:\temp')
-    # sol_boo = pp.load_optimal_sol('sol_boo', path=r'C:\temp')
+    # sol_boo = pp.load_optimal_sol('sol_boo_w_sm_10', path=r'C:\temp')
     # plan_planner = pp.load_plan(plan_name='plan_planner', path=r'C:\temp')
     # sol_planner = pp.load_optimal_sol('sol_planner', path=r'C:\temp')
     pp.save_plan(plan_boo, plan_name='plan_boo', path=r'C:\temp')
@@ -60,9 +60,10 @@ def ex_6_boo_benchmark():
                                                             opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
     sol_planner = pp.Optimize.run_IMRT_fluence_map_CVXPy(plan_planner, inf_matrix=inf_matrix_planner_dbv)
 
-    # plan_planner.save_plan(plan_name='plan_planner', path=r'C:\temp')
-    plan_planner.save_optimal_sol(sol_planner, sol_name='sol_planner', path=r'C:\temp')
-    plan_boo.save_optimal_sol(sol_boo, sol_name='sol_planner', path=r'C:\temp')
+    # Comment/Uncomment these lines to save & load plan and optimal solutions
+    # plan_planner.save_plan(plan_name='plan_planner_no_sm', path=r'C:\temp')
+    # plan_planner.save_optimal_sol(sol_planner, sol_name='sol_planner_no_sm', path=r'C:\temp')
+    # sol_planner = pp.load_optimal_sol(sol_name='sol_planner_w_sm_10', path=r'C:\temp')
 
     # Identifying bao and planner gantry angles
     bao_gantry_angles = (np.asarray(plan_boo.beams.beams_dict['gantry_angle']) + 1) * (sol_boo['optimal_beams'] > 0)

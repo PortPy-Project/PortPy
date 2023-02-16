@@ -88,18 +88,15 @@ def ex_2_down_sampling():
 
     # To know the cost of down sampling beamlets, lets compare the dvh of down sampled beamlets with original
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_db, structs=structs, style='dotted', create_fig=False)
-
-    # To get the discrepancy due to down sampling beamlets
     sol_db_new = pp.sol_change_inf_matrix(sol_db, inf_matrix=sol_orig['inf_matrix'])
-    pp.Visualize.plot_dvh(my_plan, sol=sol_db_new, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_db, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_db_new, structs=structs, style='dotted', create_fig=False)
 
     # Similarly to analyze the cost of down sampling voxels, lets compare the dvh of down sampled voxels with original
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    sol_dv_new = pp.sol_change_inf_matrix(sol_dv, inf_matrix=sol_orig['inf_matrix'])
     pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_dv, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dv_new, structs=structs, style='dotted', create_fig=False)
 
     # To get the discrepancy due to down sampling voxels
     sol_dv_new = pp.sol_change_inf_matrix(sol_dv, inf_matrix=sol_orig['inf_matrix'])
@@ -108,11 +105,11 @@ def ex_2_down_sampling():
 
     # Now let us plot dvh for analyzing the combined cost of down-sampling beamlets and voxels
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    sol_dbv_new = pp.sol_change_inf_matrix(sol_dbv, inf_matrix=sol_orig['inf_matrix'])
     pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_dbv, structs=structs, style='dotted', create_fig=False)
+    pp.Visualize.plot_dvh(my_plan, sol=sol_dbv_new, structs=structs, style='dotted', create_fig=False)
 
     # Similarly let us plot dvh for analyzing the combined discrepancy of down-sampling beamlets and voxels
-    sol_dbv_new = pp.sol_change_inf_matrix(sol_dbv, inf_matrix=sol_orig['inf_matrix'])
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     pp.Visualize.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', show=False)
     pp.Visualize.plot_dvh(my_plan, sol=sol_dbv_new, structs=structs, style='dotted', create_fig=False)

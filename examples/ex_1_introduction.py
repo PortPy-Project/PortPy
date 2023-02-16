@@ -30,7 +30,7 @@ def ex_1_introduction():
     # create my_plan object for the planner beams_dict
     # for the customized beams_dict, you can pass the argument beam_ids
     # e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    # my_plan = pp.Plan(patient_id)
+    my_plan = pp.Plan(patient_id)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -41,13 +41,13 @@ def ex_1_introduction():
     # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
-    # sol = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
+    sol = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK', ptv_underdose_weight=10000)
 
     # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    # pp.save_plan(my_plan, plan_name='my_plan', path=r'C:\temp')
-    # pp.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
-    my_plan = pp.load_plan(path=r'C:\temp')
-    sol = pp.load_optimal_sol(sol_name='sol', path=r'C:\temp')
+    pp.save_plan(my_plan, plan_name='my_plan', path=r'C:\temp')
+    pp.save_optimal_sol(sol, sol_name='sol', path=r'C:\temp')
+    # my_plan = pp.load_plan(path=r'C:\temp')
+    # sol = pp.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 
     # plot fluence 3d and 2d
     pp.Visualize.plot_fluence_3d(sol=sol, beam_id=0)

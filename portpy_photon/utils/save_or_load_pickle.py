@@ -21,7 +21,7 @@ def save_plan(my_plan: Plan, plan_name: str = None, path: str = None) -> None:
     >>> my_plan.save_plan(plan_name='my_plan', path=r"path/to/save_plan")
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
+        path = os.getcwd()
     elif not os.path.exists(path):
         os.makedirs(path)
 
@@ -44,9 +44,7 @@ def load_plan(plan_name: str = None, path: str = None):
     >>> load_plan(plan_name='my_plan', path=r"path/for/loading_plan")
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
-    elif not os.path.exists(path):
-        os.makedirs(path)
+        path = os.getcwd()
 
     if plan_name is None:
         plan_name = 'my_plan'
@@ -68,7 +66,7 @@ def load_optimal_sol(sol_name: str, path: str = None) -> dict:
     >>> sol = load_optimal_sol(sol_name='sol', path=r'path/for/loading_sol')
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
+        path = os.getcwd()
 
     with open(os.path.join(path, sol_name), 'rb') as pickle_file:
         sol = pickle.load(pickle_file)
@@ -88,7 +86,7 @@ def save_optimal_sol(sol: dict, sol_name: str, path: str = None) -> None:
     >>> save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
+        path = os.getcwd()
     elif not os.path.exists(path):
         os.makedirs(path)
     with open(os.path.join(path, sol_name), 'wb') as pickle_file:
@@ -109,7 +107,7 @@ def save_inf_matrix(inf_matrix, inf_name: str = None, path: str = None) -> None:
     >>> save_inf_matrix(inf_matrix=inf_matrix, inf_name='inf_matrix', path=r"path/to/save_inf_matrix")
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
+        path = os.getcwd()
     elif not os.path.exists(path):
         os.makedirs(path)
 
@@ -132,9 +130,7 @@ def load_inf_matrix(inf_name: str = None, path: str = None):
     >>> load_plan(plan_name='my_plan', path=r"path/for/loading_inf_matrix")
     """
     if path is None:
-        path = os.path.join(Path(__file__).parents[2])
-    elif not os.path.exists(path):
-        os.makedirs(path)
+        path = os.getcwd()
 
     if inf_name is None:
         inf_name = 'inf_matrix'
