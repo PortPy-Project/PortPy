@@ -3,7 +3,7 @@
 </p>
 
 # What is PortPy?
-**Note: The package is at its early stages of development (version 0.xx) and we are now collecting feedback from reserachers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around March 2023. We would love to hear your feedback.**
+**Note: The package is at its early stages of development (version 0.0.3) and we are now collecting feedback from reserachers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around March 2023. We would love to hear your feedback.**
 
 PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop the **first opensource python library** to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code for *benchmarking*, *reproducibility*, and *community-driven* development.
@@ -15,14 +15,23 @@ Data needed for optimization and algorithm development (e.g., a set of beams/bea
 
 You can download the sample patient data [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing).
 
-Create a directory named 'Data' in the current project directory and copy the downloaded file to it, e.g ./Data/Lung_Patient_1
+Create a directory named './data' in the current project directory and copy the downloaded file to it, e.g ./data/Lung_Patient_1
 
 
 # Installing PortPy
 
+1. Installing using pip
+  ```bash
+  pip install portpy-photon
+  ```
+2. Installing using conda
+  ```bash
+  conda install -c conda-forge portpy-photon
+  ```
+3. Installing from source
 - Clone this repository:
   ```bash
-  git clone https://github.com/PortPy-Project/PortPy.git
+  git clone https://github.com/PortPy-Project/PortPy-Photon.git
   cd portpy_photon
   ```
 

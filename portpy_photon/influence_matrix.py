@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import itertools
 from patchify import patchify
-from typing import List
+from typing import List, Union
 
 
 class InfluenceMatrix:
@@ -85,6 +85,7 @@ class InfluenceMatrix:
             self.beamlets_dict[i]['beam_id'] = plan_obj.beams.beams_dict['ID'][i]  # save beam_id in beamlet_dict
 
         self.opt_beamlets_PTV_margin_mm = plan_obj.opt_beamlets_PTV_margin_mm
+        self.opt_voxels_dict['ct_origin_xyz_mm'] = plan_obj.ct['origin_xyz_mm']  # store ct origin from plan
         print('Creating BEV..')
         self.preprocess_beams(plan_obj, structure=structure)
         if self.down_sample_xyz is not None:
@@ -104,10 +105,45 @@ class InfluenceMatrix:
         print('Done')
 
     def get_voxel_info(self, row_number):
-        pass
+        row_dict = {}
+        if row_number <= self.A.shape[0]:
+            for i in range(len(self.opt_voxels_dict['name'])):
+                if row_number in list(self.opt_voxels_dict['voxel_idx'][i]):
+                    row_dict.setdefault('structures', []).append(self.opt_voxels_dict['name'][i])
 
-    def get_beamlet_info(self, col_number):
-        pass
+            patch = np.where(self.opt_voxels_dict['ct_to_dose_voxel_map'][0] == row_number)  # get dose voxel index patch
+
+            # get center of patch. It should be equivalent dose voxel center
+            z_ind = (min(patch[0]) + max(patch[0]))/2
+            y_ind = (min(patch[1]) + max(patch[1])) / 2
+            x_ind = (min(patch[2]) + max(patch[2])) / 2
+            ct_res = self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']
+            ct_orig = self.opt_voxels_dict['ct_origin_xyz_mm']
+            xyz_mm = [ct_orig[0] + x_ind*ct_res[0], ct_orig[1] + y_ind*ct_res[1], ct_orig[2] + z_ind*ct_res[2]]
+            row_dict['position_xyz_mm'] = xyz_mm
+        else:
+            raise ValueError('invalid row number {}'.format(row_number))
+        return row_dict
+
+    def get_beamlet_info(self, col_number: int) -> dict:
+        """
+
+        :param col_number: col number/beamlet number in influence matrix
+        :return: dictionary containing information about the beamlet
+        """
+        col_dict = {}
+        for ind in range(len(self.beamlets_dict)):
+            if col_number in range(self.beamlets_dict[ind]['start_beamlet'], self.beamlets_dict[ind]['end_beamlet'] + 1):
+                if ind > 0:
+                    prev_beam_beamlet = self.beamlets_dict[ind-1]['end_beamlet'] + 1
+                else:
+                    prev_beam_beamlet = 0
+                col_dict['beam_id'] = self.beamlets_dict[ind]['beam_id']
+                col_dict['position_x_mm'] = self.beamlets_dict[ind]['position_x_mm'][0][col_number - prev_beam_beamlet]
+                col_dict['position_y_mm'] = self.beamlets_dict[ind]['position_y_mm'][0][col_number - prev_beam_beamlet]
+                col_dict['width_mm'] = self.beamlets_dict[ind]['width_mm'][0][col_number - prev_beam_beamlet]
+                col_dict['height_mm'] = self.beamlets_dict[ind]['height_mm'][0][col_number - prev_beam_beamlet]
+        return col_dict
 
     def dose_1d_to_3d(self, sol: dict = None, dose_1d: np.array = None) -> np.ndarray:
         """
@@ -282,7 +318,7 @@ class InfluenceMatrix:
                     else:
                         if self.down_sample_xyz is None:
                             inf_matrix = np.hstack([inf_matrix, inf_matrix_full[ind][:, opt_beamlets]])
-                
+
                 # down sampling voxels
             if 'influenceMatrixFull' in plan.beams.beams_dict:
                 del plan.beams.beams_dict['influenceMatrixFull']
@@ -544,6 +580,86 @@ class InfluenceMatrix:
         # beam_map = beam_map - int(1)  # subtract one again to get original beamlets
         return beam_map
 
+    def get_bev_2d_grid_in_orig_res(self, ind: int = None, beam_id: Union[int, List[int]] = None) -> Union[np.ndarray, List[np.ndarray]]:
+
+        """
+        get BEV in 2d grid in original resolution where beamlet index is the column number in influence matrix
+
+        :param ind: idx of the beam in beamlets_dict.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :param beam_id: beam_id of the beam.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :return: ndarray/List[ndarray]
+        """
+
+        if beam_id is not None:
+            ind = []
+            if isinstance(beam_id, int):
+                ind = [i for i in range(len(self.beamlets_dict)) if
+                       self.beamlets_dict[i]['beam_id'] == beam_id]
+
+            elif isinstance(beam_id, list):
+                for idx in beam_id:
+                    try:
+                        ind_1 = [i for i in range(len(self.beamlets_dict)) if
+                                 self.beamlets_dict[i]['beam_id'] == idx][0]
+                        ind.append(ind_1)
+                    except:
+                        raise ValueError("invalid beam id {}".format(idx))
+
+        beam_orig = []
+        for b in ind:
+            beam_map = self.beamlets_dict[b]['beamlet_idx_2dgrid']
+
+            rowsNoRepeat = [0]
+            for i in range(1, np.size(beam_map, 0)):
+                if (beam_map[i, :] != beam_map[rowsNoRepeat[-1], :]).any():
+                    rowsNoRepeat.append(i)
+            colsNoRepeat = [0]
+            for j in range(1, np.size(beam_map, 1)):
+                if (beam_map[:, j] != beam_map[:, colsNoRepeat[-1]]).any():
+                    colsNoRepeat.append(j)
+            beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
+            beam_orig.append(beam_map)
+        if len(beam_orig) == 1:
+            beam_orig = beam_orig[0]  # return ndarray in case if it is not list
+
+        return beam_orig
+
+    def get_bev_2d_grid(self, ind: int = None, beam_id: Union[int, List[int]] = None) -> Union[np.ndarray, List[np.ndarray]]:
+        """
+        get BEV in 2d grid in finest resolution where beamlet index is the column number in influence matrix
+
+        :param ind: idx of the beam in beamlets_dict.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :param beam_id: beam_id of the beam.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :return: ndarray/List[ndarray]
+        """
+        if beam_id is not None:
+            ind = []
+            if isinstance(beam_id, int):
+                ind = [i for i in range(len(self.beamlets_dict)) if
+                       self.beamlets_dict[i]['beam_id'] == beam_id]
+
+            elif isinstance(beam_id, list):
+                for idx in beam_id:
+                    try:
+                        ind_1 = [i for i in range(len(self.beamlets_dict)) if
+                                 self.beamlets_dict[i]['beam_id'] == idx][0]
+                        ind.append(ind_1)
+                    except:
+                        raise ValueError("invalid beam id {}".format(idx))
+
+        beam_orig = []
+        for b in ind:
+            beam_map = self.beamlets_dict[b]['beamlet_idx_2dgrid']
+            beam_orig.append(beam_map)
+        if len(beam_orig) == 1:
+            beam_orig = beam_orig[0]  # return ndarray in case if it is not list
+
+        return beam_orig
+
     def down_sample_voxels(self, down_sample_xyz: List[int] = None):
         """
         This method creates new ct to dose_1d voxel map array based on down sampled voxels.
@@ -653,7 +769,8 @@ class InfluenceMatrix:
                 # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
                 vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
                 self.opt_voxels_dict['voxel_idx'][ind] = vox
-                self.opt_voxels_dict['voxel_size'][ind] = counts * np.prod(plan_obj.get_ct_res_xyz_mm())  # calculate weight for each voxel
+                self.opt_voxels_dict['voxel_size'][ind] = counts * np.prod(
+                    plan_obj.get_ct_res_xyz_mm())  # calculate weight for each voxel
                 # self.opt_voxels_dict['voxel_size'][ind] = counts / np.max(counts)  # calculate weight for each voxel
 
     @staticmethod
@@ -684,7 +801,8 @@ class InfluenceMatrix:
         vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
         self.opt_voxels_dict['voxel_idx'].append(vox)
         # self.opt_voxels_dict['voxel_size'].append(counts / np.max(counts))  # calculate weight for each voxel
-        self.opt_voxels_dict['voxel_size'].append(counts * np.prod(plan_obj.get_ct_res_xyz_mm()))  # calculate weight for each voxel
+        self.opt_voxels_dict['voxel_size'].append(
+            counts * np.prod(plan_obj.get_ct_res_xyz_mm()))  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(structure_name)
 
     def get_opt_voxels_idx(self, structure_name: str) -> np.ndarray:

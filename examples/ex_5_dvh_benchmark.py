@@ -44,7 +44,8 @@ def ex_5_dvh_benchmark():
     eso_dvh = my_plan.clinical_criteria.create_criterion(criterion='dose_volume_V',
                                                          parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
                                                          constraints={'limit_volume_perc': 17})
-    sol_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=sol_no_dvh['inf_matrix'], dvh_criteria=eso_dvh)
+    sol_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=sol_no_dvh['inf_matrix'],
+                                                                   dvh_criteria=eso_dvh)
 
     # Comment/Uncomment these lines to save & load plan and optimal solutions
     # my_plan.save_plan(path=r'C:\temp')

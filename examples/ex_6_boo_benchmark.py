@@ -30,8 +30,8 @@ def ex_6_boo_benchmark():
     beamlet_down_sample_factor = 2
     beamlet_width_mm = plan_boo.inf_matrix.beamlet_width_mm * beamlet_down_sample_factor
     beamlet_height_mm = plan_boo.inf_matrix.beamlet_height_mm * beamlet_down_sample_factor
-    inf_matrix_dbv = plan_boo.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
-                                                opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
+    # inf_matrix_dbv = plan_boo.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
+    #                                             opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
@@ -43,7 +43,10 @@ def ex_6_boo_benchmark():
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     # beam angle and fluence map optimization with downscaled influence matrix
-    sol_boo = pp.Optimize.run_IMRT_fluence_map_CVXPy_BOO_benchmark(plan_boo, inf_matrix=inf_matrix_dbv)
+    sol_boo = pp.load_optimal_sol('sol_boo_w_sm_10', path=r'C:\temp')
+    inf_matrix_dbv = sol_boo['inf_matrix']
+    sol_boo = pp.Optimize.run_IMRT_fluence_map_CVXPy_BOO_benchmark(plan_boo, inf_matrix=inf_matrix_dbv,
+                                                                   ptv_overdose_weight=1000, ptv_underdose_weight=10000)
 
     # Comment/Uncomment these lines to save & load plan and optimal solutions
     # plan_boo = pp.load_plan(plan_name='plan_boo', path=r'C:\temp')

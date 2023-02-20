@@ -60,9 +60,12 @@ def ex_2_down_sampling():
     # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol_orig = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, solver='MOSEK')
-    sol_db = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_db)  # optimize using downsampled beamlets
-    sol_dv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dv)  # optimize using downsampled voxels
-    sol_dbv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)  # optimize using downsampled beamlets and voxels
+    sol_db = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan,
+                                                    inf_matrix=inf_matrix_db)  # optimize using downsampled beamlets
+    sol_dv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan,
+                                                    inf_matrix=inf_matrix_dv)  # optimize using downsampled voxels
+    sol_dbv = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan,
+                                                     inf_matrix=inf_matrix_dbv)  # optimize using downsampled beamlets and voxels
 
     # # Comment/Uncomment these lines to save & load plan and optimal solutions
     my_plan.save_plan(path=r'C:\temp')

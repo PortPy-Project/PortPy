@@ -33,11 +33,12 @@ class Optimization(object):
                    'inf_matrix': Pointer to object of InfluenceMatrix }
                   }
         :Example:
-        >>> Optimization.run_IMRT_fluence_map_CVXPy(my_plan=my_plan, inf_matrix=inf_matrix, solver='MOSEK')
+        >>> Optimization.run_IMRT_fluence_map_CVXPy(my_plan=my_plan,inf_matrix=inf_matrix,solver='MOSEK')
         """
 
         if cvxpy_options is None:
-            cvxpy_options = {}
+            cvxpy_options = dict()
+
         t = time.time()
 
         # get data for optimization
@@ -155,7 +156,7 @@ class Optimization(object):
 
     @staticmethod
     def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan: Plan, inf_matrix: InfluenceMatrix = None,
-                                                 dvh_criteria: List[dict] = None, solver='MOSEK',
+                                                 dvh_criteria: List[dict] = None, solver: str = 'MOSEK',
                                                  verbose: bool = True, cvxpy_options: dict = None, **opt_params) -> dict:
         """
         Add dvh constraints and solve the optimization for getting ground truth solution
@@ -171,6 +172,8 @@ class Optimization(object):
 
 
         """
+        if cvxpy_options is None:
+            cvxpy_options = dict()
         t = time.time()
 
         # get data for optimization
@@ -333,6 +336,8 @@ class Optimization(object):
 
 
         """
+        if cvxpy_options is None:
+            cvxpy_options = dict()
         t = time.time()
 
         # get data for optimization
