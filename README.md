@@ -3,7 +3,7 @@
 </p>
 
 # What is PortPy?
-**Note: The package is at its early stages of development (version 0.0.3) and we are now collecting feedback from reserachers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around March 2023. We would love to hear your feedback.**
+**Note: The package is at its early stages of development (version 0.0.3) and we are now collecting feedback from researchers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around March 2023. We would love to hear your feedback.**
 
 PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop the **first opensource python library** to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code for *benchmarking*, *reproducibility*, and *community-driven* development.
