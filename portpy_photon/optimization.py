@@ -54,8 +54,7 @@ class Optimization(object):
 
         # create and add rind constraints
         rinds = ['RIND_0', 'RIND_1', 'RIND_2', 'RIND_3', 'RIND_4']
-        if rinds[0] not in my_plan.structures.structures_dict[
-            'name']:  # check if rind is already created. If yes, skip rind creation
+        if rinds[0] not in my_plan.structures.structures_dict['name']:  # check if rind is already created. If yes, skip rind creation
             Optimization.create_rinds(my_plan, size_mm=[5, 5, 20, 30, 500])
             Optimization.set_rinds_opt_voxel_idx(my_plan,
                                                  inf_matrix=inf_matrix)  # rind_0 is 5mm after PTV, rind_2 is 5 mm after rind_1, and so on..
@@ -82,7 +81,8 @@ class Optimization(object):
         elif cc_dict['disease_site'] == 'Lung':
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
+            if 'HEART' in st.opt_voxels_dict['name']:
+                oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
@@ -103,7 +103,8 @@ class Optimization(object):
         obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+                       smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (
+                           1 / num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
@@ -127,17 +128,9 @@ class Optimization(object):
                                     (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
                                                                                       :] @ x)))) <= limit / num_fractions]
 
-        # Step 1 and 2 constraint
+        # Step 1 and 2 constraints
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
-
-        # Smoothness Constraint
-        # for b in range(len(my_plan.beams_dict.beams_dict['ID'])):
-        #     startB = my_plan.beams_dict.beams_dict['start_beamlet'][b]
-        #     endB = my_plan.beams_dict.beams_dict['end_beamlet'][b]
-        #     constraints += [0.6 * cp.sum_squares(
-        #         Qx[startB:endB, startB:endB] @ x[startB:endB]) + 0.4 * cp.sum_squares(
-        #         Qy[startB:endB, startB:endB] @ x[startB:endB]) <= 0.5]
 
         print('Constraints Done')
 
@@ -157,7 +150,8 @@ class Optimization(object):
     @staticmethod
     def run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan: Plan, inf_matrix: InfluenceMatrix = None,
                                                  dvh_criteria: List[dict] = None, solver: str = 'MOSEK',
-                                                 verbose: bool = True, cvxpy_options: dict = None, **opt_params) -> dict:
+                                                 verbose: bool = True, cvxpy_options: dict = None,
+                                                 **opt_params) -> dict:
         """
         Add dvh constraints and solve the optimization for getting ground truth solution
 
@@ -217,11 +211,12 @@ class Optimization(object):
         elif cc_dict['disease_site'] == 'Lung':
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
+            if 'HEART' in st.opt_voxels_dict['name']:
+                oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
-        # get volume constraint in V(Gy) <= v% format
+        # get volume constraints in V(Gy) <= v% format
         import pandas as pd
         df_dvh_criteria = pd.DataFrame()
         count = 0
@@ -253,9 +248,10 @@ class Optimization(object):
         dO = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
         dU = cp.Variable(len(st.get_opt_voxels_idx('PTV')), pos=True)
 
-        # binary variable for dvh constraint
-        b = cp.Variable(len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure.to_list()])),
-                        boolean=True)
+        # binary variable for dvh constraints
+        b = cp.Variable(
+            len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure.to_list()])),
+            boolean=True)
         # Form objective.
         ptv_overdose_weight = opt_params['ptv_overdose_weight'] if 'ptv_overdose_weight' in opt_params else 10000
         ptv_underdose_weight = opt_params['ptv_underdose_weight'] if 'ptv_underdose_weight' in opt_params else 100000
@@ -268,7 +264,8 @@ class Optimization(object):
         obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+                       smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (
+                           1 / num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
@@ -293,15 +290,16 @@ class Optimization(object):
                                                                                       :] @ x)))) <= limit / num_fractions]
         start = 0
         for i in range(len(df_dvh_criteria)):
-            struct, limit, v, M = df_dvh_criteria.loc[i, 'structure'], df_dvh_criteria.loc[i, 'dose_gy'], df_dvh_criteria.loc[i, 'vol_perc'], df_dvh_criteria.loc[i, 'M']
+            struct, limit, v, M = df_dvh_criteria.loc[i, 'structure'], df_dvh_criteria.loc[i, 'dose_gy'], \
+                                  df_dvh_criteria.loc[i, 'vol_perc'], df_dvh_criteria.loc[i, 'M']
             end = start + len(st.get_opt_voxels_idx(struct))
             frac = my_plan.structures.get_fraction_of_vol_in_calc_box(struct)
-            constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b * M / num_fractions]
+            constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= limit / num_fractions + b[start:end] * M / num_fractions]
             constraints += [b @ st.get_opt_voxels_size(struct) <= (v / frac) / 100 * sum(
                 st.get_opt_voxels_size(struct))]
             start = end
 
-        # Step 1 and 2 constraint
+        # Step 1 and 2 constraints
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 
@@ -381,7 +379,8 @@ class Optimization(object):
         elif cc_dict['disease_site'] == 'Lung':
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('CORD')))] = 10
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('ESOPHAGUS')))] = 20
-            oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
+            if 'HEART' in st.opt_voxels_dict['name']:
+                oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('HEART')))] = 20
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_0')))] = 3
             oar_weights[np.where(np.isin(oar_voxels, st.get_opt_voxels_idx('RIND_1')))] = 3
 
@@ -405,7 +404,8 @@ class Optimization(object):
         obj = [(1 / len(st.get_opt_voxels_idx('PTV'))) * (
                 ptv_overdose_weight * cp.sum_squares(dO) + ptv_underdose_weight * cp.sum_squares(dU)),
                smoothness_weight * (
-                       smoothness_X_weight * (1/num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (1/num_rows) * cp.sum_squares(Qy @ x)),
+                       smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) + smoothness_Y_weight * (
+                           1 / num_rows) * cp.sum_squares(Qy @ x)),
                total_oar_weight * (1 / A[oar_voxels, :].shape[0]) * cp.sum_squares(
                    cp.multiply(cp.sqrt(oar_weights), A[oar_voxels, :] @ x))]
 
@@ -437,7 +437,7 @@ class Optimization(object):
             M = 40  # upper bound on the beamlet intensity
             constraints += [x[start_beamlet:end_beamlet] <= b[i] * M]
 
-        # Step 1 and 2 constraint
+        # Step 1 and 2 constraints
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x <= pres + dO]
         constraints += [A[st.get_opt_voxels_idx('PTV'), :] @ x >= pres - dU]
 

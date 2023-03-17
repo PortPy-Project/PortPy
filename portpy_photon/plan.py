@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List
-
+import json
 from portpy_photon.utils import *
 from portpy_photon.beam import Beams
 from portpy_photon.structures import Structures
@@ -9,7 +9,8 @@ from portpy_photon.clinical_criteria import ClinicalCriteria
 from portpy_photon.influence_matrix import InfluenceMatrix
 from portpy_photon.visualization import Visualization
 from portpy_photon.optimization import Optimization
-from pathlib import Path
+
+
 # from typing import Dict, List, Optional, Union
 # from functools import wraps
 
@@ -51,7 +52,8 @@ class Plan:
     """
 
     def __init__(self, patient_id: str, data_dir: str = None, beam_ids: List[int] = None,
-                 opt_beamlets_PTV_margin_mm: int = 3, load_inf_matrix_full: bool = False) -> None:
+                 opt_beamlets_PTV_margin_mm: int = 3, load_inf_matrix_full: bool = False,
+                 protocol_name='Lung_Default_2Gy_30Fr', protocol_type='Default') -> None:
         """
         Creates an object of Plan class for the specified patient
 
@@ -71,15 +73,12 @@ class Plan:
         """
 
         if data_dir is None:
-            data_dir = os.path.join(Path(__file__).parents[1], 'data')
+            data_dir = os.path.join('..', 'data')
         patient_folder_path = os.path.join(data_dir, patient_id)
 
-        # read all the meta data for the specified patient
+        # read all the meta data for the specified patient and protocol
         meta_data = load_metadata(patient_folder_path)
 
-        # options for loading requested data
-        # if 1 then load the data. if 0 then skip loading the data
-        # meta_data = my_plan.load_options(options=options, meta_data=meta_data)
         # filter metadata for the given beam_indices.
         # The meta_data originally includes all the beams_dict.  get_plan_beams only keeps the requested beams_dict
         meta_data = self.get_plan_beams(beam_ids=beam_ids, meta_data=meta_data)
@@ -225,6 +224,13 @@ class Plan:
         """
         return self.clinical_criteria.clinical_criteria_dict['num_of_fractions']
 
+    def get_disease_site(self) -> float:
+        """
+
+        :return: number of fractions to be delivered
+        """
+        return self.clinical_criteria.clinical_criteria_dict['disease_site']
+
     def get_ct_res_xyz_mm(self) -> List[float]:
         """
 
@@ -262,25 +268,76 @@ class Plan:
     def run_IMRT_fluence_map_CVXPy(self, inf_matrix: InfluenceMatrix = None, solver='MOSEK'):
         Optimization.run_IMRT_fluence_map_CVXPy(self, inf_matrix=inf_matrix, solver=solver)
 
+    def add_rinds(self, rind_params: List[dict], inf_matrix=None):
+        """
+        Example for
+        rind_params = [{'rind_name': 'RIND_0', 'ref_structure': 'PTV, 'margin_start_mm': 2, 'margin_end_mm': 10, 'max_dose_gy': 10}]
+
+        :param rind_params: rind_params as dictionary
+        :param inf_matrix: object of class inf_matrix
+        :return: save rinds to plan object
+        """
+
+        if inf_matrix is None:
+            inf_matrix = self.inf_matrix
+        print('creating rinds..')
+
+        ct_to_dose_map = inf_matrix.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+        dose_mask = ct_to_dose_map >= 0
+        dose_mask = dose_mask.astype(int)
+        self.structures.create_structure('dose_mask', dose_mask)
+
+        for ind, param in enumerate(rind_params):
+            rind_name = param['rind_name']
+            first_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_start_mm'])
+            second_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_end_mm'])
+            self.structures.expand(param['ref_structure'], margin_mm=param['margin_start_mm'],
+                                   new_structure=first_dummy_name)
+            if param['margin_end_mm'] == 'inf':
+                param['margin_end_mm'] = 500
+            self.structures.expand(param['ref_structure'], margin_mm=param['margin_end_mm'],
+                                   new_structure=second_dummy_name)
+            self.structures.subtract(second_dummy_name, first_dummy_name, str1_sub_str2=rind_name)
+            self.structures.delete_structure(first_dummy_name)
+            self.structures.delete_structure(second_dummy_name)
+            self.structures.intersect(rind_name, 'dose_mask', str1_and_str2=rind_name)
+        self.structures.delete_structure('dose_mask')
+
+        print('rinds created!!')
+
+        for param in rind_params:
+            inf_matrix.set_opt_voxel_idx(self, structure_name=param['rind_name'])
+            # add rind constraint
+            parameters = {'structure_name': param['rind_name']}
+            # total_pres = self.get_prescription()
+            if 'max_dose_gy' in param:
+                constraints = {'limit_dose_gy': param['max_dose_gy']}
+                self.clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
+                                                     constraints=constraints)
+            if 'mean_dose_gy' in param:
+                constraints = {'limit_dose_gy': param['mean_dose_gy']}
+                self.clinical_criteria.add_criterion(criterion='mean_dose', parameters=parameters,
+                                                     constraints=constraints)
+
     @staticmethod
-    def plot_fluence_2d(beam_id: int, sol: dict = None):
+    def plot_fluence_2d(beam_id: int, sol: dict = None, **options):
         """
         plot fluence in 2d for beam_id
         :param beam_id: beam_id of the beam
         :param sol: solution dictionary after optimization
         :return: 2d optimal fluence plot
         """
-        Visualization.plot_fluence_2d(beam_id=beam_id, sol=sol)
+        return Visualization.plot_fluence_2d(beam_id=beam_id, sol=sol, **options)
 
     @staticmethod
-    def plot_fluence_3d(beam_id: int, sol: dict = None):
+    def plot_fluence_3d(beam_id: int, sol: dict = None, **options):
         """
         plot fluence in 3d for beam_id
         :param sol: solution after optimization
         :param beam_id: beam_id of the beam
         :return: 3d optimal fluence plot
         """
-        Visualization.plot_fluence_3d(beam_id=beam_id, sol=sol)
+        return Visualization.plot_fluence_3d(beam_id=beam_id, sol=sol, **options)
 
     def save_nrrd(self, sol: dict, data_dir: str = None):
         """

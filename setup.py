@@ -29,7 +29,7 @@ setup(
     license='Apache License, Version 2.0',
     packages=find_packages(exclude=["examples*"]),
     author='Gourav Jhanwar, Mojtaba Tefagh, Vicki Taasti, Seppo Tuomaala, Saad Nadeem, Masoud Zarepisheh',
-    author_email="jhanwarg@mskcc.org, mtefagh@acm.org, vicki.taasti@maastro.nl, tuomaals@mskcc.org, nadeems@mskcc.org, zarepism@mskcc.org",
+    author_email="jhanwarg@mskcc.struct, mtefagh@acm.struct, vicki.taasti@maastro.nl, tuomaals@mskcc.struct, nadeems@mskcc.struct, zarepism@mskcc.struct",
     description='First open-source radiation treatment planning system in Python',
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",

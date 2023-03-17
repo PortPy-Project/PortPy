@@ -7,7 +7,7 @@ from tabulate import tabulate
 from portpy_photon.evaluation import Evaluation
 from matplotlib.lines import Line2D
 import os
-from portpy_photon.utils import load_metadata
+from portpy_photon.utils import load_metadata, view_in_slicer_jupyter
 import pandas as pd
 import webbrowser
 from pathlib import Path
@@ -48,7 +48,7 @@ class Visualization:
             structs = my_plan.structures.structures_dict['name']
         max_dose = 0.0
         all_orgs = my_plan.structures.structures_dict['name']
-        # orgs = [org.upper for org in orgs]
+        # orgs = [struct.upper for struct in orgs]
         pres = my_plan.clinical_criteria['pres_per_fraction_gy'] * my_plan.clinical_criteria[
             'num_of_fractions']
         legend = []
@@ -160,9 +160,10 @@ class Visualization:
         figsize = options['figsize'] if 'figsize' in options else (12, 8)
         title = options['title'] if 'title' in options else None
         filename = options['filename'] if 'filename' in options else None
-        show = options['show'] if 'show' in options else True
-        create_fig = options['create_fig'] if 'create_fig' in options else True
+        show = options['show'] if 'show' in options else False
+        # create_fig = options['create_fig'] if 'create_fig' in options else False
         show_criteria = options['show_criteria'] if 'show_criteria' in options else None
+        ax = options['ax'] if 'ax' in options else None
 
         # getting norm options
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
@@ -183,11 +184,12 @@ class Visualization:
         max_dose = 0.0
         max_vol = 0.0
         all_orgs = my_plan.structures.structures_dict['name']
-        # orgs = [org.upper for org in orgs]
+        # orgs = [struct.upper for struct in orgs]
         pres = my_plan.get_prescription()
         legend = []
-        if create_fig:
-            plt.figure(figsize=figsize)
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
         if norm_flag:
             norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
@@ -199,20 +201,20 @@ class Visualization:
             x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
             if dose_scale == 'Absolute(Gy)':
                 max_dose = np.maximum(max_dose, x[-1])
-                plt.xlabel('Dose (Gy)')
+                ax.set_xlabel('Dose (Gy)')
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                plt.xlabel('Dose (%)')
+                ax.set_xlabel('Dose (%)')
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
                 max_vol = np.maximum(max_vol, y[1] * 100)
-                plt.ylabel('Volume (cc)')
+                ax.set_ylabel('Volume (cc)')
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                plt.ylabel('Volume Fraction (%)')
-            plt.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[i])
+                ax.set_ylabel('Volume Fraction (%)')
+            ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[i])
             legend.append(all_orgs[i])
 
         if show_criteria is not None:
@@ -220,16 +222,17 @@ class Visualization:
                 if 'dose_volume' in show_criteria[s]['name']:
                     x = show_criteria[s]['parameters']['dose_gy']
                     y = show_criteria[s]['constraints']['limit_volume_perc']
-                    plt.plot(x, y, marker='x', color='red', markersize=20)
+                    ax.plot(x, y, marker='x', color='red', markersize=20)
         # plt.xlabel('Dose (Gy)')
         # plt.ylabel('Volume Fraction (%)')
-        plt.xlim(0, max_dose * 1.1)
-        plt.ylim(0, max_vol)
-        plt.legend(legend, prop={'size': legend_font_size}, loc="upper right")
-        plt.grid(visible=True, which='major', color='#666666', linestyle='-')
+        ax.set_xlim(0, max_dose * 1.1)
+        ax.set_ylim(0, max_vol)
+        ax.legend(legend, prop={'size': legend_font_size}, loc="upper right")
+        ax.grid(visible=True, which='major', color='#666666', linestyle='-')
 
         # Show the minor grid lines with very faint and almost transparent grey lines
-        plt.minorticks_on()
+        # plt.minorticks_on()
+        ax.minorticks_on()
         plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         # if norm_flag:
@@ -240,13 +243,14 @@ class Visualization:
         else:
             x = 100 * np.ones_like(y)
 
-        plt.plot(x, y, color='black')
+        ax.plot(x, y, color='black')
         if title:
-            plt.title(title)
+            ax.set_title(title)
         if show:
             plt.show()
         if filename is not None:
             plt.savefig(filename, bbox_inches="tight", dpi=300)
+        return ax
 
     @staticmethod
     def plot_binary_mask_points(my_plan, structure: str, show: bool = True, color: List[str] = None):
@@ -267,24 +271,24 @@ class Visualization:
 
         :return: return list of 20 colors
         """
-        colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4',
+        colors = ['#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4',
                   '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
                   '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
-                  '#000075', '#808080', '#ffffff', '#000000']
+                  '#000075', '#808080', '#ffffff', '#000000', '#e6194b']
         return colors
 
     @staticmethod
-    def surface_plot(matrix: np.ndarray, **kwargs) -> None:
+    def surface_plot(matrix: np.ndarray, **kwargs):
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
-        return fig, ax, surf
+        return ax, surf
 
     @staticmethod
-    def plot_fluence_2d(beam_id: int, sol: dict) -> None:
+    def plot_fluence_2d(beam_id: int, sol: dict, **options):
         """
 
         Displays fluence in 2d for the given beam_id
@@ -294,12 +298,12 @@ class Visualization:
         :return: 2d optimal fluence plot
 
         :Example:
-        >>> Visualization.plot_fluence_2d(beam_id=0, sol=sol)
+        >>> Visualization.plot_fluence_2d(beam_id=0, sol=sol, **options)
         """
-        sol['inf_matrix'].plot_fluence_2d(beam_id=beam_id, sol=sol)
+        return sol['inf_matrix'].plot_fluence_2d(beam_id=beam_id, sol=sol, **options)
 
     @staticmethod
-    def plot_fluence_3d(beam_id: int, sol: dict) -> None:
+    def plot_fluence_3d(beam_id: int, sol: dict, **options):
         """
         Displays fluence in 3d for the given beam_id
 
@@ -308,14 +312,14 @@ class Visualization:
         :return: 3d optimal fluence plot
 
         :Example:
-        >>> Visualization.plot_fluence_3d(beam_id=0, sol=sol)
+        >>> Visualization.plot_fluence_3d(beam_id=0, sol=sol, **options)
         """
-        sol['inf_matrix'].plot_fluence_3d(beam_id=beam_id, sol=sol)
+        return sol['inf_matrix'].plot_fluence_3d(beam_id=beam_id, sol=sol, **options)
 
     @staticmethod
     def plot_2d_dose(my_plan: Plan, sol: dict, slice_num: int = 40, structs: List[str] = None, show_dose: bool = True,
-                     show_struct: bool = True, show_isodose: bool = True,
-                     dpi: int = 100) -> None:
+                     show_struct: bool = True, show_isodose: bool = False,
+                     **options) -> None:
         """
 
         Plot 2d view of ct, dose_1d, isodose and structure contours
@@ -333,12 +337,22 @@ class Visualization:
         :Example:
         >>> Visualization.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=['PTV'], show_isodose=False)
         """
-        fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi)
+
+        # getting options_fig:
+        figsize = options['figsize'] if 'figsize' in options else (8, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        dpi = options['dpi'] if 'dpi' in options else 100
+        show = options['show'] if 'show' in options else False
+        ax = options['ax'] if 'ax' in options else None
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.rcParams["figure.autolayout"] = True
         ct = my_plan.ct['ct_hu_3d'][0]
 
         # adjust the main plot to make room for the legends
-        fig.subplots_adjust(left=0.2)
+        plt.subplots_adjust(left=0.2)
         dose_3d = []
         if show_dose:
             dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']*my_plan.get_num_of_fractions()
@@ -348,7 +362,7 @@ class Visualization:
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
                            cmap='rainbow')
 
-            plt.colorbar(im)
+            plt.colorbar(im, ax=ax, pad=0.1)
 
         if show_isodose:
             if not show_dose:
@@ -366,7 +380,10 @@ class Visualization:
                                         label=dose_legend['dose_1d name'][item]))
             ax.add_artist(ax.legend(handles=dose_list,
                                     bbox_to_anchor=(1.15, 1), loc='upper left', borderaxespad=0.))
-        ax.set_title('Axial View - Slice #: {}'.format(slice_num))
+        if title is not None:
+            ax.set_title('{}: Axial View - Slice #: {}'.format(title, slice_num))
+        else:
+            ax.set_title('Axial View - Slice #: {}'.format(slice_num))
 
         if show_struct:
             if structs is None:
@@ -379,15 +396,19 @@ class Visualization:
                 cmap = mpl.colors.ListedColormap(colors[i])
                 contours = measure.find_contours(struct_masks[ind][slice_num, :, :], 0.5)
                 for contour in contours:
-                    plt.plot(contour[:, 1], contour[:, 0], linewidth=2, color=colors[i])
+                    ax.plot(contour[:, 1], contour[:, 0], linewidth=2, color=colors[i])
             labels = [struct for struct in structs]
             # get the colors of the values, according to the
             import matplotlib.patches as mpatches
             patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
             # rax.labels = labels
-            fig.legend(handles=patches, bbox_to_anchor=(0.1, 0.8), loc=2, borderaxespad=0.,
-                       bbox_transform=fig.transFigure)
-        plt.show()
+            ax.legend(handles=patches, bbox_to_anchor=(0.1, 0.8), loc=2, borderaxespad=0.)
+                       # bbox_transform=fig.transFigure)
+        if show:
+            plt.show()
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
+        return ax
 
     @staticmethod
     def get_cmap_colors(n, name='hsv'):
@@ -440,8 +461,34 @@ class Visualization:
         print('Done')
 
     @staticmethod
+    def view_in_slicer_jupyter(my_plan: Plan, dose_1d: np.ndarray = None, sol: dict = None,
+                               ct_name: str = 'ct', dose_name: str = 'dose', struct_set_name: str = 'rt_struct',
+                               show_ct: bool = True,
+                               show_dose: bool = True,
+                               show_structs: bool = True):
+        """
+        This method helps to visualize CT, Dose and Rt struct in 3d slicer
+
+
+        :param my_plan: object of class plan
+        :param dose_1d: dose in 1d
+        :param sol: solution dictionary
+        :param ct_name: Default to 'ct'. name of the ct node in 3D slicer
+        :param dose_name: Default to 'dose'. name of the dose node in 3D slicer
+        :param struct_set_name: name of the rtstruct
+        :param show_structs: default to True. If false, will not create structure node
+        :param show_dose: default to True. If false, will not create dose node
+        :param show_ct:default to True. If false, will not create ct node
+        :return: visualize in slicer jupyter
+        """
+        view_in_slicer_jupyter.view_in_slicer_jupyter(my_plan, dose_1d=dose_1d, sol=sol, ct_name=ct_name, dose_name=dose_name,
+                                                      struct_set_name=struct_set_name, show_ct=show_ct, show_dose=show_dose,
+                                                      show_structs=show_structs)
+
+    @staticmethod
     def display_patient_metadata(patient_id: str, data_dir: str = None,
-                                 in_browser: bool = False) -> None:
+                                 in_browser: bool = False, return_beams_df: bool = False,
+                                 return_structs_df: bool = False):
         """Displays the patient information in console or html format. If in_browswer is enabled
         it creates a temporary html file and lnunches your browser
 
@@ -449,6 +496,8 @@ class Visualization:
         :param data_dir: the folder path where data located, defaults to None.
                 If path = None, then it assumes the data is in sub-folder named data in the current directory
         :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
+        :param return_beams_df: return dataframe containing beams metadata
+        :param return_structs_df: return dataframe containing structures metadata
         :raises invalid directory error: raises an exception if invalid data directory
 
         :Example:
@@ -493,6 +542,12 @@ class Visualization:
         keep_columns = ['name', 'volume_cc']  # discard the columns except this columns
         struct_df = struct_df[keep_columns]
 
+        if return_beams_df and return_structs_df:
+            return beams_df, struct_df
+        elif return_beams_df:
+            return beams_df
+        elif return_structs_df:
+            return struct_df
         # Write the results in a temporary html file in the current directory and launch a browser to display
         if in_browser:
             style_file = os.path.join('..', 'df_style.css')
@@ -540,13 +595,14 @@ class Visualization:
                 print(tabulate(struct_df, headers='keys', tablefmt='psql'))
 
     @staticmethod
-    def display_patients(data_dir: str = None, in_browser: bool = False) -> None:
+    def display_patients(data_dir: str = None, in_browser: bool = False, return_df: bool = False):
         """
         Displays the list of patients included in data_dir folder
 
         :param data_dir: folder including patient data.
             If it is None, then it assumes the data is in the current directory under sub-folder named "data"
         :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
+        :param return_df: return dataframe instead of visualization
         :raises invalid directory error: raises an exception if invalid data directory.
 
         :return display patient information in table
@@ -576,6 +632,8 @@ class Visualization:
                 else:
                     display_dict.setdefault('iso_center_shift ', []).append('Yes')
         df = pd.DataFrame.from_dict(display_dict)  # convert dictionary to dataframe
+        if return_df:
+            return df
         if in_browser:
             style_file = os.path.join('..', 'df_style.css')  # get style file path
             html_string = '''
@@ -605,7 +663,7 @@ class Visualization:
                 print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
-    def plan_metrics(my_plan: Plan, sol: dict) -> None:
+    def plan_metrics(my_plan: Plan, sol: dict, html_file_name='temp.html', return_df: bool = False):
         """
         Visualize the plan metrics for clinical criteria in browser.
         It evaluate the plan by comparing the metrics against required criteria.
@@ -613,9 +671,11 @@ class Visualization:
         If plan value is green color. It meets all the Limits and Goals
         If plan value is yellow color. It meets limits but not goals
         If plan value is red color. It violates both limit and goals
-
+ 
         :param my_plan: object of class Plan
         :param sol: optimal solution dictionary
+        :param html_file_name:  name of the html file to be launched in browser
+        :param return_df: return df instead of visualization
         :return: plan metrics in browser
         """
 
@@ -626,33 +686,39 @@ class Visualization:
         for ind in range(len(df)):  # Loop through the clinical criteria
             if df.name[ind] == 'max_dose':
                 struct = df.parameters[ind]['structure_name']
-                max_dose = Evaluation.get_max_dose(sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
-                if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
-                    df.at[ind, 'Plan Value'] = max_dose
-                elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
-                    df.at[ind, 'Plan Value'] = max_dose / (
-                            my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
+                if struct in my_plan.structures.get_structures():
+                    max_dose = Evaluation.get_max_dose(sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
+                    if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
+                        df.at[ind, 'Plan Value'] = max_dose
+                    elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
+                        df.at[ind, 'Plan Value'] = max_dose / (
+                                my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
             if df.name[ind] == 'mean_dose':
                 struct = df.parameters[ind]['structure_name']
-                mean_dose = Evaluation.get_mean_dose(sol, dose_1d=dose_1d, struct=struct)
-                df.at[ind, 'Plan Value'] = mean_dose
+                if struct in my_plan.structures.get_structures():
+                    mean_dose = Evaluation.get_mean_dose(sol, dose_1d=dose_1d, struct=struct)
+                    df.at[ind, 'Plan Value'] = mean_dose
             if df.name[ind] == 'dose_volume_V':
                 struct = df.parameters[ind]['structure_name']
-                if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
-                    dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
-                    df.at[ind, 'Plan Value'] = volume
-                elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
-                    dose = df.parameters[ind]['dose_gy']
-                    volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
-                    vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
-                    df.at[ind, 'Plan Value'] = vol_cc
+                if struct in my_plan.structures.get_structures():
+                    if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
+                        dose = df.parameters[ind]['dose_gy']
+                        volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                        df.at[ind, 'Plan Value'] = volume
+                    elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
+                        dose = df.parameters[ind]['dose_gy']
+                        volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                        vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
+                        df.at[ind, 'Plan Value'] = vol_cc
+        pd.set_option("display.precision", 3)
+        df.dropna(axis=0, inplace=True)  # remove structures which are not present
+        df.reset_index(drop=True, inplace=True)  # reset the index
 
         def color_plan_value(row):
 
             highlight_red = 'background-color: red;'
             highlight_green = 'background-color: green;'
-            highlight_yellow = 'background-color: yellow;'
+            highlight_orange = 'background-color: orange;'
             default = ''
 
             def matching_keys(dictionary, search_string):  # method to find the key of only part of the key match
@@ -677,39 +743,52 @@ class Visualization:
             row_color = [default, default]  # default color for all rows initially
             # must return one string per cell in this row
             if limit_key in row['constraints']:
-                if row['Plan Value'] > row['constraints'][limit_key]:
-                    row_color = [highlight_red, default]  # make plan value in red
-                else:
-                    row_color = [highlight_green, default]
+                if not (pd.isnull(row['Plan Value'])):
+                    if row['Plan Value'] > row['constraints'][limit_key] + 0.0001:  # added epsilon to avoid minor differences
+                        row_color = [highlight_red, default]  # make plan value in red
+                    else:
+                        row_color = [highlight_green, default]
             if goal_key in row['constraints']:
-                if row['Plan Value'] > row['constraints'][goal_key]:
-                    row_color = [highlight_yellow, default]
-                else:
-                    row_color = [highlight_green, default]
+                if not (pd.isnull(row['Plan Value'])):
+                    if row['Plan Value'] > row['constraints'][goal_key] + 0.0001:
+                        row_color = [highlight_orange, default]
+                    else:
+                        row_color = [highlight_green, default]
             return row_color
 
         styled_df = df.style.apply(color_plan_value, subset=['Plan Value', 'constraints'], axis=1)  # apply
         # color to dataframe using df.style method
-        html = styled_df.render()  # render to html
-        html_string = '''
-                        <html>
-                          <head><title>Portpy Clinical Criteria Evaluation</title></head>
-                          <style> 
-                            table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}
-                            th, td {{padding: 5px;}}
-                          </style>
-                          <body>
-                          <h1> Clinical Criteria</h1>
-                          <h4 style="color: green">Meets limit and goal</h4>
-                          <h4 style="color: yellow">Meets limit but not goal</h4>
-                          <h4 style="color: red">Violate both limit and goal</h4>
-                            {table}
-                          </body>
-                        </html>.
-                        '''
-        with open('temp.html', 'w') as f:
-            f.write(html_string.format(table=html))
-        webbrowser.open('file://' + os.path.realpath('temp.html'))
+        if return_df:
+            return styled_df
+        if Visualization.is_notebook():
+            from IPython.display import display
+            with pd.option_context('display.max_rows', None,
+                                   'display.max_columns', None,
+                                   'display.precision', 3,
+                                   ):
+
+                display(styled_df)
+        else:
+            html = styled_df.render()  # render to html
+            html_string = '''
+                            <html>
+                              <head><title>Portpy Clinical Criteria Evaluation</title></head>
+                              <style> 
+                                table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}
+                                th, td {{padding: 5px;}}
+                              </style>
+                              <body>
+                              <h1> Clinical Criteria</h1>
+                              <h4 style="color: green">Meets limit and goal</h4>
+                              <h4 style="color: orange">Meets limit but not goal</h4>
+                              <h4 style="color: red">Violate both limit and goal</h4>
+                                {table}
+                              </body>
+                            </html>.
+                            '''
+            with open(html_file_name, 'w') as f:
+                f.write(html_string.format(table=html))
+            webbrowser.open('file://' + os.path.realpath(html_file_name))
 
     @staticmethod
     def is_notebook() -> bool:
@@ -721,6 +800,11 @@ class Visualization:
             elif shell == 'TerminalInteractiveShell':
                 return False  # Terminal running IPython
             else:
-                return False  # Other type (?)
+                if 'google.colab' in str(get_ipython()):
+                    return True
+                else:
+                    return False  # Other type (?)
         except NameError:
+            return False  # Probably standard Python interpreter
+        except:
             return False  # Probably standard Python interpreter

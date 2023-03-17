@@ -116,6 +116,9 @@ class Beams:
         beamlets = self.beams_dict['beamlets'][0]
         return beamlets['height_mm'][0][0][0]
 
+    def get_all_beam_ids(self) -> List[int]:
+        return self.beams_dict['ID']
+
     def create_beamlet_idx_2d_grid(self, beam_id: int) -> np.ndarray:
         """
         Create 2d grid for the beamlets where each element is 2.5mm*2.5mm for the given beam id from x and y coordinates of beamlets.

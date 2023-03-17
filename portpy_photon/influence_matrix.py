@@ -111,15 +111,16 @@ class InfluenceMatrix:
                 if row_number in list(self.opt_voxels_dict['voxel_idx'][i]):
                     row_dict.setdefault('structures', []).append(self.opt_voxels_dict['name'][i])
 
-            patch = np.where(self.opt_voxels_dict['ct_to_dose_voxel_map'][0] == row_number)  # get dose voxel index patch
+            patch = np.where(
+                self.opt_voxels_dict['ct_to_dose_voxel_map'][0] == row_number)  # get dose voxel index patch
 
             # get center of patch. It should be equivalent dose voxel center
-            z_ind = (min(patch[0]) + max(patch[0]))/2
+            z_ind = (min(patch[0]) + max(patch[0])) / 2
             y_ind = (min(patch[1]) + max(patch[1])) / 2
             x_ind = (min(patch[2]) + max(patch[2])) / 2
             ct_res = self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']
             ct_orig = self.opt_voxels_dict['ct_origin_xyz_mm']
-            xyz_mm = [ct_orig[0] + x_ind*ct_res[0], ct_orig[1] + y_ind*ct_res[1], ct_orig[2] + z_ind*ct_res[2]]
+            xyz_mm = [ct_orig[0] + x_ind * ct_res[0], ct_orig[1] + y_ind * ct_res[1], ct_orig[2] + z_ind * ct_res[2]]
             row_dict['position_xyz_mm'] = xyz_mm
         else:
             raise ValueError('invalid row number {}'.format(row_number))
@@ -133,9 +134,10 @@ class InfluenceMatrix:
         """
         col_dict = {}
         for ind in range(len(self.beamlets_dict)):
-            if col_number in range(self.beamlets_dict[ind]['start_beamlet'], self.beamlets_dict[ind]['end_beamlet'] + 1):
+            if col_number in range(self.beamlets_dict[ind]['start_beamlet'],
+                                   self.beamlets_dict[ind]['end_beamlet'] + 1):
                 if ind > 0:
-                    prev_beam_beamlet = self.beamlets_dict[ind-1]['end_beamlet'] + 1
+                    prev_beam_beamlet = self.beamlets_dict[ind - 1]['end_beamlet'] + 1
                 else:
                     prev_beam_beamlet = 0
                 col_dict['beam_id'] = self.beamlets_dict[ind]['beam_id']
@@ -162,7 +164,7 @@ class InfluenceMatrix:
                 dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']  # multiply it with num fractions
             else:
                 dose_1d = sol['dose_1d']
-        dose_3d = np.zeros_like(dose_vox_map, dtype=float)
+        dose_3d = np.zeros_like(dose_vox_map, dtype='float32')
         inds = np.unique(dose_vox_map[dose_vox_map >= 0])
         a = np.where(np.isin(dose_vox_map, inds))
         dose_3d[a] = dose_1d[dose_vox_map[a]]
@@ -205,7 +207,7 @@ class InfluenceMatrix:
                         fluence_1d[curr] = fluence_2d[ind][r, c]
         return fluence_1d
 
-    def fluence_1d_to_2d(self, sol: dict = None, fluence_1d: np.array = None) -> List[np.ndarray]:
+    def fluence_1d_to_2d(self, fluence_1d: np.array = None, sol: dict = None) -> List[np.ndarray]:
         """
         Create 2d fluence maps from vector of intensities.
 
@@ -580,7 +582,8 @@ class InfluenceMatrix:
         # beam_map = beam_map - int(1)  # subtract one again to get original beamlets
         return beam_map
 
-    def get_bev_2d_grid_in_orig_res(self, ind: int = None, beam_id: Union[int, List[int]] = None) -> Union[np.ndarray, List[np.ndarray]]:
+    def get_bev_2d_grid(self, beam_id: Union[int, List[int]] = None, ind: int = None,
+                        finest_grid: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
 
         """
         get BEV in 2d grid in original resolution where beamlet index is the column number in influence matrix
@@ -589,6 +592,7 @@ class InfluenceMatrix:
         It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
         :param beam_id: beam_id of the beam.
         It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :param finest_grid:Default to False. If set to true, it will return 2d grid in finest resolution
         :return: ndarray/List[ndarray]
         """
 
@@ -597,7 +601,8 @@ class InfluenceMatrix:
             if isinstance(beam_id, int):
                 ind = [i for i in range(len(self.beamlets_dict)) if
                        self.beamlets_dict[i]['beam_id'] == beam_id]
-
+                if not ind:
+                    raise ValueError("invalid beam id {}".format(beam_id))
             elif isinstance(beam_id, list):
                 for idx in beam_id:
                     try:
@@ -606,54 +611,22 @@ class InfluenceMatrix:
                         ind.append(ind_1)
                     except:
                         raise ValueError("invalid beam id {}".format(idx))
-
+        # Bug fix. in case ind is int make it as list
+        if isinstance(ind, int):
+            ind = [ind]
         beam_orig = []
         for b in ind:
             beam_map = self.beamlets_dict[b]['beamlet_idx_2dgrid']
-
-            rowsNoRepeat = [0]
-            for i in range(1, np.size(beam_map, 0)):
-                if (beam_map[i, :] != beam_map[rowsNoRepeat[-1], :]).any():
-                    rowsNoRepeat.append(i)
-            colsNoRepeat = [0]
-            for j in range(1, np.size(beam_map, 1)):
-                if (beam_map[:, j] != beam_map[:, colsNoRepeat[-1]]).any():
-                    colsNoRepeat.append(j)
-            beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
-            beam_orig.append(beam_map)
-        if len(beam_orig) == 1:
-            beam_orig = beam_orig[0]  # return ndarray in case if it is not list
-
-        return beam_orig
-
-    def get_bev_2d_grid(self, ind: int = None, beam_id: Union[int, List[int]] = None) -> Union[np.ndarray, List[np.ndarray]]:
-        """
-        get BEV in 2d grid in finest resolution where beamlet index is the column number in influence matrix
-
-        :param ind: idx of the beam in beamlets_dict.
-        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
-        :param beam_id: beam_id of the beam.
-        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
-        :return: ndarray/List[ndarray]
-        """
-        if beam_id is not None:
-            ind = []
-            if isinstance(beam_id, int):
-                ind = [i for i in range(len(self.beamlets_dict)) if
-                       self.beamlets_dict[i]['beam_id'] == beam_id]
-
-            elif isinstance(beam_id, list):
-                for idx in beam_id:
-                    try:
-                        ind_1 = [i for i in range(len(self.beamlets_dict)) if
-                                 self.beamlets_dict[i]['beam_id'] == idx][0]
-                        ind.append(ind_1)
-                    except:
-                        raise ValueError("invalid beam id {}".format(idx))
-
-        beam_orig = []
-        for b in ind:
-            beam_map = self.beamlets_dict[b]['beamlet_idx_2dgrid']
+            if not finest_grid:
+                rowsNoRepeat = [0]
+                for i in range(1, np.size(beam_map, 0)):
+                    if (beam_map[i, :] != beam_map[rowsNoRepeat[-1], :]).any():
+                        rowsNoRepeat.append(i)
+                colsNoRepeat = [0]
+                for j in range(1, np.size(beam_map, 1)):
+                    if (beam_map[:, j] != beam_map[:, colsNoRepeat[-1]]).any():
+                        colsNoRepeat.append(j)
+                beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
             beam_orig.append(beam_map)
         if len(beam_orig) == 1:
             beam_orig = beam_orig[0]  # return ndarray in case if it is not list
@@ -826,7 +799,11 @@ class InfluenceMatrix:
         # vox_ind = np.where(my_plan.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
         return vox_weights
 
-    def plot_fluence_2d(self, beam_id: int, optimal_fluence_2d: List[np.ndarray] = None, sol: dict = None) -> None:
+    def get_all_beam_ids(self) -> List[int]:
+        ids = [self.beamlets_dict[i]['beam_id'] for i in range(len(self.beamlets_dict))]
+        return ids
+
+    def plot_fluence_2d(self, beam_id: int, optimal_fluence_2d: List[np.ndarray] = None, sol: dict = None, **options) -> None:
         """
 
                 Displays fluence in 2d for the given beam_id
@@ -839,18 +816,34 @@ class InfluenceMatrix:
                 :Example:
                 >>> Visualization.plot_fluence_2d(beam_id=0, sol=sol)
                 """
+        # getting options_fig:
+        figsize = options['figsize'] if 'figsize' in options else (8, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        show = options['show'] if 'show' in options else False
+        ax = options['ax'] if 'ax' in options else None
+
         ind = [i for i in range(len(self.beamlets_dict)) if self.beamlets_dict[i]['beam_id'] == beam_id]
         if len(ind) == 0:
             raise IndexError('invalid beam id {}'.format(beam_id))
         if sol is not None:
-            optimal_fluence_2d = self.fluence_1d_to_2d(sol)
-        fig, ax = plt.subplots(figsize=(8, 8))
-        mat = ax.matshow(optimal_fluence_2d[ind[0]])
-        plt.xlabel('x-axis (beamlets column)')
-        plt.ylabel('y-axis (beamlets row)')
-        plt.colorbar(mat)
+            optimal_fluence_2d = self.fluence_1d_to_2d(sol=sol)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
 
-    def plot_fluence_3d(self, beam_id: int, optimal_fluence_2d: List[np.ndarray] = None, sol: dict = None) -> None:
+        mat = ax.matshow(optimal_fluence_2d[ind[0]])
+        ax.set_xlabel('x-axis (beamlets column)')
+        ax.set_ylabel('y-axis (beamlets row)')
+        plt.colorbar(mat)
+        if title is not None:
+            ax.set_title('{}'.format(title))
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
+        if show:
+            plt.show()
+        return ax
+
+    def plot_fluence_3d(self, beam_id: int, optimal_fluence_2d: List[np.ndarray] = None, sol: dict = None, **options) -> None:
         """
                 Displays fluence in 3d for the given beam_id
 
@@ -862,24 +855,41 @@ class InfluenceMatrix:
                 :Example:
                 >>> Visualization.plot_fluence_3d(beam_id=0, sol=sol)
                 """
+
+        # getting options_fig:
+        figsize = options['figsize'] if 'figsize' in options else (8, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        show = options['show'] if 'show' in options else False
+        ax = options['ax'] if 'ax' in options else None
+
         ind = [i for i in range(len(self.beamlets_dict)) if self.beamlets_dict[i]['beam_id'] == beam_id]
         if len(ind) == 0:
             raise IndexError('invalid beam id {}'.format(beam_id))
         if sol is not None:
-            optimal_fluence_2d = self.fluence_1d_to_2d(sol)
-        (fig, ax, surf) = InfluenceMatrix.surface_plot(optimal_fluence_2d[ind[0]], cmap='viridis', edgecolor='black')
+            optimal_fluence_2d = self.fluence_1d_to_2d(sol=sol)
+        (ax, surf) = InfluenceMatrix.surface_plot(optimal_fluence_2d[ind[0]], ax=ax, figsize=figsize,
+                                                       cmap='viridis', edgecolor='black')
+        plt.colorbar(surf, ax=ax, pad=0.2)
         ax.set_zlabel('Fluence Intensity')
         ax.set_xlabel('x-axis (beamlets column)')
         ax.set_ylabel('y-axis (beamlets row)')
-        fig.colorbar(surf, pad=0.2)
-        plt.show()
+
+        if title is not None:
+            ax.set_title('{}'.format(title))
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
+        if show:
+            plt.show()
+        return ax
 
     @staticmethod
-    def surface_plot(matrix, **kwargs):
+    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-        fig = plt.figure(figsize=(8, 8))
-        ax = fig.add_subplot(111, projection='3d')
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
         surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
-        return fig, ax, surf
+        return ax, surf

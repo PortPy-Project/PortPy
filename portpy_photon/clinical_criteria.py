@@ -1,3 +1,6 @@
+from typing import List
+
+
 class ClinicalCriteria:
     """
     A class representing clinical criteria.
@@ -38,7 +41,7 @@ class ClinicalCriteria:
 
         :param criterion: criterion name. e.g. max_dose
         :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
-        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
         :return: add the criteria to clinical criteria dictionary
 
         """
@@ -54,7 +57,7 @@ class ClinicalCriteria:
 
         :param criterion: criterion name. e.g. max_dose
         :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
-        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
         :return: add the criteria to clinical criteria dictionary
 
         """
@@ -74,7 +77,7 @@ class ClinicalCriteria:
 
         :param criterion: criterion name. e.g. max_dose
         :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
-        :param constraints: constraint dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
+        :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
         :return: add the criteria to clinical criteria dictionary
 
         """
@@ -82,3 +85,25 @@ class ClinicalCriteria:
         criterion = [{'name': criterion, 'parameters': parameters, 'constraints': constraints}]
         return criterion
 
+    def get_criteria(self, name: str = None) -> List[dict]:
+        """
+        Returns all the clinical criteria
+        :return:
+        """
+        all_criteria = []
+        if name is None:
+            all_criteria = self.clinical_criteria_dict['criteria']
+        elif name == 'max_dose':
+            criteria = self.clinical_criteria_dict['criteria']
+            ind = [i for i in range(len(criteria)) if criteria[i]['name'] == name]
+            if len(ind) > 0:
+                all_criteria = [criteria[i] for i in ind]
+        elif name == 'mean_dose':
+            criteria = self.clinical_criteria_dict['criteria']
+            ind = [i for i in range(len(criteria)) if criteria[i]['name'] == name]
+            if len(ind) > 0:
+                all_criteria = [criteria[i] for i in ind]
+
+        if isinstance(all_criteria, dict):
+            all_criteria = [all_criteria]
+        return all_criteria

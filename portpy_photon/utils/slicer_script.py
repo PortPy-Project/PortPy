@@ -1,7 +1,6 @@
 import sys
 import os
 
-
 print(sys.argv[1])
 print(sys.argv[2])
 img_dir = sys.argv[1]

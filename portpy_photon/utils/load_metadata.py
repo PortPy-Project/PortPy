@@ -1,6 +1,7 @@
 import json
 import os
 from natsort import natsorted
+from pathlib import Path
 
 
 def list_to_dict(json_data):
@@ -102,3 +103,24 @@ def load_metadata(pat_dir: str) -> dict:
 
     meta_data['patient_folder_path'] = pat_dir
     return meta_data
+
+
+def load_config_planner_metadata(patient_id):
+    # load planner_plan config metadata
+    fname = os.path.join(Path(__file__).parents[2], 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
+    # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
+    # Opening JSON file
+    f = open(fname)
+    planner_metadata = json.load(f)
+    return planner_metadata
+
+
+def load_config_clinical_criteria(protocol_type, protocol_name):
+    # load planner_plan config metadata
+    fname = os.path.join(Path(__file__).parents[2], 'config_files', 'clinical_criteria',
+                         protocol_type, protocol_name + '.json')
+    # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
+    # Opening JSON file
+    f = open(fname)
+    metadata = json.load(f)
+    return metadata

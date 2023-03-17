@@ -42,6 +42,13 @@ class Structures:
         self._ct_voxel_resolution_xyz_mm = deepcopy(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm'])
         self.preprocess_structures()
 
+    def get_structures(self) -> list:
+        """
+        Returns all the structure names as list
+        :return:
+        """
+        return self.structures_dict['name']
+
     def get_volume_cc(self, structure_name: str):
         """
         Get volume in cc for the structure
@@ -199,13 +206,13 @@ class Structures:
         mask_3d = self.structures_dict['structure_mask_3d'][ind]
 
         # getting kernel size for expansion or shrinking
-        num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
-
-        kernel = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
-        # creating different iterations along z and xy directions
-        num_iterations = int(num_voxels[0] / num_voxels[2])
-        iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
         if margin_mm > 0:
+            num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
+
+            kernel = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
+            # creating different iterations along z and xy directions
+            num_iterations = int(num_voxels[0] / num_voxels[2])
+            iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
             # margin_mask_3d = ndimage.binary_dilation(mask_3d, structure=struct).astype(mask_3d.dtype)
             for i in range(num_iterations):
                 if i == 0:
@@ -217,6 +224,10 @@ class Structures:
                     flat[-1, :, :] = 0
                     margin_mask_3d = ndimage.binary_dilation(margin_mask_3d, structure=flat,
                                                              iterations=iterations_in_one_step).astype(mask_3d.dtype)
+        elif margin_mm == 0:
+            margin_mask_3d = mask_3d
+        else:
+            raise ValueError('Invalid margin {}'.format(margin_mm))
         if new_structure not in self.structures_dict['name']:
             self.create_structure(new_structure=new_structure, mask_3d=margin_mask_3d)
         else:
