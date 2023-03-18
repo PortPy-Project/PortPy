@@ -42,7 +42,7 @@ def ex_1_introduction():
                    {'rind_name': 'RIND_4', 'ref_structure': 'PTV', 'margin_start_mm': 60, 'margin_end_mm': 'inf', 'max_dose_gy': rind_max_dose[4]}]
     my_plan.add_rinds(rind_params=rind_params)
 
-    # create cvxpy problem with max and mean dose clinical criteria
+    # create cvxpy problem using the clinical criteria
     prob = pp.CvxPyProb(my_plan)
 
     # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
