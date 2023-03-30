@@ -4,8 +4,8 @@ import cvxpy as cp
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from portpy_photon.plan import Plan
-    from portpy_photon.influence_matrix import InfluenceMatrix
+    from portpy.photon.plan import Plan
+    from portpy.photon.influence_matrix import InfluenceMatrix
 
 
 class CvxPyProb(object):

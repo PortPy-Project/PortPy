@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 
 def _get_portpy_photon_version():
-    with open('portpy_photon/__init__.py') as fp:
+    with open('portpy/__init__.py') as fp:
         for line in fp:
             if line.startswith('__version__'):
                 g = {}
                 exec(line, g)  # pylint: disable=exec-used
                 return g['__version__']
-        raise ValueError('`__version__` not defined in `portpy_photon/__init__.py`')
+        raise ValueError('`__version__` not defined in `portpy/__init__.py`')
 
 
 _VERSION = _get_portpy_photon_version()
@@ -23,7 +23,7 @@ STATUSES = [
 ]
 
 setup(
-    name='portpy-photon',
+    name='portpy',
     version=_VERSION,
     url='https://github.com/PortPy-Project/PortPy-Photon',
     license='Apache License, Version 2.0',
@@ -34,6 +34,7 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     python_requires='>=3.7',
+    include_package_data=True,
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Developers',

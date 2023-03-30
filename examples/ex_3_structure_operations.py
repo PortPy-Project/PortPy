@@ -3,12 +3,12 @@
     This example shows creating and modification of structures using portpy_photon
 """
 
-import portpy_photon as pp
+import portpy.photon as pp
 
 
 def ex_3_structure_operations():
     # Enter patient name
-    patient_id = 'Lung_Patient_1'
+    patient_id = 'Lung_Phantom_Patient_1'
 
     # visualize patient metadata for beams_dict and structures
     pp.Visualize.display_patient_metadata(patient_id)

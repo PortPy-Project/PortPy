@@ -1,4 +1,4 @@
-import portpy_photon as pp
+import portpy.photon as pp
 import numpy as np
 from copy import deepcopy
 
@@ -11,7 +11,7 @@ def ex_4_inf_matrix_sparsification():
     pp.Visualize.display_patients(data_dir=data_dir)
 
     # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams_dict, structures, )
-    patient_id = 'Lung_Patient_1'
+    patient_id = 'Lung_Phantom_Patient_1'
     pp.Visualize.display_patient_metadata(patient_id, data_dir=data_dir)
 
     # create my_plan object with full influence matrix for the planner beams

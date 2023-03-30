@@ -14,8 +14,8 @@
 
 """
 
-import portpy_photon as pp
 import numpy as np
+import portpy.photon as pp
 import matplotlib.pyplot as plt
 
 # ### Create plan
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 # For the customized beams_dict, you can pass the argument beam_ids
 # e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,10,20,30,40,50,60])
 data_dir = r'../data'
-patient_id = 'Lung_Phantom_Patient_2'
+patient_id = 'Lung_Phantom_Patient_1'
 my_plan = pp.Plan(patient_id, data_dir=data_dir)
 
 # PortPy can down-sample beamlets as factor of original finest beamlet resolution.

@@ -1,4 +1,4 @@
-from portpy_photon.influence_matrix import InfluenceMatrix
+from portpy.photon.influence_matrix import InfluenceMatrix
 
 
 def sol_change_inf_matrix(sol: dict, inf_matrix: InfluenceMatrix) -> dict:

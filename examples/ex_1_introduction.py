@@ -13,8 +13,8 @@ This example demonstrates performing the following tasks using portpy_photon:
 
 
 """
-import portpy_photon as pp
 import numpy as np
+import portpy.photon as pp
 
 
 def ex_1_introduction():
@@ -22,10 +22,10 @@ def ex_1_introduction():
     # (you first need to download the patient database from the link provided in the GitHub page)
     data_dir = r'../data'
     # display the existing patients. To display it in browser rather than console, turn on in_browser=True
-    # pp.Visualize.display_patients(data_dir=data_dir)
+    pp.Visualize.display_patients(data_dir=data_dir)
 
     # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams_dict, structures, )
-    patient_id = 'Lung_Phantom_Patient_2'
+    patient_id = 'Lung_Phantom_Patient_1'
     pp.Visualize.display_patient_metadata(patient_id, data_dir=data_dir)
 
     # create my_plan object for the planner beams_dict
@@ -58,8 +58,8 @@ def ex_1_introduction():
     sol = prob.get_sol()
 
     # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    pp.save_plan(my_plan, plan_name='my_plan_phantom', path=r'C:\temp')
-    pp.save_optimal_sol(sol, sol_name='sol_phantom', path=r'C:\temp')
+    # pp.save_plan(my_plan, plan_name='my_plan_phantom', path=r'C:\temp')
+    # pp.save_optimal_sol(sol, sol_name='sol_phantom', path=r'C:\temp')
     # my_plan = pp.load_plan(path=r'C:\temp')
     # sol = pp.load_optimal_sol(sol_name='sol', path=r'C:\temp')
 
@@ -79,7 +79,7 @@ def ex_1_introduction():
     my_plan.plot_dvh(sol=sol, structs=structs)
 
     # plot 2d axial slice for the given solution and display the structures contours on the slice
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol, slice_num=70, structs=['PTV'])
+    pp.Visualize.plot_2d_dose(my_plan, sol=sol, slice_num=60, structs=['PTV'])
 
     # visualize plan metrics based upon clinical criteria
     pp.Visualize.plan_metrics(my_plan, sol=sol)
@@ -87,7 +87,7 @@ def ex_1_introduction():
     # view ct, dose_1d and segmentations in 3d slicer. This requires downloading and installing 3d slicer
     # First save the Nrrd images in data_dir directory
     pp.save_nrrd(my_plan, sol=sol, data_dir=r'C:\temp')
-    pp.Visualize.view_in_slicer(my_plan, slicer_path=r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe',
+    pp.Visualize.view_in_slicer(my_plan, slicer_path=r'C:\ProgramData\NA-MIC\Slicer 5.2.1\Slicer.exe',
                                 data_dir=r'C:\temp')
     print('Done!')
 

@@ -15,24 +15,24 @@ Data needed for optimization and algorithm development (e.g., a set of beams/bea
 
 You can download the sample patient data [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing).
 
-Create a directory named './data' in the current project directory and copy the downloaded file to it, e.g ./data/Lung_Patient_1
+Create a directory named './data' in the current project directory and copy the downloaded file to it, e.g ./data/Lung_Phantom_Patient_1
 
 
 # Installing PortPy
 
 1. Installing using pip
   ```bash
-  pip install portpy-photon
+  pip install portpy
   ```
 2. Installing using conda
   ```bash
-  conda install -c conda-forge portpy-photon
+  conda install -c conda-forge portpy
   ```
 3. Installing from source
 - Clone this repository:
   ```bash
   git clone https://github.com/PortPy-Project/PortPy-Photon.git
-  cd portpy_photon
+  cd portpy
   ```
 
 - You need to install the dependencies in either a python virtual environment or anaconda environment. Instructions for setting up in python virtual environment are as follows:

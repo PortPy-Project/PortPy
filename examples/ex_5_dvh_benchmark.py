@@ -2,12 +2,12 @@
     This example demonstrates the use of portpy_photon to create down sampled influence matrix and
     optimize it with exact dvh constraints for benchmarking
 """
-import portpy_photon as pp
+import portpy.photon as pp
 
 
 def ex_5_dvh_benchmark():
     # Enter patient name
-    patient_id = 'Lung_Patient_1'
+    patient_id = 'Lung_Phantom_Patient_1'
 
     # visualize patient metadata for beams_dict and structures
     pp.Visualize.display_patient_metadata(patient_id)
@@ -40,7 +40,7 @@ def ex_5_dvh_benchmark():
     # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
     sol_no_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)
 
-    # optimize with downscaled influence matrix and the dvh constraint created below
+    # optimize with downscaled influence matrix and the dvh constraints created below
     eso_dvh = my_plan.clinical_criteria.create_criterion(criterion='dose_volume_V',
                                                          parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
                                                          constraints={'limit_volume_perc': 17})

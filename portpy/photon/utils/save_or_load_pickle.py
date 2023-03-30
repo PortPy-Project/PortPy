@@ -1,10 +1,9 @@
 from __future__ import annotations
 import os
 import pickle
-from pathlib import Path
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from portpy_photon.plan import Plan
+    from portpy.photon.plan import Plan
 
 
 def save_plan(my_plan: Plan, plan_name: str = None, path: str = None) -> None:

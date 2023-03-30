@@ -1,18 +1,12 @@
-import numpy as np
 from typing import List
-import json
-from portpy_photon.utils import *
-from portpy_photon.beam import Beams
-from portpy_photon.structures import Structures
+from portpy.photon.beam import Beams
+from portpy.photon.structures import Structures
 import os
-from portpy_photon.clinical_criteria import ClinicalCriteria
-from portpy_photon.influence_matrix import InfluenceMatrix
-from portpy_photon.visualization import Visualization
-from portpy_photon.optimization import Optimization
-
-
-# from typing import Dict, List, Optional, Union
-# from functools import wraps
+from portpy.photon.clinical_criteria import ClinicalCriteria
+from portpy.photon.influence_matrix import InfluenceMatrix
+from portpy.photon.visualization import Visualization
+from portpy.photon.optimization import Optimization
+from portpy.photon.utils import *
 
 
 class Plan:
@@ -73,7 +67,7 @@ class Plan:
         """
 
         if data_dir is None:
-            data_dir = os.path.join('..', 'data')
+            data_dir = os.path.join('../..', 'data')
         patient_folder_path = os.path.join(data_dir, patient_id)
 
         # read all the meta data for the specified patient and protocol

@@ -2,13 +2,13 @@
     This example demonstrates the use of portpy_photon to create down sampled influence matrix and
     optimize the plan by selecting optimal beams using beam angle optimization
 """
-import portpy_photon as pp
+import portpy.photon as pp
 import numpy as np
 
 
 def ex_6_boo_benchmark():
     # Enter patient name
-    patient_id = 'Lung_Patient_1'
+    patient_id = 'Lung_Phantom_Patient_1'
 
     # visualize patient metadata for beams_dict and structures
     pp.Visualize.display_patient_metadata(patient_id)

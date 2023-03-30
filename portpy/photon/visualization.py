@@ -4,17 +4,18 @@ import matplotlib as mpl
 import numpy as np
 from skimage import measure
 from tabulate import tabulate
-from portpy_photon.evaluation import Evaluation
+from portpy.photon.evaluation import Evaluation
 from matplotlib.lines import Line2D
 import os
-from portpy_photon.utils import load_metadata, view_in_slicer_jupyter
+from portpy.photon.utils import load_metadata
+from portpy.photon.utils import view_in_slicer_jupyter
 import pandas as pd
 import webbrowser
 from pathlib import Path
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    from portpy_photon.plan import Plan
+    from portpy.photon.plan import Plan
 try:
     from typing import Literal
 except ImportError:
@@ -355,7 +356,7 @@ class Visualization:
         plt.subplots_adjust(left=0.2)
         dose_3d = []
         if show_dose:
-            dose_1d = sol['inf_matrix'].A * sol['optimal_intensity']*my_plan.get_num_of_fractions()
+            dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity']*my_plan.get_num_of_fractions())
             dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
             ax.imshow(ct[slice_num, :, :], cmap='gray')
             masked = np.ma.masked_where(dose_3d[slice_num, :, :] <= 0, dose_3d[slice_num, :, :])
@@ -451,7 +452,7 @@ class Visualization:
         if slicer_path is None:
             slicer_path = r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe'
         if data_dir is None:
-            data_dir = os.path.join('..', 'data', my_plan.patient_id)
+            data_dir = os.path.join('../..', 'data', my_plan.patient_id)
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         slicer_script_dir = os.path.join(Path(__file__).parents[0], 'utils', 'slicer_script.py')
@@ -505,7 +506,7 @@ class Visualization:
         """
 
         if data_dir is None:
-            data_dir = os.path.join('..', 'data')
+            data_dir = os.path.join('../..', 'data')
             data_dir = os.path.join(data_dir, patient_id)
         else:
             data_dir = os.path.join(data_dir, patient_id)
@@ -550,7 +551,7 @@ class Visualization:
             return struct_df
         # Write the results in a temporary html file in the current directory and launch a browser to display
         if in_browser:
-            style_file = os.path.join('..', 'df_style.css')
+            style_file = os.path.join('../..', 'df_style.css')
             html_string = '''
                     <html>
                       <head><title>Portpy MetaData</title></head>
@@ -611,7 +612,7 @@ class Visualization:
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
         if data_dir is None:  # if data directory not provided, then use the subfolder named "data" in the current directory
-            data_dir = os.path.join('..', 'data')
+            data_dir = os.path.join('../..', 'data')
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         pat_ids = os.listdir(data_dir)
@@ -635,7 +636,7 @@ class Visualization:
         if return_df:
             return df
         if in_browser:
-            style_file = os.path.join('..', 'df_style.css')  # get style file path
+            style_file = os.path.join('../..', 'df_style.css')  # get style file path
             html_string = '''
                     <html>
                       <head><title>Portpy MetaData</title></head>
@@ -663,7 +664,8 @@ class Visualization:
                 print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
-    def plan_metrics(my_plan: Plan, sol: dict, html_file_name='temp.html', return_df: bool = False):
+    def plan_metrics(my_plan: Plan, sol: Union[dict, List[dict]], html_file_name='temp.html', sol_names: List[str] = None,
+                     return_df: bool = False):
         """
         Visualize the plan metrics for clinical criteria in browser.
         It evaluate the plan by comparing the metrics against required criteria.
@@ -675,41 +677,50 @@ class Visualization:
         :param my_plan: object of class Plan
         :param sol: optimal solution dictionary
         :param html_file_name:  name of the html file to be launched in browser
+        :param sol_names: Default to Plan Value. column names for the plan evaluation
         :param return_df: return df instead of visualization
         :return: plan metrics in browser
         """
 
-        dose_1d = sol['inf_matrix'].A * sol['optimal_intensity'] * my_plan.get_num_of_fractions()
-
         # convert clinical criteria in dataframe
+
         df = pd.DataFrame.from_dict(my_plan.clinical_criteria.clinical_criteria_dict['criteria'])
-        for ind in range(len(df)):  # Loop through the clinical criteria
-            if df.name[ind] == 'max_dose':
-                struct = df.parameters[ind]['structure_name']
-                if struct in my_plan.structures.get_structures():
-                    max_dose = Evaluation.get_max_dose(sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
-                    if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
-                        df.at[ind, 'Plan Value'] = max_dose
-                    elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
-                        df.at[ind, 'Plan Value'] = max_dose / (
-                                my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
-            if df.name[ind] == 'mean_dose':
-                struct = df.parameters[ind]['structure_name']
-                if struct in my_plan.structures.get_structures():
-                    mean_dose = Evaluation.get_mean_dose(sol, dose_1d=dose_1d, struct=struct)
-                    df.at[ind, 'Plan Value'] = mean_dose
-            if df.name[ind] == 'dose_volume_V':
-                struct = df.parameters[ind]['structure_name']
-                if struct in my_plan.structures.get_structures():
-                    if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
-                        dose = df.parameters[ind]['dose_gy']
-                        volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
-                        df.at[ind, 'Plan Value'] = volume
-                    elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
-                        dose = df.parameters[ind]['dose_gy']
-                        volume = Evaluation.get_volume(sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
-                        vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
-                        df.at[ind, 'Plan Value'] = vol_cc
+        if isinstance(sol, dict):
+            sol = [sol]
+        if sol_names is None:
+            if len(sol) > 1:
+                sol_names = ['Plan Value ' + str(i) for i in range(len(sol))]
+            else:
+                sol_names = ['Plan Value']
+        for p, s in enumerate(sol):
+            dose_1d = s['inf_matrix'].A @ (s['optimal_intensity'] * my_plan.get_num_of_fractions())
+            for ind in range(len(df)):  # Loop through the clinical criteria
+                if df.name[ind] == 'max_dose':
+                    struct = df.parameters[ind]['structure_name']
+                    if struct in my_plan.structures.get_structures():
+                        max_dose = Evaluation.get_max_dose(s, dose_1d=dose_1d, struct=struct)  # get max dose_1d
+                        if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
+                            df.at[ind, sol_names[p]] = max_dose
+                        elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
+                            df.at[ind, sol_names[p]] = max_dose / (
+                                    my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
+                if df.name[ind] == 'mean_dose':
+                    struct = df.parameters[ind]['structure_name']
+                    if struct in my_plan.structures.get_structures():
+                        mean_dose = Evaluation.get_mean_dose(s, dose_1d=dose_1d, struct=struct)
+                        df.at[ind, sol_names[p]] = mean_dose
+                if df.name[ind] == 'dose_volume_V':
+                    struct = df.parameters[ind]['structure_name']
+                    if struct in my_plan.structures.get_structures():
+                        if 'limit_volume_perc' in df.constraints[ind] or 'goal_volume_perc' in df.constraints[ind]:
+                            dose = df.parameters[ind]['dose_gy']
+                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                            df.at[ind, sol_names[p]] = volume
+                        elif 'limit_volume_cc' in df.constraints[ind] or 'goal_volume_cc' in df.constraints[ind]:
+                            dose = df.parameters[ind]['dose_gy']
+                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                            vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
+                            df.at[ind, sol_names[p]] = vol_cc
         pd.set_option("display.precision", 3)
         df.dropna(axis=0, inplace=True)  # remove structures which are not present
         df.reset_index(drop=True, inplace=True)  # reset the index
@@ -740,23 +751,24 @@ class Visualization:
             limit_key = matching_keys(row['constraints'], 'limit')
             goal_key = matching_keys(row['constraints'], 'goal')
 
-            row_color = [default, default]  # default color for all rows initially
+            row_color = len(row)*[default]  # default color for all rows initially
             # must return one string per cell in this row
-            if limit_key in row['constraints']:
-                if not (pd.isnull(row['Plan Value'])):
-                    if row['Plan Value'] > row['constraints'][limit_key] + 0.0001:  # added epsilon to avoid minor differences
-                        row_color = [highlight_red, default]  # make plan value in red
-                    else:
-                        row_color = [highlight_green, default]
-            if goal_key in row['constraints']:
-                if not (pd.isnull(row['Plan Value'])):
-                    if row['Plan Value'] > row['constraints'][goal_key] + 0.0001:
-                        row_color = [highlight_orange, default]
-                    else:
-                        row_color = [highlight_green, default]
+            for i in range(len(row) - 1):
+                if limit_key in row['constraints']:
+                    if not (pd.isnull(row[i])):
+                        if row[i] > row['constraints'][limit_key] + 0.0001:  # added epsilon to avoid minor differences
+                            row_color[i] = highlight_red  # make plan value in red
+                        else:
+                            row_color[i] = highlight_green  # make plan value in red
+                if goal_key in row['constraints']:
+                    if not (pd.isnull(row[i])):
+                        if row[i] > row['constraints'][goal_key] + 0.0001:
+                            row_color[i] = highlight_orange  # make plan value in red
+                        else:
+                            row_color[i] = highlight_green  # make plan value in red
             return row_color
-
-        styled_df = df.style.apply(color_plan_value, subset=['Plan Value', 'constraints'], axis=1)  # apply
+        sol_names.append('constraints')
+        styled_df = df.style.apply(color_plan_value, subset=sol_names, axis=1)  # apply
         # color to dataframe using df.style method
         if return_df:
             return styled_df
