@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.cvxpy_prob &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.cvxpy_prob</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.cvxpy_prob</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cvxpy</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">portpy.photon.plan</span> <span class="kn">import</span> <span class="n">Plan</span>
+    <span class="kn">from</span> <span class="nn">portpy.photon.influence_matrix</span> <span class="kn">import</span> <span class="n">InfluenceMatrix</span>
+
+
+<div class="viewcode-block" id="CvxPyProb"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb">[docs]</a><span class="k">class</span> <span class="nc">CvxPyProb</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Optimization class for creating cvxpy problem object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">inf_matrix</span><span class="p">:</span> <span class="n">InfluenceMatrix</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_constraints</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">mean_constraints</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">opt_params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        It runs optimization to create optimal plan based upon clinical criteria</span>
+
+<span class="sd">        :param my_plan: object of class Plan</span>
+<span class="sd">        :param inf_matrix: object of class InfluenceMatrix</span>
+<span class="sd">        :param solver: default solver &#39;MOSEK&#39;. check cvxpy website for available solvers</span>
+<span class="sd">        :param verbose: Default to True. If set to False, it will not print the solver iterations.</span>
+<span class="sd">        :param cvxpy_options: cvxpy and the solver settings</span>
+<span class="sd">        :param opt_params: optimization parameters for modifying parameters of problem statement</span>
+<span class="sd">        :return: cvxpy problem object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># get data for optimization</span>
+        <span class="k">if</span> <span class="n">max_constraints</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_constraints</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">get_criteria</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;max_dose&#39;</span><span class="p">)</span>  <span class="c1"># returns all the max dose criteria as a list</span>
+        <span class="k">if</span> <span class="n">mean_constraints</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mean_constraints</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">get_criteria</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;mean_dose&#39;</span><span class="p">)</span>  <span class="c1"># returns all the mean dose criteria as a list</span>
+
+        <span class="k">if</span> <span class="n">inf_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">inf_matrix</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">inf_matrix</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">num_fractions</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">inf_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">my_plan</span> <span class="o">=</span> <span class="n">my_plan</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span> <span class="o">=</span> <span class="n">inf_matrix</span>
+
+        <span class="c1"># Opt params</span>
+        <span class="n">ptv_overdose_weight</span> <span class="o">=</span> <span class="n">opt_params</span><span class="p">[</span><span class="s1">&#39;ptv_overdose_weight&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;ptv_overdose_weight&#39;</span> <span class="ow">in</span> <span class="n">opt_params</span> <span class="k">else</span> <span class="mi">10000</span>
+        <span class="n">ptv_underdose_weight</span> <span class="o">=</span> <span class="n">opt_params</span><span class="p">[</span><span class="s1">&#39;ptv_underdose_weight&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;ptv_underdose_weight&#39;</span> <span class="ow">in</span> <span class="n">opt_params</span> <span class="k">else</span> <span class="mi">100000</span>
+        <span class="n">smoothness_weight</span> <span class="o">=</span> <span class="n">opt_params</span><span class="p">[</span><span class="s1">&#39;smoothness_weight&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;smoothness_weight&#39;</span> <span class="ow">in</span> <span class="n">opt_params</span> <span class="k">else</span> <span class="mi">10</span>
+        <span class="n">total_oar_weight</span> <span class="o">=</span> <span class="n">opt_params</span><span class="p">[</span><span class="s1">&#39;total_oar_weight&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;total_oar_weight&#39;</span> <span class="ow">in</span> <span class="n">opt_params</span> <span class="k">else</span> <span class="mi">10</span>
+        <span class="n">all_vox</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">oar_voxels</span> <span class="o">=</span> <span class="n">all_vox</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">))]</span>
+        <span class="n">oar_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">oar_voxels</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">pres_per_frac</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_prescription</span><span class="p">()</span> <span class="o">/</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()</span>
+        <span class="p">[</span><span class="n">Qx</span><span class="p">,</span> <span class="n">Qy</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_smoothness_matrix</span><span class="p">(</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">)</span>
+        <span class="n">smoothness_X_weight</span> <span class="o">=</span> <span class="mf">0.6</span>
+        <span class="n">smoothness_Y_weight</span> <span class="o">=</span> <span class="mf">0.4</span>
+
+        <span class="c1"># Construct optimization problem</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Construct the problem.</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">dO</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">)),</span> <span class="n">pos</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dU</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">)),</span> <span class="n">pos</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective Start&#39;</span><span class="p">)</span>
+        <span class="c1"># Add target objective</span>
+        <span class="n">obj</span> <span class="o">+=</span> <span class="p">[(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="n">ptv_overdose_weight</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">dO</span><span class="p">)</span> <span class="o">+</span> <span class="n">ptv_underdose_weight</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">dU</span><span class="p">))]</span>
+        <span class="c1"># Add smoothness objective</span>
+        <span class="n">obj</span> <span class="o">+=</span> <span class="p">[</span><span class="n">smoothness_weight</span> <span class="o">*</span> <span class="p">(</span><span class="n">smoothness_X_weight</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">num_cols</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">Qx</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span>
+                                     <span class="n">smoothness_Y_weight</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">num_rows</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">Qy</span> <span class="o">@</span> <span class="n">x</span><span class="p">))]</span>
+        <span class="c1"># Add quadratic oar objective</span>
+        <span class="n">obj</span> <span class="o">+=</span> <span class="p">[</span><span class="n">total_oar_weight</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">A</span><span class="p">[</span><span class="n">oar_voxels</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span>
+            <span class="n">cp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">oar_weights</span><span class="p">),</span> <span class="n">A</span><span class="p">[</span><span class="n">oar_voxels</span><span class="p">,</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">))]</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Objective done&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Constraints Start&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Adding max constraints</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">max_constraints</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="s1">&#39;max_dose&#39;</span> <span class="ow">in</span> <span class="n">max_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s1">&#39;limit_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">max_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                    <span class="n">limit</span> <span class="o">=</span> <span class="n">max_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="s1">&#39;limit_dose_gy&#39;</span><span class="p">]</span>
+                    <span class="n">org</span> <span class="o">=</span> <span class="n">max_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">org</span> <span class="o">!=</span> <span class="s1">&#39;GTV&#39;</span> <span class="ow">or</span> <span class="n">org</span> <span class="o">!=</span> <span class="s1">&#39;CTV&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">org</span> <span class="ow">in</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                            <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">org</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">limit</span> <span class="o">/</span> <span class="n">num_fractions</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structure </span><span class="si">{}</span><span class="s1"> not available!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">org</span><span class="p">))</span>
+
+        <span class="c1"># Adding mean constraints</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mean_constraints</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="s1">&#39;mean_dose&#39;</span> <span class="ow">in</span> <span class="n">mean_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s1">&#39;limit_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">mean_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                    <span class="n">limit</span> <span class="o">=</span> <span class="n">mean_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="s1">&#39;limit_dose_gy&#39;</span><span class="p">]</span>
+                    <span class="n">org</span> <span class="o">=</span> <span class="n">mean_constraints</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="c1"># mean constraints using voxel weights</span>
+                    <span class="k">if</span> <span class="n">org</span> <span class="ow">in</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">org</span><span class="p">)))</span> <span class="o">*</span>
+                                        <span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">cp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">org</span><span class="p">),</span> <span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">org</span><span class="p">),</span>
+                                                                                          <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">))))</span> <span class="o">&lt;=</span> <span class="n">limit</span> <span class="o">/</span> <span class="n">num_fractions</span><span class="p">]</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structure </span><span class="si">{}</span><span class="s1"> not available!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">org</span><span class="p">))</span>
+
+        <span class="c1"># Step 1 and 2 constraints</span>
+        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">pres_per_frac</span> <span class="o">+</span> <span class="n">dO</span><span class="p">]</span>
+        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">pres_per_frac</span> <span class="o">-</span> <span class="n">dU</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">constraints</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Constraints done&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CvxPyProb.add_max"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_max">[docs]</a>    <span class="k">def</span> <span class="nf">add_max</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">struct</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dose_gy</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add max constraints to the problem</span>
+<span class="sd">        :param struct: structure name</span>
+<span class="sd">        :param dose_gy: dose in Gy per fraction.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="n">max_constraint</span> <span class="o">=</span> <span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">dose_gy</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">(</span><span class="n">max_constraint</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_mean"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_mean">[docs]</a>    <span class="k">def</span> <span class="nf">add_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">struct</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dose_gy</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add mean constraints to the problem</span>
+<span class="sd">        :param struct: structure name</span>
+<span class="sd">        :param dose_gy: dose in Gy per fraction.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="n">mean_constraint</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">struct</span><span class="p">)))</span> <span class="o">*</span>
+                           <span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">cp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">struct</span><span class="p">),</span>
+                                                <span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">),</span>
+                                                <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">))))</span> <span class="o">&lt;=</span> <span class="n">dose_gy</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">(</span><span class="n">mean_constraint</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_overdose_quad"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_overdose_quad">[docs]</a>    <span class="k">def</span> <span class="nf">add_overdose_quad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">struct</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dose_gy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add quadratic loss for the overdose voxels of the structure</span>
+<span class="sd">        :param struct: structure name</span>
+<span class="sd">        :param dose_gy: dose in Gy per fraction.</span>
+<span class="sd">        :param weight: penalty/weight in the objective for overdose</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="n">dO</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">)),</span> <span class="n">pos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_overdose&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">struct</span><span class="p">))</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span><span class="n">weight</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">dO</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">([</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">dose_gy</span> <span class="o">+</span> <span class="n">dO</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_underdose_quad"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_underdose_quad">[docs]</a>    <span class="k">def</span> <span class="nf">add_underdose_quad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">struct</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dose_gy</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add quadratic loss for the underdose voxels of the structure</span>
+<span class="sd">        :param struct: structure name</span>
+<span class="sd">        :param dose_gy: dose in Gy per fraction.</span>
+<span class="sd">        :param weight: penalty/weight in the objective for underdose</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="n">dU</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">)),</span> <span class="n">pos</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_underdose&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">struct</span><span class="p">))</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span><span class="n">weight</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">dU</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">([</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">dose_gy</span> <span class="o">-</span> <span class="n">dU</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_quad"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_quad">[docs]</a>    <span class="k">def</span> <span class="nf">add_quad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">struct</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">voxels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                 <span class="n">voxels_weight</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add quadratic objective to the optimization problem</span>
+<span class="sd">        :param struct: structure for which quadratic loss is added to objective function</span>
+<span class="sd">        :param voxels: Default to None. If set, quadratic loss will be added for the given voxels</span>
+<span class="sd">        :param weight: Default to 10. penalty in the objective function for the given structure.</span>
+<span class="sd">        :param voxels_weight: weight for each voxel in the objective function</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">voxels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">voxels_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Please input weight array for the input voxels&#39;</span><span class="p">)</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">A</span><span class="p">[</span><span class="n">voxels</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span>
+                <span class="n">cp</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">voxels_weight</span><span class="p">),</span> <span class="n">A</span><span class="p">[</span><span class="n">voxels</span><span class="p">,</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">struct</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">)))</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">weight</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_smoothness_quad"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_smoothness_quad">[docs]</a>    <span class="k">def</span> <span class="nf">add_smoothness_quad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">smoothness_X_weight</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span> <span class="n">smoothness_Y_weight</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add quadratic smoothness to the optimization problem</span>
+<span class="sd">        :param weight: smoothness weight</span>
+<span class="sd">        :param smoothness_X_weight: weight in X direction of MLC (parallel to MLC)</span>
+<span class="sd">        :param smoothness_Y_weight: weight in Y direction of MLC (perpendicular to MLC)</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="p">[</span><span class="n">Qx</span><span class="p">,</span> <span class="n">Qy</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">,</span> <span class="n">num_cols</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_smoothness_matrix</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="n">smoothness_X_weight</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">num_cols</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">Qx</span> <span class="o">@</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">smoothness_Y_weight</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">num_rows</span><span class="p">)</span>
+                <span class="o">*</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum_squares</span><span class="p">(</span><span class="n">Qy</span> <span class="o">@</span> <span class="n">x</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_constraints"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">add_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">constraints</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add constraint to the problem</span>
+<span class="sd">        :param constraints: list of constraints</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraints</span> <span class="o">+=</span> <span class="n">constraints</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_objective"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_objective">[docs]</a>    <span class="k">def</span> <span class="nf">add_objective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add objective function to the problem</span>
+<span class="sd">        :param obj: objective function expression using cvxpy</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">+=</span> <span class="n">obj</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_boo"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_boo">[docs]</a>    <span class="k">def</span> <span class="nf">add_boo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_beams</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Select optimal beams from set of beams using MIP</span>
+<span class="sd">        :param num_beams: number of beams to be selected</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="c1">#  Constraints for selecting beams</span>
+        <span class="c1"># binary variable for selecting beams</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">),</span> <span class="n">boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">constraints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">num_beams</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">)):</span>
+            <span class="n">start_beamlet</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;start_beamlet&#39;</span><span class="p">]</span>
+            <span class="n">end_beamlet</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">beamlets_dict</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;end_beamlet&#39;</span><span class="p">]</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="mi">50</span>  <span class="c1"># upper bound on the beamlet intensity</span>
+            <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">start_beamlet</span><span class="p">:</span><span class="n">end_beamlet</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">M</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">(</span><span class="n">constraints</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.solve"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Problem</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">Minimize</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)),</span> <span class="n">constraints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">constraints</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.get_sol"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.get_sol">[docs]</a>    <span class="k">def</span> <span class="nf">get_sol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return optimal solution and influence matrix associated with it in the form of dictionary</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;inf_matrix&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.add_dvh"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.add_dvh">[docs]</a>    <span class="k">def</span> <span class="nf">add_dvh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dvh_constraint</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+        <span class="n">df_dvh_criteria</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">criteria</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;criteria&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dvh_constraint</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="s1">&#39;dose_volume&#39;</span> <span class="ow">in</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                <span class="n">limit_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matching_keys</span><span class="p">(</span><span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">],</span> <span class="s1">&#39;limit&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">limit_key</span> <span class="ow">in</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                    <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">count</span><span class="p">,</span> <span class="s1">&#39;structure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">count</span><span class="p">,</span> <span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span>
+
+                    <span class="c1"># getting max dose_1d for the same structure</span>
+                    <span class="n">max_dose_struct</span> <span class="o">=</span> <span class="mi">1000</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">criteria</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="s1">&#39;max_dose&#39;</span> <span class="ow">in</span> <span class="n">criteria</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                            <span class="k">if</span> <span class="s1">&#39;limit_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">criteria</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                                <span class="n">org</span> <span class="o">=</span> <span class="n">criteria</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                                <span class="k">if</span> <span class="n">org</span> <span class="o">==</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]:</span>
+                                    <span class="n">max_dose_struct</span> <span class="o">=</span> <span class="n">criteria</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="s1">&#39;limit_dose_gy&#39;</span><span class="p">]</span>
+                    <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">count</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_dose_struct</span> <span class="o">-</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s1">&#39;perc&#39;</span> <span class="ow">in</span> <span class="n">limit_key</span><span class="p">:</span>
+                        <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">count</span><span class="p">,</span> <span class="s1">&#39;vol_perc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dvh_constraint</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="n">limit_key</span><span class="p">]</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># binary variable for dvh constraints</span>
+        <span class="n">b_dvh</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">org</span><span class="p">)</span> <span class="k">for</span> <span class="n">org</span> <span class="ow">in</span> <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">to_list</span><span class="p">()])),</span>
+            <span class="n">boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_dvh_criteria</span><span class="p">)):</span>
+            <span class="n">struct</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">M</span> <span class="o">=</span> <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;structure&#39;</span><span class="p">],</span> <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;dose_gy&#39;</span><span class="p">],</span> \
+                                  <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;vol_perc&#39;</span><span class="p">],</span> <span class="n">df_dvh_criteria</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">]</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">))</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_fraction_of_vol_in_calc_box</span><span class="p">(</span><span class="n">struct</span><span class="p">)</span>
+            <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">A</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_idx</span><span class="p">(</span><span class="n">struct</span><span class="p">),</span> <span class="p">:]</span> <span class="o">@</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="n">limit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()</span>
+                <span class="o">+</span> <span class="n">b_dvh</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span> <span class="o">*</span> <span class="n">M</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()]</span>
+            <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[</span><span class="n">b_dvh</span> <span class="o">@</span> <span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">struct</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">v</span> <span class="o">/</span> <span class="n">frac</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">get_opt_voxels_size</span><span class="p">(</span><span class="n">struct</span><span class="p">))]</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_constraints</span><span class="p">(</span><span class="n">constraints</span><span class="o">=</span><span class="n">constraints</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.get_smoothness_matrix"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.get_smoothness_matrix">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_smoothness_matrix</span><span class="p">(</span><span class="n">beamReq</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create smoothness matrix so that adjacent beamlets are smooth out to reduce MU</span>
+
+<span class="sd">        :param beamReq: beamlets dictionary from the object of influence matrix class</span>
+<span class="sd">        :returns: tuple(Qx, Qy) where</span>
+<span class="sd">            Qx: first matrix have values 1 and -1 for neighbouring beamlets in X direction</span>
+<span class="sd">            Qy: second matrix with values 1 and -1 for neighbouring beamlets in Y direction</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        Qx = [[1 -1 0 0 0 0]</span>
+<span class="sd">              [0 0 1 -1 0 0]</span>
+<span class="sd">              [0 0 0 0 1 -1]]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sRow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">beamReq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;end_beamlet&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">beamReq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;end_beamlet&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">sCol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">beamReq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;end_beamlet&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">beamReq</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;end_beamlet&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">num_rows</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_cols</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beamReq</span><span class="p">)):</span>
+            <span class="n">beam_map</span> <span class="o">=</span> <span class="n">beamReq</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="s1">&#39;beamlet_idx_2dgrid&#39;</span><span class="p">]</span>
+
+            <span class="n">rowsNoRepeat</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">!=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">rowsNoRepeat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">:])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="n">rowsNoRepeat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">colsNoRepeat</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="n">beam_map</span><span class="p">[:,</span> <span class="n">colsNoRepeat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="n">colsNoRepeat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="n">beam_map</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rowsNoRepeat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">colsNoRepeat</span><span class="p">))]</span>
+            <span class="n">num_rows</span> <span class="o">=</span> <span class="n">num_rows</span> <span class="o">+</span> <span class="n">beam_map</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">num_cols</span> <span class="o">=</span> <span class="n">num_cols</span> <span class="o">+</span> <span class="n">beam_map</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
+                <span class="n">startCol</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">endCol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+                <span class="k">while</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">startCol</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">startCol</span> <span class="o">&lt;=</span> <span class="n">endCol</span><span class="p">):</span>
+                    <span class="n">startCol</span> <span class="o">=</span> <span class="n">startCol</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">endCol</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">startCol</span> <span class="o">&lt;=</span> <span class="n">endCol</span><span class="p">):</span>
+                    <span class="n">endCol</span> <span class="o">=</span> <span class="n">endCol</span> <span class="o">-</span> <span class="mi">1</span>
+
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">startCol</span><span class="p">,</span> <span class="n">endCol</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+                    <span class="n">RN</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">ind</span> <span class="o">*</span> <span class="n">RN</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">sRow</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="n">sRow</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">RN</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+                <span class="n">startRow</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">endRow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+                <span class="k">while</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">startRow</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">startRow</span> <span class="o">&lt;=</span> <span class="n">endRow</span><span class="p">):</span>
+                    <span class="n">startRow</span> <span class="o">=</span> <span class="n">startRow</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">endRow</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">startRow</span> <span class="o">&lt;=</span> <span class="n">endRow</span><span class="p">):</span>
+                    <span class="n">endRow</span> <span class="o">=</span> <span class="n">endRow</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">startRow</span><span class="p">,</span> <span class="n">endRow</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+                    <span class="n">DN</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">r</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">ind</span> <span class="o">*</span> <span class="n">DN</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">sCol</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="n">sCol</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">DN</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sRow</span><span class="p">,</span> <span class="n">sCol</span><span class="p">,</span> <span class="n">num_rows</span><span class="p">,</span> <span class="n">num_cols</span></div>
+
+<div class="viewcode-block" id="CvxPyProb.matching_keys"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.cvxpy_prob.CvxPyProb.matching_keys">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">matching_keys</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">search_string</span><span class="p">):</span>
+        <span class="n">get_key</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">search_string</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">get_key</span> <span class="o">=</span> <span class="n">key</span>
+        <span class="k">if</span> <span class="n">get_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

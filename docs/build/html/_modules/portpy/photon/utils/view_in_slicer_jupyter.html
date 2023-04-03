@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.utils.view_in_slicer_jupyter &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.utils.view_in_slicer_jupyter</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.utils.view_in_slicer_jupyter</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="view_in_slicer_jupyter"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.view_in_slicer_jupyter.view_in_slicer_jupyter">[docs]</a><span class="k">def</span> <span class="nf">view_in_slicer_jupyter</span><span class="p">(</span><span class="n">my_plan</span><span class="p">,</span> <span class="n">dose_1d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="n">ct_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ct&#39;</span><span class="p">,</span> <span class="n">dose_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;dose&#39;</span><span class="p">,</span> <span class="n">struct_set_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;rt_struct&#39;</span><span class="p">,</span>
+                           <span class="n">show_ct</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                           <span class="n">show_dose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                           <span class="n">show_structs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This method helps to visualize CT, Dose and Rt struct in 3d slicer</span>
+
+
+<span class="sd">    :param my_plan: object of class plan</span>
+<span class="sd">    :param dose_1d: dose in 1d</span>
+<span class="sd">    :param sol: solution dictionary</span>
+<span class="sd">    :param ct_name: Default to &#39;ct&#39;. name of the ct node in 3D slicer</span>
+<span class="sd">    :param dose_name: Default to &#39;dose&#39;. name of the dose node in 3D slicer</span>
+<span class="sd">    :param struct_set_name: name of the rtstruct</span>
+<span class="sd">    :param show_structs: default to True. If false, will not create structure node</span>
+<span class="sd">    :param show_dose: default to True. If false, will not create dose node</span>
+<span class="sd">    :param show_ct:default to True. If false, will not create ct node</span>
+<span class="sd">    :return: visualize in slicer jupyter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">slicer</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please use slicer kernel before using this method&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">show_ct</span><span class="p">:</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">mrmlScene</span><span class="o">.</span><span class="n">AddNewNodeByClass</span><span class="p">(</span><span class="s2">&quot;vtkMRMLScalarVolumeNode&quot;</span><span class="p">,</span> <span class="n">ct_name</span><span class="p">)</span>
+        <span class="n">ct_node</span> <span class="o">=</span> <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">getNode</span><span class="p">(</span><span class="n">ct_name</span><span class="p">)</span>
+
+        <span class="n">ct_node</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;origin_xyz_mm&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])))</span>  <span class="c1"># convert to RAS origin. -ve in x and y direction</span>
+        <span class="n">ct_node</span><span class="o">.</span><span class="n">SetSpacing</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;resolution_xyz_mm&#39;</span><span class="p">])</span>
+        <span class="n">ct_node</span><span class="o">.</span><span class="n">SetIJKToRASDirections</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]))</span>  <span class="c1"># set itk to RAS direction</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">updateVolumeFromArray</span><span class="p">(</span><span class="n">ct_node</span><span class="p">,</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;ct_hu_3d&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">setSliceViewerLayers</span><span class="p">(</span><span class="n">background</span><span class="o">=</span><span class="n">ct_node</span><span class="p">)</span>
+
+    <span class="c1"># Another way to push simple itk image</span>
+    <span class="c1"># import sitkUtils</span>
+    <span class="c1"># ct = sitk.GetImageFromArray(my_plan.ct[&#39;ct_hu_3d&#39;][0])</span>
+    <span class="c1"># ct.SetOrigin(my_plan.ct[&#39;origin_xyz_mm&#39;])</span>
+    <span class="c1"># ct.SetSpacing(my_plan.ct[&#39;resolution_xyz_mm&#39;])</span>
+    <span class="c1"># sitkUtils.PushVolumeToSlicer(ct, targetNode=&#39;ct&#39;)</span>
+
+    <span class="c1"># plot dose</span>
+    <span class="k">if</span> <span class="n">show_dose</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dose_1d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dose_arr</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">inf_matrix</span><span class="o">.</span><span class="n">dose_1d_to_3d</span><span class="p">(</span><span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">A</span> <span class="o">*</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()</span>
+            <span class="n">dose_arr</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dose_1d_to_3d</span><span class="p">(</span><span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">)</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">mrmlScene</span><span class="o">.</span><span class="n">AddNewNodeByClass</span><span class="p">(</span><span class="s2">&quot;vtkMRMLScalarVolumeNode&quot;</span><span class="p">,</span> <span class="n">dose_name</span><span class="p">)</span>
+        <span class="n">dose_node</span> <span class="o">=</span> <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">getNode</span><span class="p">(</span><span class="n">dose_name</span><span class="p">)</span>
+        <span class="n">dose_node</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;origin_xyz_mm&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])))</span>
+        <span class="n">dose_node</span><span class="o">.</span><span class="n">SetSpacing</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;resolution_xyz_mm&#39;</span><span class="p">])</span>
+        <span class="n">dose_node</span><span class="o">.</span><span class="n">SetIJKToRASDirections</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]))</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">updateVolumeFromArray</span><span class="p">(</span><span class="n">dose_node</span><span class="p">,</span> <span class="n">dose_arr</span><span class="p">)</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">setSliceViewerLayers</span><span class="p">(</span><span class="n">foreground</span><span class="o">=</span><span class="n">dose_node</span><span class="p">)</span>
+        <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">setSliceViewerLayers</span><span class="p">(</span><span class="n">foregroundOpacity</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+        <span class="c1"># dose_node.GetVolumeDisplayNode.</span>
+
+    <span class="c1"># plot structures</span>
+    <span class="k">if</span> <span class="n">show_structs</span><span class="p">:</span>
+        <span class="n">structure_node</span> <span class="o">=</span> <span class="n">slicer</span><span class="o">.</span><span class="n">mrmlScene</span><span class="o">.</span><span class="n">AddNewNodeByClass</span><span class="p">(</span><span class="s2">&quot;vtkMRMLSegmentationNode&quot;</span><span class="p">,</span> <span class="n">struct_set_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">struct_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Importing structure : &#39;</span> <span class="o">+</span> <span class="n">struct_name</span><span class="p">)</span>
+            <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">addVolumeFromArray</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                           <span class="n">name</span><span class="o">=</span><span class="n">struct_name</span><span class="p">,</span> <span class="n">nodeClassName</span><span class="o">=</span><span class="s2">&quot;vtkMRMLLabelMapVolumeNode&quot;</span><span class="p">)</span>
+            <span class="n">lmap</span> <span class="o">=</span> <span class="n">slicer</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">getNode</span><span class="p">(</span><span class="n">struct_name</span><span class="p">)</span>
+            <span class="n">lmap</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;origin_xyz_mm&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])))</span>
+            <span class="n">lmap</span><span class="o">.</span><span class="n">SetSpacing</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;resolution_xyz_mm&#39;</span><span class="p">])</span>
+            <span class="n">lmap</span><span class="o">.</span><span class="n">SetIJKToRASDirections</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]))</span>
+            <span class="n">slicer</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">segmentations</span><span class="o">.</span><span class="n">logic</span><span class="p">()</span><span class="o">.</span><span class="n">ImportLabelmapToSegmentationNode</span><span class="p">(</span><span class="n">lmap</span><span class="p">,</span> <span class="n">structure_node</span><span class="p">)</span>
+            <span class="n">slicer</span><span class="o">.</span><span class="n">mrmlScene</span><span class="o">.</span><span class="n">RemoveNode</span><span class="p">(</span><span class="n">lmap</span><span class="p">)</span>
+            <span class="n">segId</span> <span class="o">=</span> <span class="n">structure_node</span><span class="o">.</span><span class="n">GetSegmentation</span><span class="p">()</span><span class="o">.</span><span class="n">GetNthSegment</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">segId</span><span class="o">.</span><span class="n">SetName</span><span class="p">(</span><span class="n">struct_name</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

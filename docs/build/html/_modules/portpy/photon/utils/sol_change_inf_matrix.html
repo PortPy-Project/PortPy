@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.utils.sol_change_inf_matrix &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.utils.sol_change_inf_matrix</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.utils.sol_change_inf_matrix</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">portpy.photon.influence_matrix</span> <span class="kn">import</span> <span class="n">InfluenceMatrix</span>
+
+
+<div class="viewcode-block" id="sol_change_inf_matrix"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.sol_change_inf_matrix.sol_change_inf_matrix">[docs]</a><span class="k">def</span> <span class="nf">sol_change_inf_matrix</span><span class="p">(</span><span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">inf_matrix</span><span class="p">:</span> <span class="n">InfluenceMatrix</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new solution by changing the basis of current solution.</span>
+<span class="sd">    It will create a solution with same number of beamlets and voxels as inf_matrix</span>
+
+
+<span class="sd">    :param sol: solution for which influence matrix is changed</span>
+<span class="sd">    :param inf_matrix: object of class Influence matrix</span>
+<span class="sd">    :return: new solution dictionary having same number of beamlets and voxels as inf_matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_sol</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">optimal_intensity</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fluence_1d_to_2d</span><span class="p">(</span><span class="n">fluence_1d</span><span class="o">=</span><span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">])</span>
+        <span class="n">new_sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inf_matrix</span><span class="o">.</span><span class="n">fluence_2d_to_1d</span><span class="p">(</span><span class="n">optimal_intensity</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">inf_matrix</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">new_sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Beamlet resolution should be greater than or equal to beamlets for inf_matrix&quot;</span><span class="p">)</span>
+
+    <span class="c1"># new_sol[&#39;dose_1d&#39;] = inf_matrix.A * new_sol[&#39;optimal_intensity&#39;]</span>
+
+    <span class="c1"># dose_3d = sol[&#39;inf_matrix&#39;].dose_1d_to_3d(dose_1d=sol[&#39;dose_1d&#39;])</span>
+    <span class="c1"># new_sol[&#39;dose_1d&#39;] = inf_matrix.dose_3d_to_1d(dose_3d=dose_3d)</span>
+
+    <span class="n">new_sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inf_matrix</span>
+    <span class="k">return</span> <span class="n">new_sol</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

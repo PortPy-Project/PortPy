@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.visualization &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.visualization</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.visualization</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="n">measure</span>
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.evaluation</span> <span class="kn">import</span> <span class="n">Evaluation</span>
+<span class="kn">from</span> <span class="nn">matplotlib.lines</span> <span class="kn">import</span> <span class="n">Line2D</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.utils</span> <span class="kn">import</span> <span class="n">load_metadata</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.utils</span> <span class="kn">import</span> <span class="n">view_in_slicer_jupyter</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">webbrowser</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">portpy.photon.plan</span> <span class="kn">import</span> <span class="n">Plan</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+
+<span class="c1"># mpl.use(&#39;TkAgg&#39;)  # or can use &#39;Qt5Agg&#39;, whatever you have/prefer</span>
+
+
+<div class="viewcode-block" id="Visualization"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization">[docs]</a><span class="k">class</span> <span class="nc">Visualization</span><span class="p">:</span>
+    <span class="n">dose_type</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Absolute(Gy)&quot;</span><span class="p">,</span> <span class="s2">&quot;Relative(%)&quot;</span><span class="p">]</span>
+    <span class="n">volume_type</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;Absolute(cc)&quot;</span><span class="p">,</span> <span class="s2">&quot;Relative(%)&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Visualization.plot_robust_dvh"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_robust_dvh">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_robust_dvh</span><span class="p">(</span><span class="n">my_plan</span><span class="p">,</span> <span class="n">dose_list</span><span class="p">,</span> <span class="n">structs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s1">&#39;solid&#39;</span><span class="p">,</span> <span class="n">norm_flag</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">norm_volume</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span>
+                        <span class="n">norm_struct</span><span class="o">=</span><span class="s1">&#39;PTV&#39;</span><span class="p">,</span> <span class="n">weight_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">legend_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dose_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">dose_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">dose_list</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dose_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;dose_list is empty&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s1">&#39;dotted&#39;</span> <span class="ow">or</span> <span class="n">style</span> <span class="o">==</span> <span class="s1">&#39;dashed&#39;</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="mf">2.5</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_colors</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">structs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># orgs = []</span>
+            <span class="n">structs</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="n">max_dose</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">all_orgs</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="c1"># orgs = [struct.upper for struct in orgs]</span>
+        <span class="n">pres</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="p">[</span><span class="s1">&#39;pres_per_fraction_gy&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="p">[</span>
+            <span class="s1">&#39;num_of_fractions&#39;</span><span class="p">]</span>
+        <span class="n">legend</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">all_orgs</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">structs</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">dose_sort_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">dose</span> <span class="ow">in</span> <span class="n">dose_list</span><span class="p">:</span>
+                <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_dvh</span><span class="p">(</span><span class="n">dose</span><span class="p">,</span> <span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">weight_flag</span><span class="o">=</span><span class="n">weight_flag</span><span class="p">)</span>
+                <span class="n">dose_sort_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">d_sort_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">dose_sort_list</span><span class="p">)</span>
+            <span class="c1"># Compute min/max DVH curve taken across scenarios.</span>
+            <span class="n">d_min_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">d_sort_mat</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">d_max_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">d_sort_mat</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Plot user-specified scenarios.</span>
+            <span class="k">if</span> <span class="n">plot_scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dose_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">plot_scenario</span> <span class="o">=</span> <span class="p">[</span><span class="n">plot_scenario</span><span class="p">]</span>
+
+                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">plot_scenario</span><span class="p">)):</span>
+                    <span class="n">scene_num</span> <span class="o">=</span> <span class="n">plot_scenario</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">norm_flag</span><span class="p">:</span>
+                        <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_dose</span><span class="p">(</span><span class="n">dose_list</span><span class="p">[</span><span class="n">scene_num</span><span class="p">],</span> <span class="n">my_plan</span><span class="p">,</span> <span class="n">norm_struct</span><span class="p">,</span>
+                                                          <span class="n">norm_volume</span><span class="p">)</span> <span class="o">/</span> <span class="n">pres</span>
+                        <span class="n">dose_sort_list</span><span class="p">[</span><span class="n">scene_num</span><span class="p">]</span> <span class="o">=</span> <span class="n">dose_sort_list</span><span class="p">[</span><span class="n">scene_num</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm_factor</span>
+                        <span class="n">d_min_mat</span> <span class="o">=</span> <span class="n">d_min_mat</span> <span class="o">/</span> <span class="n">norm_factor</span>
+                        <span class="n">d_max_mat</span> <span class="o">=</span> <span class="n">d_max_mat</span> <span class="o">/</span> <span class="n">norm_factor</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dose_sort_list</span><span class="p">[</span><span class="n">scene_num</span><span class="p">],</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+                             <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">max_dose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_dose</span><span class="p">,</span> <span class="n">d_max_mat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">d_min_mat</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dotted&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">d_max_mat</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dotted&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">fill_betweenx</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="n">d_min_mat</span><span class="p">,</span> <span class="n">d_max_mat</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Dose (Gy)&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Volume Fraction (%)&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_dose</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="n">legend_font_size</span><span class="p">},</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#666666&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Show the minor grid lines with very faint and almost transparent grey lines</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">minorticks_on</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#999999&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">norm_flag</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="p">[</span><span class="s1">&#39;pres_per_fraction_gy&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="p">[</span>
+                <span class="s1">&#39;num_of_fractions&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="p">[</span><span class="s1">&#39;pres_per_fraction_gy&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.plot_dvh"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_dvh">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_dvh</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dose_1d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">structs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">dose_scale</span><span class="p">:</span> <span class="n">dose_type</span> <span class="o">=</span> <span class="s2">&quot;Absolute(Gy)&quot;</span><span class="p">,</span>
+                 <span class="n">volume_scale</span><span class="p">:</span> <span class="n">volume_type</span> <span class="o">=</span> <span class="s2">&quot;Relative(%)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create dvh plot for the selected structures</span>
+
+<span class="sd">        :param my_plan: object of class Plan</span>
+<span class="sd">        :param sol: optimal sol dictionary</span>
+<span class="sd">        :param dose_1d: dose_1d in 1d voxels</span>
+<span class="sd">        :param structs: structures to be included in dvh plot</span>
+<span class="sd">        :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = &quot;Absolute(cc)&quot; or volume_scale = &quot;Relative(%)&quot;</span>
+<span class="sd">        :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = &quot;Absolute(Gy)&quot; or dose_scale = &quot;Relative(%)&quot;</span>
+<span class="sd">        :keyword style (str): line style for dvh curve. default &quot;solid&quot;. can be &quot;dotted&quot;, &quot;dash-dotted&quot;.</span>
+<span class="sd">        :keyword width (int): width of line. Default 2</span>
+<span class="sd">        :keyword colors(list): list of colors</span>
+<span class="sd">        :keyword legend_font_size: Set legend_font_size. default 10</span>
+<span class="sd">        :keyword figsize: Set figure size for the plot. Default figure size (12,8)</span>
+<span class="sd">        :keyword create_fig: Create a new figure. Default True. If False, append to the previous figure</span>
+<span class="sd">        :keyword title: Title for the figure</span>
+<span class="sd">        :keyword filename: Name of the file to save the figure in current directory</span>
+<span class="sd">        :keyword show: Show the figure. Default is True. If false, next plot can be append to it</span>
+<span class="sd">        :keyword norm_flag: Use to normalize the plan. Default is False.</span>
+<span class="sd">        :keyword norm_volume: Use to set normalization volume. default is 90 percentile.</span>
+<span class="sd">        :return: dvh plot for the selected structures</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.plot_dvh(my_plan, sol=sol, structs=[&#39;PTV&#39;, &#39;ESOPHAGUS&#39;], dose_scale=&#39;Absolute(Gy)&#39;,volume_scale=&quot;Relative(%)&quot;, show=False, create_fig=True )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">dose_1d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;dose_1d&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sol</span><span class="p">:</span>
+                <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">A</span> <span class="o">@</span> <span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;dose_1d&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">sol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sol</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">inf_matrix</span>  <span class="c1"># create temporary solution</span>
+
+        <span class="c1"># getting options_fig:</span>
+        <span class="n">style</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;style&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;style&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="s1">&#39;solid&#39;</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;colors&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;colors&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">legend_font_size</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;legend_font_size&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;legend_font_size&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="mi">10</span>
+        <span class="n">figsize</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;figsize&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;figsize&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;title&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">show</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;show&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;show&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="c1"># create_fig = options[&#39;create_fig&#39;] if &#39;create_fig&#39; in options else False</span>
+        <span class="n">show_criteria</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;show_criteria&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;show_criteria&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;ax&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;ax&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="c1"># getting norm options</span>
+        <span class="n">norm_flag</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;norm_flag&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;norm_flag&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="n">norm_volume</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;norm_volume&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;norm_volume&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="mi">90</span>
+        <span class="n">norm_struct</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;norm_struct&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;norm_struct&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="s1">&#39;PTV&#39;</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">12</span>
+        <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">style</span> <span class="o">==</span> <span class="s1">&#39;dotted&#39;</span> <span class="ow">or</span> <span class="n">style</span> <span class="o">==</span> <span class="s1">&#39;dashed&#39;</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="mf">2.5</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">get_colors</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">structs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># orgs = []</span>
+            <span class="n">structs</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="n">max_dose</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">max_vol</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">all_orgs</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="c1"># orgs = [struct.upper for struct in orgs]</span>
+        <span class="n">pres</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_prescription</span><span class="p">()</span>
+        <span class="n">legend</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">norm_flag</span><span class="p">:</span>
+            <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_dose</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">norm_struct</span><span class="p">,</span> <span class="n">volume_per</span><span class="o">=</span><span class="n">norm_volume</span><span class="p">)</span> <span class="o">/</span> <span class="n">pres</span>
+            <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">dose_1d</span> <span class="o">/</span> <span class="n">norm_factor</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">all_orgs</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">structs</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># for dose_1d in dose_list:</span>
+            <span class="c1">#</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_dvh</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dose_scale</span> <span class="o">==</span> <span class="s1">&#39;Absolute(Gy)&#39;</span><span class="p">:</span>
+                <span class="n">max_dose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_dose</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Dose (Gy)&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dose_scale</span> <span class="o">==</span> <span class="s1">&#39;Relative(%)&#39;</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">pres</span> <span class="o">*</span> <span class="mi">100</span>
+                <span class="n">max_dose</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_dose</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Dose (%)&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">volume_scale</span> <span class="o">==</span> <span class="s1">&#39;Absolute(cc)&#39;</span><span class="p">:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_volume_cc</span><span class="p">(</span><span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="mi">100</span>
+                <span class="n">max_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_vol</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Volume (cc)&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">volume_scale</span> <span class="o">==</span> <span class="s1">&#39;Relative(%)&#39;</span><span class="p">:</span>
+                <span class="n">max_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_vol</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Volume Fraction (%)&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_orgs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">show_criteria</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">show_criteria</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="s1">&#39;dose_volume&#39;</span> <span class="ow">in</span> <span class="n">show_criteria</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">show_criteria</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span>
+                    <span class="n">y</span> <span class="o">=</span> <span class="n">show_criteria</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="s1">&#39;limit_volume_perc&#39;</span><span class="p">]</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="c1"># plt.xlabel(&#39;Dose (Gy)&#39;)</span>
+        <span class="c1"># plt.ylabel(&#39;Volume Fraction (%)&#39;)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_dose</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_vol</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="n">legend_font_size</span><span class="p">},</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#666666&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Show the minor grid lines with very faint and almost transparent grey lines</span>
+        <span class="c1"># plt.minorticks_on()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">minorticks_on</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">visible</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;#999999&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
+        <span class="c1"># if norm_flag:</span>
+        <span class="c1">#     x = pres * np.ones_like(y)</span>
+        <span class="c1"># else:</span>
+        <span class="k">if</span> <span class="n">dose_scale</span> <span class="o">==</span> <span class="s2">&quot;Absolute(Gy)&quot;</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">pres</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="Visualization.plot_binary_mask_points"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_binary_mask_points">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_binary_mask_points</span><span class="p">(</span><span class="n">my_plan</span><span class="p">,</span> <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+        <span class="n">mask_3d</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask_3d</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">get_colors</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Visualization.get_colors"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.get_colors">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_colors</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :return: return list of 20 colors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#3cb44b&#39;</span><span class="p">,</span> <span class="s1">&#39;#ffe119&#39;</span><span class="p">,</span> <span class="s1">&#39;#4363d8&#39;</span><span class="p">,</span> <span class="s1">&#39;#f58231&#39;</span><span class="p">,</span> <span class="s1">&#39;#911eb4&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;#46f0f0&#39;</span><span class="p">,</span> <span class="s1">&#39;#f032e6&#39;</span><span class="p">,</span> <span class="s1">&#39;#bcf60c&#39;</span><span class="p">,</span> <span class="s1">&#39;#fabebe&#39;</span><span class="p">,</span> <span class="s1">&#39;#008080&#39;</span><span class="p">,</span> <span class="s1">&#39;#e6beff&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;#9a6324&#39;</span><span class="p">,</span> <span class="s1">&#39;#fffac8&#39;</span><span class="p">,</span> <span class="s1">&#39;#800000&#39;</span><span class="p">,</span> <span class="s1">&#39;#aaffc3&#39;</span><span class="p">,</span> <span class="s1">&#39;#808000&#39;</span><span class="p">,</span> <span class="s1">&#39;#ffd8b1&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;#000075&#39;</span><span class="p">,</span> <span class="s1">&#39;#808080&#39;</span><span class="p">,</span> <span class="s1">&#39;#ffffff&#39;</span><span class="p">,</span> <span class="s1">&#39;#000000&#39;</span><span class="p">,</span> <span class="s1">&#39;#e6194b&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">colors</span></div>
+
+<div class="viewcode-block" id="Visualization.surface_plot"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.surface_plot">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">surface_plot</span><span class="p">(</span><span class="n">matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># acquire the cartesian coordinate matrices from the matrix</span>
+        <span class="c1"># x is cols, y is rows</span>
+        <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+        <span class="n">surf</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">matrix</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span><span class="p">,</span> <span class="n">surf</span></div>
+
+<div class="viewcode-block" id="Visualization.plot_fluence_2d"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_fluence_2d">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_fluence_2d</span><span class="p">(</span><span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Displays fluence in 2d for the given beam_id</span>
+
+<span class="sd">        :param beam_id: beam_id of the beam</span>
+<span class="sd">        :param sol: solution dictionary after optimization</span>
+<span class="sd">        :return: 2d optimal fluence plot</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.plot_fluence_2d(beam_id=0, sol=sol, **options)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fluence_2d</span><span class="p">(</span><span class="n">beam_id</span><span class="o">=</span><span class="n">beam_id</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.plot_fluence_3d"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_fluence_3d">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_fluence_3d</span><span class="p">(</span><span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Displays fluence in 3d for the given beam_id</span>
+
+<span class="sd">        :param sol: solution after optimization</span>
+<span class="sd">        :param beam_id: beam_id of the beam</span>
+<span class="sd">        :return: 3d optimal fluence plot</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.plot_fluence_3d(beam_id=0, sol=sol, **options)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot_fluence_3d</span><span class="p">(</span><span class="n">beam_id</span><span class="o">=</span><span class="n">beam_id</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.plot_2d_dose"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plot_2d_dose">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_2d_dose</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">slice_num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span> <span class="n">structs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show_dose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                     <span class="n">show_struct</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">show_isodose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Plot 2d view of ct, dose_1d, isodose and structure contours</span>
+
+<span class="sd">        :param sol: solution to optimization</span>
+<span class="sd">        :param my_plan: object of class Plan</span>
+<span class="sd">        :param slice_num: slice number</span>
+<span class="sd">        :param structs: structures for which contours to be displayed on the slice view. e.g. structs = [&#39;PTV, ESOPHAGUS&#39;]</span>
+<span class="sd">        :param show_dose: view dose_1d on the slice</span>
+<span class="sd">        :param show_struct: view structure on the slice</span>
+<span class="sd">        :param show_isodose: view isodose</span>
+<span class="sd">        :param dpi: Default dpi=100 for figure</span>
+<span class="sd">        :return: plot 2d view of ct, dose_1d, isodose and structure contours</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.plot_2d_dose(my_plan, sol=sol, slice_num=50, structs=[&#39;PTV&#39;], show_isodose=False)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># getting options_fig:</span>
+        <span class="n">figsize</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;figsize&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;figsize&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;title&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">dpi</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;dpi&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;dpi&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="mi">100</span>
+        <span class="n">show</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;show&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;show&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;ax&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;ax&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;figure.autolayout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">ct</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;ct_hu_3d&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># adjust the main plot to make room for the legends</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="n">dose_3d</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">show_dose</span><span class="p">:</span>
+            <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">A</span> <span class="o">@</span> <span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">())</span>
+            <span class="n">dose_3d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dose_1d_to_3d</span><span class="p">(</span><span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ct</span><span class="p">[</span><span class="n">slice_num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+            <span class="n">masked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">dose_3d</span><span class="p">[</span><span class="n">slice_num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dose_3d</span><span class="p">[</span><span class="n">slice_num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">masked</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                           <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;rainbow&#39;</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">show_isodose</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">show_dose</span><span class="p">:</span>
+                <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">A</span> <span class="o">*</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">()</span>
+                <span class="n">dose_3d</span> <span class="o">=</span> <span class="n">sol</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dose_1d_to_3d</span><span class="p">(</span><span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">)</span>
+            <span class="n">dose_legend</span> <span class="o">=</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">legend_dose_storage</span><span class="p">(</span><span class="n">my_plan</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">dose_3d</span><span class="p">[</span><span class="n">slice_num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">dose_legend</span><span class="p">[</span><span class="s1">&#39;dose_1d value&#39;</span><span class="p">],</span>
+                       <span class="n">colors</span><span class="o">=</span><span class="n">dose_legend</span><span class="p">[</span><span class="s1">&#39;dose_1d color&#39;</span><span class="p">],</span>
+                       <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">dose_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dose_legend</span><span class="p">[</span><span class="s1">&#39;dose_1d name&#39;</span><span class="p">])):</span>
+                <span class="n">dose_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="n">color</span><span class="o">=</span><span class="n">dose_legend</span><span class="p">[</span><span class="s1">&#39;dose_1d color&#39;</span><span class="p">][</span><span class="n">item</span><span class="p">],</span>
+                                        <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">label</span><span class="o">=</span><span class="n">dose_legend</span><span class="p">[</span><span class="s1">&#39;dose_1d name&#39;</span><span class="p">][</span><span class="n">item</span><span class="p">]))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_artist</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">dose_list</span><span class="p">,</span>
+                                    <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.15</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span><span class="mf">0.</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: Axial View - Slice #: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">slice_num</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Axial View - Slice #: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">slice_num</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">show_struct</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">structs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">structs</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+            <span class="n">struct_masks</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">]</span>
+            <span class="n">all_mask</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">get_colors</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">structs</span><span class="p">)):</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">ListedColormap</span><span class="p">(</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">contours</span> <span class="o">=</span> <span class="n">measure</span><span class="o">.</span><span class="n">find_contours</span><span class="p">(</span><span class="n">struct_masks</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="n">slice_num</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="mf">0.5</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">contour</span> <span class="ow">in</span> <span class="n">contours</span><span class="p">:</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">contour</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">contour</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">struct</span> <span class="k">for</span> <span class="n">struct</span> <span class="ow">in</span> <span class="n">structs</span><span class="p">]</span>
+            <span class="c1"># get the colors of the values, according to the</span>
+            <span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">mpatches</span>
+            <span class="n">patches</span> <span class="o">=</span> <span class="p">[</span><span class="n">mpatches</span><span class="o">.</span><span class="n">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">))]</span>
+            <span class="c1"># rax.labels = labels</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">patches</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+                       <span class="c1"># bbox_transform=fig.transFigure)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="Visualization.get_cmap_colors"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.get_cmap_colors">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_cmap_colors</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;hsv&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a function that maps each index in 0, 1, ..., n-1 to a distinct</span>
+<span class="sd">        RGB color; the keyword argument name must be a standard mpl colormap name.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.legend_dose_storage"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.legend_dose_storage">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">legend_dose_storage</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="c1"># dose_color = [[0.55, 0, 1], [0, 0, 1], [0, 0.5, 1], [0, 1, 0],</span>
+        <span class="c1">#               [1, 1, 0], [1, 0.65, 0], [1, 0, 0], [0.55, 0, 0]]</span>
+        <span class="n">dose_color</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.55</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.55</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+        <span class="n">dose_level</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">]</span>
+        <span class="n">dose_prescription</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;pres_per_fraction_gy&#39;</span><span class="p">]</span> <span class="o">*</span> \
+                            <span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;num_of_fractions&#39;</span><span class="p">]</span>
+        <span class="n">dose_value</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="o">*</span> <span class="n">dose_prescription</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">dose_level</span><span class="p">]</span>
+        <span class="n">dose_name</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">dose_level</span><span class="p">)):</span>
+            <span class="n">dose_name</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">dose_level</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; % / &#39;</span> <span class="o">+</span>
+                             <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">dose_value</span><span class="p">[</span><span class="n">item</span><span class="p">],</span> <span class="mi">3</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="s1">&#39;Gy&#39;</span><span class="p">)</span>
+        <span class="n">dose_storage_legend</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dose_1d color&#39;</span><span class="p">:</span> <span class="n">dose_color</span><span class="p">,</span> <span class="s1">&#39;dose_1d level&#39;</span><span class="p">:</span> <span class="n">dose_level</span><span class="p">,</span> <span class="s1">&#39;dose_1d value&#39;</span><span class="p">:</span> <span class="n">dose_value</span><span class="p">,</span>
+                               <span class="s1">&#39;dose_1d name&#39;</span><span class="p">:</span> <span class="n">dose_name</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">dose_storage_legend</span></div>
+
+<div class="viewcode-block" id="Visualization.view_in_slicer"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.view_in_slicer">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">view_in_slicer</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">slicer_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param my_plan: object of class Plan</span>
+<span class="sd">        :param slicer_path: slicer executable path on your local machine</span>
+<span class="sd">        :param data_dir: the folder path where data located, defaults to None.</span>
+<span class="sd">                If path = None, then it assumes the data is in sub-folder named data in the current directory</span>
+<span class="sd">        :return: plot the images in 3d slicer</span>
+
+<span class="sd">        view ct, dose_1d and structure set images in 3d slicer</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.view_in_slicer(my_plan, slicer_path=&#39;C:/Slicer/Slicer.exe&#39;, data_dir=&#39;path/to/nrrd/image&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">slicer_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">slicer_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe&#39;</span>
+        <span class="k">if</span> <span class="n">data_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">patient_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">data_dir</span><span class="p">):</span>  <span class="c1"># check if valid directory</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data directory. Please input valid directory&quot;</span><span class="p">)</span>
+        <span class="n">slicer_script_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;utils&#39;</span><span class="p">,</span> <span class="s1">&#39;slicer_script.py&#39;</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">subprocess</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">slicer_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;--python-script&quot;</span><span class="p">,</span> <span class="n">slicer_script_dir</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">,</span>
+                        <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])],</span> <span class="n">shell</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.view_in_slicer_jupyter"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.view_in_slicer_jupyter">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">view_in_slicer_jupyter</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">dose_1d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                               <span class="n">ct_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ct&#39;</span><span class="p">,</span> <span class="n">dose_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;dose&#39;</span><span class="p">,</span> <span class="n">struct_set_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;rt_struct&#39;</span><span class="p">,</span>
+                               <span class="n">show_ct</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                               <span class="n">show_dose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                               <span class="n">show_structs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method helps to visualize CT, Dose and Rt struct in 3d slicer</span>
+
+
+<span class="sd">        :param my_plan: object of class plan</span>
+<span class="sd">        :param dose_1d: dose in 1d</span>
+<span class="sd">        :param sol: solution dictionary</span>
+<span class="sd">        :param ct_name: Default to &#39;ct&#39;. name of the ct node in 3D slicer</span>
+<span class="sd">        :param dose_name: Default to &#39;dose&#39;. name of the dose node in 3D slicer</span>
+<span class="sd">        :param struct_set_name: name of the rtstruct</span>
+<span class="sd">        :param show_structs: default to True. If false, will not create structure node</span>
+<span class="sd">        :param show_dose: default to True. If false, will not create dose node</span>
+<span class="sd">        :param show_ct:default to True. If false, will not create ct node</span>
+<span class="sd">        :return: visualize in slicer jupyter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">view_in_slicer_jupyter</span><span class="o">.</span><span class="n">view_in_slicer_jupyter</span><span class="p">(</span><span class="n">my_plan</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="n">ct_name</span><span class="o">=</span><span class="n">ct_name</span><span class="p">,</span> <span class="n">dose_name</span><span class="o">=</span><span class="n">dose_name</span><span class="p">,</span>
+                                                      <span class="n">struct_set_name</span><span class="o">=</span><span class="n">struct_set_name</span><span class="p">,</span> <span class="n">show_ct</span><span class="o">=</span><span class="n">show_ct</span><span class="p">,</span> <span class="n">show_dose</span><span class="o">=</span><span class="n">show_dose</span><span class="p">,</span>
+                                                      <span class="n">show_structs</span><span class="o">=</span><span class="n">show_structs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Visualization.display_patient_metadata"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.display_patient_metadata">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">display_patient_metadata</span><span class="p">(</span><span class="n">patient_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">in_browser</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_beams_df</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                 <span class="n">return_structs_df</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Displays the patient information in console or html format. If in_browswer is enabled</span>
+<span class="sd">        it creates a temporary html file and lnunches your browser</span>
+
+<span class="sd">        :param patient_id: the patient id</span>
+<span class="sd">        :param data_dir: the folder path where data located, defaults to None.</span>
+<span class="sd">                If path = None, then it assumes the data is in sub-folder named data in the current directory</span>
+<span class="sd">        :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console</span>
+<span class="sd">        :param return_beams_df: return dataframe containing beams metadata</span>
+<span class="sd">        :param return_structs_df: return dataframe containing structures metadata</span>
+<span class="sd">        :raises invalid directory error: raises an exception if invalid data directory</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Visualization.display_patient_metadata(patient_id=patient_id, data_dir=&#39;path/to/data&#39;, in_browser=True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">data_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">patient_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">patient_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">data_dir</span><span class="p">):</span>  <span class="c1"># check if valid directory</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data directory. Please input valid directory&quot;</span><span class="p">)</span>
+
+        <span class="n">meta_data</span> <span class="o">=</span> <span class="n">load_metadata</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
+        <span class="c1"># if show_beams:</span>
+        <span class="c1"># check if full and/or sparse influence matrices are provided.</span>
+        <span class="c1"># Sparse matrix is just a truncated version of the full matrix (zeroing out small elements)</span>
+        <span class="c1"># often used in the optimization for computational efficiency</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]</span>  <span class="c1"># get beams_dict metadata</span>
+        <span class="n">beams_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">beams</span><span class="p">)</span>  <span class="c1"># using Pandas data structure</span>
+        <span class="n">is_full</span> <span class="o">=</span> <span class="n">beams_df</span><span class="p">[</span><span class="s1">&#39;influenceMatrixFull_File&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;full&#39;</span><span class="p">,</span>
+                                                                    <span class="n">na</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># does the data include the full influence matrix</span>
+        <span class="n">is_sparse</span> <span class="o">=</span> <span class="n">beams_df</span><span class="p">[</span><span class="s1">&#39;influenceMatrixSparse_File&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;sparse&#39;</span><span class="p">,</span>
+                                                                        <span class="n">na</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># does the data include the sparse influence matrix</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="p">(</span><span class="n">sparse</span><span class="p">,</span> <span class="n">full</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">is_full</span><span class="p">,</span> <span class="n">is_sparse</span><span class="p">)):</span>  <span class="c1"># create column for sparse/full check</span>
+            <span class="k">if</span> <span class="n">sparse</span> <span class="ow">and</span> <span class="n">full</span><span class="p">:</span>
+                <span class="n">beams_df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="s1">&#39;influence_matrix(sparse/full)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Both&#39;</span>
+            <span class="k">elif</span> <span class="n">sparse</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">full</span><span class="p">:</span>
+                <span class="n">beams_df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="s1">&#39;influence_matrix(sparse/full)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Only Sparse&#39;</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">sparse</span> <span class="ow">and</span> <span class="n">full</span><span class="p">:</span>
+                <span class="n">beams_df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="s1">&#39;influence_matrix(sparse/full)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Only Full&#39;</span>
+        <span class="c1">#  pick information to include in the table</span>
+        <span class="n">keep_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;gantry_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;collimator_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;couch_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;beam_modality&#39;</span><span class="p">,</span> <span class="s1">&#39;energy_MV&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;influence_matrix(sparse/full)&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;iso_center&#39;</span><span class="p">,</span> <span class="s1">&#39;MLC_name&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;machine_name&#39;</span><span class="p">]</span>
+        <span class="n">beams_df</span> <span class="o">=</span> <span class="n">beams_df</span><span class="p">[</span><span class="n">keep_columns</span><span class="p">]</span>
+
+        <span class="n">structures</span> <span class="o">=</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;structures&#39;</span><span class="p">]</span>
+        <span class="n">struct_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">structures</span><span class="p">)</span>
+        <span class="n">keep_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;volume_cc&#39;</span><span class="p">]</span>  <span class="c1"># discard the columns except this columns</span>
+        <span class="n">struct_df</span> <span class="o">=</span> <span class="n">struct_df</span><span class="p">[</span><span class="n">keep_columns</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">return_beams_df</span> <span class="ow">and</span> <span class="n">return_structs_df</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">beams_df</span><span class="p">,</span> <span class="n">struct_df</span>
+        <span class="k">elif</span> <span class="n">return_beams_df</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">beams_df</span>
+        <span class="k">elif</span> <span class="n">return_structs_df</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">struct_df</span>
+        <span class="c1"># Write the results in a temporary html file in the current directory and launch a browser to display</span>
+        <span class="k">if</span> <span class="n">in_browser</span><span class="p">:</span>
+            <span class="n">style_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;../..&#39;</span><span class="p">,</span> <span class="s1">&#39;df_style.css&#39;</span><span class="p">)</span>
+            <span class="n">html_string</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">                    &lt;html&gt;</span>
+<span class="s1">                      &lt;head&gt;&lt;title&gt;Portpy MetaData&lt;/title&gt;&lt;/head&gt;</span>
+<span class="s1">                      &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;</span><span class="si">{style}</span><span class="s1">&quot;/&gt;</span>
+<span class="s1">                      &lt;body&gt;</span>
+<span class="s1">                      &lt;h1&gt; PortPy Metadata &lt;/h1&gt; </span>
+<span class="s1">                      &lt;h4&gt; Beams Metadata &lt;/h4&gt;</span>
+<span class="s1">                        </span><span class="si">{table_1}</span><span class="s1"></span>
+<span class="s1">                      &lt;h4&gt; Structures Metadata &lt;/h4&gt;</span>
+<span class="s1">                        </span><span class="si">{table_2}</span><span class="s1"></span>
+<span class="s1">                      &lt;/body&gt;</span>
+<span class="s1">                    &lt;/html&gt;.</span>
+<span class="s1">                    &#39;&#39;&#39;</span>  <span class="c1"># create html body and append table to it</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;temp.html&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_string</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table_1</span><span class="o">=</span><span class="n">beams_df</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;mystyle&#39;</span><span class="p">),</span>
+                                           <span class="n">table_2</span><span class="o">=</span><span class="n">struct_df</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;mystyle&#39;</span><span class="p">),</span>
+                                           <span class="n">style</span><span class="o">=</span><span class="n">style_file</span><span class="p">))</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="s1">&#39;temp.html&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">is_notebook</span><span class="p">():</span>
+                <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Beams table..&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">option_context</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.max_columns&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.precision&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.colheader_justify&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                                       <span class="p">):</span>
+                    <span class="n">beams_df</span> <span class="o">=</span> <span class="n">beams_df</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">set_properties</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;text-align&#39;</span><span class="p">:</span> <span class="s1">&#39;center&#39;</span><span class="p">})</span>
+                    <span class="n">display</span><span class="p">(</span><span class="n">beams_df</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Structure table..&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">option_context</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.max_columns&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.precision&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.colheader_justify&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                                       <span class="p">):</span>
+                    <span class="n">struct_df</span> <span class="o">=</span> <span class="n">struct_df</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">set_properties</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="s1">&#39;text-align&#39;</span><span class="p">:</span> <span class="s1">&#39;center&#39;</span><span class="p">})</span>
+                    <span class="n">display</span><span class="p">(</span><span class="n">struct_df</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Beams table..&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span><span class="n">beams_df</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">tablefmt</span><span class="o">=</span><span class="s1">&#39;psql&#39;</span><span class="p">))</span>  <span class="c1"># print the table in console using tabulate</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">Structures table..&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span><span class="n">struct_df</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">tablefmt</span><span class="o">=</span><span class="s1">&#39;psql&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Visualization.display_patients"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.display_patients">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">display_patients</span><span class="p">(</span><span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">in_browser</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">return_df</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Displays the list of patients included in data_dir folder</span>
+
+<span class="sd">        :param data_dir: folder including patient data.</span>
+<span class="sd">            If it is None, then it assumes the data is in the current directory under sub-folder named &quot;data&quot;</span>
+<span class="sd">        :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console</span>
+<span class="sd">        :param return_df: return dataframe instead of visualization</span>
+<span class="sd">        :raises invalid directory error: raises an exception if invalid data directory.</span>
+
+<span class="sd">        :return display patient information in table</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">display_dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># we add all the relevant information from meta_data to this dictionary</span>
+        <span class="k">if</span> <span class="n">data_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># if data directory not provided, then use the subfolder named &quot;data&quot; in the current directory</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">data_dir</span><span class="p">):</span>  <span class="c1"># check if valid directory</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data directory. Please input valid directory&quot;</span><span class="p">)</span>
+        <span class="n">pat_ids</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pat_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pat_ids</span><span class="p">):</span>  <span class="c1"># Loop through patients in path</span>
+            <span class="k">if</span> <span class="s2">&quot;Patient&quot;</span> <span class="ow">in</span> <span class="n">pat_id</span><span class="p">:</span>  <span class="c1"># ignore irrelevant folders</span>
+                <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;patient_id&#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pat_id</span><span class="p">)</span>
+                <span class="n">meta_data</span> <span class="o">=</span> <span class="n">load_metadata</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">pat_id</span><span class="p">))</span>  <span class="c1"># load metadata for the patients</span>
+                <span class="c1"># set the keys and append to display dict</span>
+                <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;disease_site&#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;clinical_criteria&#39;</span><span class="p">][</span><span class="s1">&#39;disease_site&#39;</span><span class="p">])</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;structures&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;PTV&#39;</span><span class="p">)</span>
+                <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;ptv_vol_cc&#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;structures&#39;</span><span class="p">][</span><span class="s1">&#39;volume_cc&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">])</span>
+                <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;num_beams&#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="s1">&#39;ID&#39;</span><span class="p">]))</span>
+                <span class="c1"># check if all the iso centers are same for beams_dict</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span>
+                    <span class="n">ele</span> <span class="o">==</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="s1">&#39;iso_center&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ele</span> <span class="ow">in</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="s1">&#39;iso_center&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                    <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;iso_center_shift &#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;No&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">display_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;iso_center_shift &#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Yes&#39;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">display_dict</span><span class="p">)</span>  <span class="c1"># convert dictionary to dataframe</span>
+        <span class="k">if</span> <span class="n">return_df</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span>
+        <span class="k">if</span> <span class="n">in_browser</span><span class="p">:</span>
+            <span class="n">style_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;df_style.css&#39;</span><span class="p">)</span>  <span class="c1"># get style file path</span>
+            <span class="n">html_string</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">                    &lt;html&gt;</span>
+<span class="s1">                      &lt;head&gt;&lt;title&gt;Portpy MetaData&lt;/title&gt;&lt;/head&gt;</span>
+<span class="s1">                      &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;</span><span class="si">{style}</span><span class="s1">&quot;/&gt;</span>
+<span class="s1">                      &lt;body&gt;</span>
+<span class="s1">                      &lt;h4&gt; Patients Metadata &lt;/h4&gt;</span>
+<span class="s1">                        </span><span class="si">{table}</span><span class="s1"></span>
+<span class="s1">                      &lt;/body&gt;</span>
+<span class="s1">                    &lt;/html&gt;.</span>
+<span class="s1">                    &#39;&#39;&#39;</span>  <span class="c1"># create html body and append table to it</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;temp.html&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                    <span class="n">html_string</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;mystyle&#39;</span><span class="p">),</span> <span class="n">style</span><span class="o">=</span><span class="n">style_file</span><span class="p">))</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="s1">&#39;temp.html&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">is_notebook</span><span class="p">():</span>
+                <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+                <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">option_context</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.max_columns&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                       <span class="s1">&#39;display.precision&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+                                       <span class="p">):</span>
+
+                    <span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="n">tablefmt</span><span class="o">=</span><span class="s1">&#39;psql&#39;</span><span class="p">))</span>  <span class="c1"># print in console using tabulate</span></div>
+
+<div class="viewcode-block" id="Visualization.plan_metrics"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.plan_metrics">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plan_metrics</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">html_file_name</span><span class="o">=</span><span class="s1">&#39;temp.html&#39;</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">return_df</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Visualize the plan metrics for clinical criteria in browser.</span>
+<span class="sd">        It evaluate the plan by comparing the metrics against required criteria.</span>
+
+<span class="sd">        If plan value is green color. It meets all the Limits and Goals</span>
+<span class="sd">        If plan value is yellow color. It meets limits but not goals</span>
+<span class="sd">        If plan value is red color. It violates both limit and goals</span>
+<span class="sd"> </span>
+<span class="sd">        :param my_plan: object of class Plan</span>
+<span class="sd">        :param sol: optimal solution dictionary</span>
+<span class="sd">        :param html_file_name:  name of the html file to be launched in browser</span>
+<span class="sd">        :param sol_names: Default to Plan Value. column names for the plan evaluation</span>
+<span class="sd">        :param return_df: return df instead of visualization</span>
+<span class="sd">        :return: plan metrics in browser</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># convert clinical criteria in dataframe</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">my_plan</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;criteria&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">sol</span> <span class="o">=</span> <span class="p">[</span><span class="n">sol</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sol_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">sol_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Plan Value &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="p">))]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sol_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Plan Value&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sol</span><span class="p">):</span>
+            <span class="n">dose_1d</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;inf_matrix&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">A</span> <span class="o">@</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;optimal_intensity&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)):</span>  <span class="c1"># Loop through the clinical criteria</span>
+                <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;max_dose&#39;</span><span class="p">:</span>
+                    <span class="n">struct</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">struct</span> <span class="ow">in</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_structures</span><span class="p">():</span>
+                        <span class="n">max_dose</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_max_dose</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">)</span>  <span class="c1"># get max dose_1d</span>
+                        <span class="k">if</span> <span class="s1">&#39;limit_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="ow">or</span> <span class="s1">&#39;goal_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
+                            <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">=</span> <span class="n">max_dose</span>
+                        <span class="k">elif</span> <span class="s1">&#39;limit_dose_perc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="ow">or</span> <span class="s1">&#39;goal_dose_perc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
+                            <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">=</span> <span class="n">max_dose</span> <span class="o">/</span> <span class="p">(</span>
+                                    <span class="n">my_plan</span><span class="o">.</span><span class="n">get_prescription</span><span class="p">()</span> <span class="o">*</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">get_num_of_fractions</span><span class="p">())</span> <span class="o">*</span> <span class="mi">100</span>
+                <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;mean_dose&#39;</span><span class="p">:</span>
+                    <span class="n">struct</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">struct</span> <span class="ow">in</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_structures</span><span class="p">():</span>
+                        <span class="n">mean_dose</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_mean_dose</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">)</span>
+                        <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">=</span> <span class="n">mean_dose</span>
+                <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;dose_volume_V&#39;</span><span class="p">:</span>
+                    <span class="n">struct</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;structure_name&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">struct</span> <span class="ow">in</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_structures</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="s1">&#39;limit_volume_perc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="ow">or</span> <span class="s1">&#39;goal_volume_perc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
+                            <span class="n">dose</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span>
+                            <span class="n">volume</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_volume</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">,</span> <span class="n">dose_value_gy</span><span class="o">=</span><span class="n">dose</span><span class="p">)</span>
+                            <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">=</span> <span class="n">volume</span>
+                        <span class="k">elif</span> <span class="s1">&#39;limit_volume_cc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="ow">or</span> <span class="s1">&#39;goal_volume_cc&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">constraints</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
+                            <span class="n">dose</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="s1">&#39;dose_gy&#39;</span><span class="p">]</span>
+                            <span class="n">volume</span> <span class="o">=</span> <span class="n">Evaluation</span><span class="o">.</span><span class="n">get_volume</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="n">struct</span><span class="p">,</span> <span class="n">dose_value_gy</span><span class="o">=</span><span class="n">dose</span><span class="p">)</span>
+                            <span class="n">vol_cc</span> <span class="o">=</span> <span class="n">my_plan</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">get_volume_cc</span><span class="p">(</span><span class="n">structure_name</span><span class="o">=</span><span class="n">struct</span><span class="p">)</span> <span class="o">*</span> <span class="n">volume</span> <span class="o">/</span> <span class="mi">100</span>
+                            <span class="n">df</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="n">sol_names</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span> <span class="o">=</span> <span class="n">vol_cc</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;display.precision&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># remove structures which are not present</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># reset the index</span>
+
+        <span class="k">def</span> <span class="nf">color_plan_value</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+
+            <span class="n">highlight_red</span> <span class="o">=</span> <span class="s1">&#39;background-color: red;&#39;</span>
+            <span class="n">highlight_green</span> <span class="o">=</span> <span class="s1">&#39;background-color: green;&#39;</span>
+            <span class="n">highlight_orange</span> <span class="o">=</span> <span class="s1">&#39;background-color: orange;&#39;</span>
+            <span class="n">default</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+            <span class="k">def</span> <span class="nf">matching_keys</span><span class="p">(</span><span class="n">dictionary</span><span class="p">,</span> <span class="n">search_string</span><span class="p">):</span>  <span class="c1"># method to find the key of only part of the key match</span>
+                <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">                :param dictionary: dictionary to search the string</span>
+<span class="sd">                :param search_string: string to be searched in dictionary</span>
+<span class="sd">                :return: full key if found search string found else empty string</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="n">get_key</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">search_string</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                        <span class="n">get_key</span> <span class="o">=</span> <span class="n">key</span>
+                <span class="k">if</span> <span class="n">get_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">get_key</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+
+            <span class="n">limit_key</span> <span class="o">=</span> <span class="n">matching_keys</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">],</span> <span class="s1">&#39;limit&#39;</span><span class="p">)</span>
+            <span class="n">goal_key</span> <span class="o">=</span> <span class="n">matching_keys</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">],</span> <span class="s1">&#39;goal&#39;</span><span class="p">)</span>
+
+            <span class="n">row_color</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="o">*</span><span class="p">[</span><span class="n">default</span><span class="p">]</span>  <span class="c1"># default color for all rows initially</span>
+            <span class="c1"># must return one string per cell in this row</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">limit_key</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="n">limit_key</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">:</span>  <span class="c1"># added epsilon to avoid minor differences</span>
+                            <span class="n">row_color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">highlight_red</span>  <span class="c1"># make plan value in red</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">row_color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">highlight_green</span>  <span class="c1"># make plan value in red</span>
+                <span class="k">if</span> <span class="n">goal_key</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;constraints&#39;</span><span class="p">][</span><span class="n">goal_key</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.0001</span><span class="p">:</span>
+                            <span class="n">row_color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">highlight_orange</span>  <span class="c1"># make plan value in red</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">row_color</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">highlight_green</span>  <span class="c1"># make plan value in red</span>
+            <span class="k">return</span> <span class="n">row_color</span>
+        <span class="n">sol_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;constraints&#39;</span><span class="p">)</span>
+        <span class="n">styled_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">color_plan_value</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="n">sol_names</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># apply</span>
+        <span class="c1"># color to dataframe using df.style method</span>
+        <span class="k">if</span> <span class="n">return_df</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">styled_df</span>
+        <span class="k">if</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">is_notebook</span><span class="p">():</span>
+            <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+            <span class="k">with</span> <span class="n">pd</span><span class="o">.</span><span class="n">option_context</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                   <span class="s1">&#39;display.max_columns&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                   <span class="s1">&#39;display.precision&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+                                   <span class="p">):</span>
+
+                <span class="n">display</span><span class="p">(</span><span class="n">styled_df</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">html</span> <span class="o">=</span> <span class="n">styled_df</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>  <span class="c1"># render to html</span>
+            <span class="n">html_string</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">                            &lt;html&gt;</span>
+<span class="s1">                              &lt;head&gt;&lt;title&gt;Portpy Clinical Criteria Evaluation&lt;/title&gt;&lt;/head&gt;</span>
+<span class="s1">                              &lt;style&gt; </span>
+<span class="s1">                                table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}</span>
+<span class="s1">                                th, td {{padding: 5px;}}</span>
+<span class="s1">                              &lt;/style&gt;</span>
+<span class="s1">                              &lt;body&gt;</span>
+<span class="s1">                              &lt;h1&gt; Clinical Criteria&lt;/h1&gt;</span>
+<span class="s1">                              &lt;h4 style=&quot;color: green&quot;&gt;Meets limit and goal&lt;/h4&gt;</span>
+<span class="s1">                              &lt;h4 style=&quot;color: orange&quot;&gt;Meets limit but not goal&lt;/h4&gt;</span>
+<span class="s1">                              &lt;h4 style=&quot;color: red&quot;&gt;Violate both limit and goal&lt;/h4&gt;</span>
+<span class="s1">                                </span><span class="si">{table}</span><span class="s1"></span>
+<span class="s1">                              &lt;/body&gt;</span>
+<span class="s1">                            &lt;/html&gt;.</span>
+<span class="s1">                            &#39;&#39;&#39;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">html_file_name</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_string</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">html</span><span class="p">))</span>
+            <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">html_file_name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Visualization.is_notebook"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.visualization.Visualization.is_notebook">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">get_ipython</span>
+            <span class="n">shell</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">if</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;ZMQInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># Jupyter notebook or qtconsole</span>
+            <span class="k">elif</span> <span class="n">shell</span> <span class="o">==</span> <span class="s1">&#39;TerminalInteractiveShell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Terminal running IPython</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;google.colab&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">get_ipython</span><span class="p">()):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Other type (?)</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Probably standard Python interpreter</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Probably standard Python interpreter</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

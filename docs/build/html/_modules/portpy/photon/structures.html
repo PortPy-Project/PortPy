@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.structures &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.structures</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.structures</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+
+<div class="viewcode-block" id="Structures"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures">[docs]</a><span class="k">class</span> <span class="nc">Structures</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class representing structures.</span>
+
+<span class="sd">    - **Attributes** ::</span>
+
+<span class="sd">        :param structures_dict: structure dictionary that contains information about the structures present in the patient&#39;s CT scan.</span>
+<span class="sd">        :type structures_dict: dict</span>
+<span class="sd">        :param opt_voxels_dict: It contains information about optimization voxels in the form of dictionary</span>
+<span class="sd">        :type opt_voxels_dict: dict</span>
+
+
+<span class="sd">    - **Methods** ::</span>
+
+<span class="sd">        :get_volume_cc(struct):</span>
+<span class="sd">            Get volume in cc for the structure</span>
+<span class="sd">        :expand(structure, margin_mm, new_structure):</span>
+<span class="sd">            Expand the structure with margin_mm in mm</span>
+<span class="sd">        :shrink(structure, margin_mm, new_structure):</span>
+<span class="sd">            Shrink the structure with margin_mm in mm</span>
+<span class="sd">        :union(str_1, str_2, str1_or_str2):</span>
+<span class="sd">            Create union of two structures str_1 and str_2</span>
+<span class="sd">        :intersect(str_1, str_2, str1_and_str2):</span>
+<span class="sd">            Create intersect of two structures str_1 and str_2</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structures</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">opt_voxels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param structures: structures dictionary that contains information about the structures present in the patient&#39;s CT scan.</span>
+<span class="sd">        :param opt_voxels: optimization voxels dictionary containing data about optimization voxels</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span> <span class="o">=</span> <span class="n">structures</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span> <span class="o">=</span> <span class="n">opt_voxels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">structures</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ct_voxel_resolution_xyz_mm</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;ct_voxel_resolution_xyz_mm&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_structures</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Structures.get_structures"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.get_structures">[docs]</a>    <span class="k">def</span> <span class="nf">get_structures</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns all the structure names as list</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Structures.get_volume_cc"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.get_volume_cc">[docs]</a>    <span class="k">def</span> <span class="nf">get_volume_cc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get volume in cc for the structure</span>
+
+<span class="sd">         :param structure_name: name of the structure in plan</span>
+<span class="sd">         :return: volume of the structure</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;volume_cc&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Structures.get_fraction_of_vol_in_calc_box"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.get_fraction_of_vol_in_calc_box">[docs]</a>    <span class="k">def</span> <span class="nf">get_fraction_of_vol_in_calc_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get fraction of volume in calc box for the structure</span>
+
+<span class="sd">         :param structure_name: name of the structure in plan</span>
+<span class="sd">         :return: volume of the structure</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;fraction_of_vol_in_calc_box&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Structures.preprocess_structures"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.preprocess_structures">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_structures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        preprocess structures to create optimization voxel indices for the structure</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;voxel_idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;voxel_size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])):</span>
+
+            <span class="n">vox_3d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;ct_to_dose_voxel_map&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># my_plan.structures_dict[&#39;voxel_idx&#39;][i] = np.unique(vox_3d[vox_3d &gt; 0])</span>
+            <span class="n">vox</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">vox_3d</span><span class="p">[</span><span class="n">vox_3d</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">],</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;voxel_idx&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vox</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;voxel_size&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ct_voxel_resolution_xyz_mm</span><span class="p">)</span>  <span class="c1"># calculate weight for each voxel</span></div>
+            <span class="c1"># self.opt_voxels_dict[&#39;voxel_size&#39;][i] = counts / np.max(counts)  # calculate weight for each voxel</span>
+
+<div class="viewcode-block" id="Structures.create_structure"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.create_structure">[docs]</a>    <span class="k">def</span> <span class="nf">create_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mask_3d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new structure and append its mask to the structures_dict</span>
+
+<span class="sd">        :param new_structure: name of the new structure</span>
+<span class="sd">        :param mask_3d: 3d mask for the structure</span>
+<span class="sd">        :return: create new_structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_structure</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mask_3d</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Structures.modify_structure"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.modify_structure">[docs]</a>    <span class="k">def</span> <span class="nf">modify_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mask_3d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param structure: name of the structure to be modified</span>
+<span class="sd">        :param mask_3d: 3d mask for the structure</span>
+<span class="sd">        :return: modify structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">structure</span>
+            <span class="k">elif</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask_3d</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Structures.delete_structure"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.delete_structure">[docs]</a>    <span class="k">def</span> <span class="nf">delete_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param structure: structure to be removed</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Structures.union"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.union">[docs]</a>    <span class="k">def</span> <span class="nf">union</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">str_1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str_2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str1_or_str2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create union of two structures str_1 and str_2. If str1_or_str2 is not in structures dict,</span>
+<span class="sd">        it will create new structures. If str1_or_str2 is in structure_dict, it will modify the structure</span>
+
+<span class="sd">        :param str_1: structure name for the 1st structure</span>
+<span class="sd">        :param str_2: structure name for the 2nd structure</span>
+<span class="sd">        :param str1_or_str2: structure name for the union of  structure 1 and 2</span>
+<span class="sd">        :return: create union of the structures and save it to structures list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">str1_or_str2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;str1_or_str2 need to be provided&quot;</span><span class="p">)</span>
+        <span class="n">ind1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_1</span><span class="p">)</span>
+        <span class="n">ind2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+        <span class="n">mask_3d_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind1</span><span class="p">]</span>
+        <span class="n">mask_3d_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind2</span><span class="p">]</span>
+        <span class="n">new_mask_3d_1</span> <span class="o">=</span> <span class="n">mask_3d_1</span> <span class="o">|</span> <span class="n">mask_3d_2</span>
+        <span class="k">if</span> <span class="n">str1_or_str2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="n">new_structure</span><span class="o">=</span><span class="n">str1_or_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modify_structure</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">str1_or_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Structures.intersect"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.intersect">[docs]</a>    <span class="k">def</span> <span class="nf">intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">str_1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str_2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str1_and_str2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create intersection of two structures str_1 and str_2. If str1_and_str2 is not in structures dict,</span>
+<span class="sd">        it will create new structures. If str1_and_str2 is in structure_dict, it will modify the structure</span>
+
+<span class="sd">        :param str_1: structure name for the 1st structure</span>
+<span class="sd">        :param str_2: structure name for the 2nd structure</span>
+<span class="sd">        :param str1_and_str2: structure name for the intersection of  structure 1 and 2</span>
+<span class="sd">        :return: create intersection of the structures and save it to structures list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">str1_and_str2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;str1_and_str2 need to be provided&quot;</span><span class="p">)</span>
+        <span class="n">ind1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_1</span><span class="p">)</span>
+        <span class="n">ind2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+        <span class="n">mask_3d_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind1</span><span class="p">]</span>
+        <span class="n">mask_3d_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind2</span><span class="p">]</span>
+        <span class="n">new_mask_3d_1</span> <span class="o">=</span> <span class="n">mask_3d_1</span> <span class="o">&amp;</span> <span class="n">mask_3d_2</span>
+        <span class="k">if</span> <span class="n">str1_and_str2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="n">new_structure</span><span class="o">=</span><span class="n">str1_and_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modify_structure</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">str1_and_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Structures.subtract"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.subtract">[docs]</a>    <span class="k">def</span> <span class="nf">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">str_1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str_2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str1_sub_str2</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param str_1: structure name for the 1st structure</span>
+<span class="sd">        :param str_2: structure name for the 2nd structure</span>
+<span class="sd">        :param str1_sub_str2: structure name for subtracting 2 from 1</span>
+<span class="sd">        :return: create structure1 - structure2 and save it to list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">str1_sub_str2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;str1_sub_str2 need to be provided&quot;</span><span class="p">)</span>
+        <span class="n">ind1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_1</span><span class="p">)</span>
+        <span class="n">ind2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">str_2</span><span class="p">)</span>
+        <span class="n">mask_3d_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind1</span><span class="p">]</span>
+        <span class="n">mask_3d_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind2</span><span class="p">]</span>
+        <span class="n">new_mask_3d_1</span> <span class="o">=</span> <span class="n">mask_3d_1</span> <span class="o">-</span> <span class="n">mask_3d_2</span>
+        <span class="n">new_mask_3d_1</span><span class="p">[</span><span class="n">new_mask_3d_1</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">str1_sub_str2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="n">new_structure</span><span class="o">=</span><span class="n">str1_sub_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modify_structure</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">str1_sub_str2</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">new_mask_3d_1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Structures.expand"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">margin_mm</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Expand the structure with the given margin_mm.</span>
+
+<span class="sd">        :param structure: structure name to expand</span>
+<span class="sd">        :param margin_mm: margin_mm in mm</span>
+<span class="sd">        :param new_structure: new structure name. if same as structure name,</span>
+<span class="sd">        expand the same structure. else create new structure</span>
+<span class="sd">        :return: expand and save the structure mask in structures dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># from skimage import data, morphology, transform</span>
+        <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+        <span class="n">mask_3d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="c1"># getting kernel size for expansion or shrinking</span>
+        <span class="k">if</span> <span class="n">margin_mm</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">num_voxels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">margin_mm</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ct_voxel_resolution_xyz_mm</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">generate_binary_structure</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">connectivity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># ball kernel</span>
+            <span class="c1"># creating different iterations along z and xy directions</span>
+            <span class="n">num_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_voxels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_voxels</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">iterations_in_one_step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">num_voxels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_iterations</span><span class="p">))</span>
+            <span class="c1"># margin_mask_3d = ndimage.binary_dilation(mask_3d, structure=struct).astype(mask_3d.dtype)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">margin_mask_3d</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">binary_dilation</span><span class="p">(</span><span class="n">mask_3d</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span>
+                                                             <span class="n">iterations</span><span class="o">=</span><span class="n">iterations_in_one_step</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mask_3d</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+                    <span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">flat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">margin_mask_3d</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">binary_dilation</span><span class="p">(</span><span class="n">margin_mask_3d</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="n">flat</span><span class="p">,</span>
+                                                             <span class="n">iterations</span><span class="o">=</span><span class="n">iterations_in_one_step</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mask_3d</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">margin_mm</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">margin_mask_3d</span> <span class="o">=</span> <span class="n">mask_3d</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid margin </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">margin_mm</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">new_structure</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="n">new_structure</span><span class="o">=</span><span class="n">new_structure</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">margin_mask_3d</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modify_structure</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">structure</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">margin_mask_3d</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Structures.shrink"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.structures.Structures.shrink">[docs]</a>    <span class="k">def</span> <span class="nf">shrink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">margin_mm</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">new_structure</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Shrink the structure with margin_mm.</span>
+
+<span class="sd">            :param structure: structure name to shrink</span>
+<span class="sd">            :param margin_mm: margin_mm in mm</span>
+<span class="sd">            :param new_structure: new structure name. if same as structure, shrink the same structure. else create new structure</span>
+<span class="sd">            :return: shrink and save the structure in structures_dictionary</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+        <span class="n">mask_3d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;structure_mask_3d&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="c1"># getting kernel size for expansion or shrinking</span>
+        <span class="n">num_voxels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">margin_mm</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ct_voxel_resolution_xyz_mm</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">struct</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">generate_binary_structure</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">connectivity</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># ball kernel</span>
+        <span class="c1"># creating different iterations along z and xy directions</span>
+        <span class="n">num_iterations</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_voxels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_voxels</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">iterations_in_one_step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">num_voxels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_iterations</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">margin_mask_3d</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">binary_erosion</span><span class="p">(</span><span class="n">mask_3d</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="n">struct</span><span class="p">,</span>
+                                                        <span class="n">iterations</span><span class="o">=</span><span class="n">iterations_in_one_step</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mask_3d</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">struct</span><span class="p">)</span>
+                <span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">flat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">margin_mask_3d</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">binary_erosion</span><span class="p">(</span><span class="n">margin_mask_3d</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="n">flat</span><span class="p">,</span>
+                                                        <span class="n">iterations</span><span class="o">=</span><span class="n">iterations_in_one_step</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mask_3d</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+            <span class="c1"># margin_mask_3d = ndimage.binary_dilation(mask_3d, structure=structure).astype(mask_3d.dtype)</span>
+        <span class="k">if</span> <span class="n">new_structure</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">structures_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="n">new_structure</span><span class="o">=</span><span class="n">new_structure</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">margin_mask_3d</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">modify_structure</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">structure</span><span class="p">,</span> <span class="n">mask_3d</span><span class="o">=</span><span class="n">margin_mask_3d</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.utils.save_or_load_pickle &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.utils.save_or_load_pickle</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.utils.save_or_load_pickle</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">portpy.photon.plan</span> <span class="kn">import</span> <span class="n">Plan</span>
+
+
+<div class="viewcode-block" id="save_plan"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.save_plan">[docs]</a><span class="k">def</span> <span class="nf">save_plan</span><span class="p">(</span><span class="n">my_plan</span><span class="p">:</span> <span class="n">Plan</span><span class="p">,</span> <span class="n">plan_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Save pickled file for plan object</span>
+
+<span class="sd">    :param my_plan: object fo class Plan</span>
+<span class="sd">    :param plan_name: create the name of the pickled file of plan object. If none, it will save with the name as &#39;my_plan&#39;</span>
+<span class="sd">    :param path: if path is set, plan object will be pickled and saved in path directory else it will save in current project directory</span>
+<span class="sd">    :return: save pickled object of class Plan</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; my_plan.save_plan(plan_name=&#39;my_plan&#39;, path=r&quot;path/to/save_plan&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">plan_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plan_name</span> <span class="o">=</span> <span class="s1">&#39;my_plan&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">plan_name</span><span class="p">),</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="c1"># pickle the dictionary and write it to file</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">my_plan</span><span class="p">,</span> <span class="n">pickle_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_plan"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.load_plan">[docs]</a><span class="k">def</span> <span class="nf">load_plan</span><span class="p">(</span><span class="n">plan_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load pickle file of the plan object.</span>
+
+<span class="sd">    :param plan_name: plan_name of the object of class Plan. It None, it will try to look for plan name called &#39;my_plan&#39;</span>
+<span class="sd">    :param path: if path is set, plan object will be load from path directory else current project directory</span>
+<span class="sd">    :return: load pickled object of class Plan</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; load_plan(plan_name=&#39;my_plan&#39;, path=r&quot;path/for/loading_plan&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">plan_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plan_name</span> <span class="o">=</span> <span class="s1">&#39;my_plan&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">plan_name</span><span class="p">),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="n">my_plan</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pickle_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">my_plan</span></div>
+
+
+<div class="viewcode-block" id="load_optimal_sol"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.load_optimal_sol">[docs]</a><span class="k">def</span> <span class="nf">load_optimal_sol</span><span class="p">(</span><span class="n">sol_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Load optimal solution dictionary got from optimization</span>
+
+<span class="sd">    :param sol_name: name of the optimal solution to be loaded.</span>
+<span class="sd">    :param path: if path is set, plan object will be load from path directory else current directory</span>
+<span class="sd">    :return: load solution</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; sol = load_optimal_sol(sol_name=&#39;sol&#39;, path=r&#39;path/for/loading_sol&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">sol_name</span><span class="p">),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pickle_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sol</span></div>
+
+
+<div class="viewcode-block" id="save_optimal_sol"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.save_optimal_sol">[docs]</a><span class="k">def</span> <span class="nf">save_optimal_sol</span><span class="p">(</span><span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">sol_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save the optimal solution dictionary from optimization</span>
+
+<span class="sd">    :param sol: optimal solution dictionary</span>
+<span class="sd">    :param sol_name: name of the optimal solution saved</span>
+<span class="sd">    :param path: if path is set, plan object will be load from path directory else current directory</span>
+<span class="sd">    :return: save pickled file of optimal solution dictionary</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; save_optimal_sol(sol=sol, sol_name=&#39;sol&#39;, path=r&#39;path/to/save_solution&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">sol_name</span><span class="p">),</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">pickle_file</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="save_inf_matrix"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.save_inf_matrix">[docs]</a><span class="k">def</span> <span class="nf">save_inf_matrix</span><span class="p">(</span><span class="n">inf_matrix</span><span class="p">,</span> <span class="n">inf_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Save pickled file for plan object</span>
+
+<span class="sd">    :param inf_matrix: object fo class Infuence matrix</span>
+<span class="sd">    :param inf_name: create the name of the pickled file of InfluenceMatrix object. If none, it will save with the name as &#39;inf_matrix&#39;</span>
+<span class="sd">    :param path: if path is set, plan object will be pickled and saved in path directory else it will save in current project directory</span>
+<span class="sd">    :return: save pickled object of class Plan</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; save_inf_matrix(inf_matrix=inf_matrix, inf_name=&#39;inf_matrix&#39;, path=r&quot;path/to/save_inf_matrix&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">inf_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">inf_matrix</span> <span class="o">=</span> <span class="s1">&#39;inf_matrix&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">inf_name</span><span class="p">),</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="c1"># pickle the dictionary and write it to file</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">inf_matrix</span><span class="p">,</span> <span class="n">pickle_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_inf_matrix"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.save_or_load_pickle.load_inf_matrix">[docs]</a><span class="k">def</span> <span class="nf">load_inf_matrix</span><span class="p">(</span><span class="n">inf_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load pickle file of the plan object.</span>
+
+<span class="sd">    :param inf_name: influence matrix name of the object of class InfleunceMatrix.</span>
+<span class="sd">    :param path: if path is set, plan object will be load from path directory else current project directory</span>
+<span class="sd">    :return: load pickled object of class Plan</span>
+
+<span class="sd">    :Example:</span>
+<span class="sd">    &gt;&gt;&gt; load_plan(plan_name=&#39;my_plan&#39;, path=r&quot;path/for/loading_inf_matrix&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">inf_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">inf_name</span> <span class="o">=</span> <span class="s1">&#39;inf_matrix&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">inf_name</span><span class="p">),</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">pickle_file</span><span class="p">:</span>
+        <span class="n">inf_matrix</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pickle_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inf_matrix</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

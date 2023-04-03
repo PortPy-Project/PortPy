@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.beam &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.beam</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.beam</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+
+<div class="viewcode-block" id="Beams"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams">[docs]</a><span class="k">class</span> <span class="nc">Beams</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class representing beams_dict.</span>
+
+<span class="sd">    - **Attributes** ::</span>
+
+<span class="sd">        :param beams_dict: beams_dict dictionary that contains information about the beams_dict in the format of</span>
+<span class="sd">        dict: {</span>
+<span class="sd">                   &#39;ID&#39;: list(int),</span>
+<span class="sd">                   &#39;gantry_angle&#39;: list(float),</span>
+<span class="sd">                   &#39;collimator_angle&#39;: list(float) }</span>
+<span class="sd">                  }</span>
+
+<span class="sd">        :type beams_dict: dict</span>
+
+<span class="sd">    - **Methods** ::</span>
+
+<span class="sd">        :get_gantry_angle(beam_id: Optional(int, List[int]):</span>
+<span class="sd">            Get gantry angle in degrees</span>
+<span class="sd">        :get_collimator_angle(beam_id):</span>
+<span class="sd">            Get collimator angle in degrees</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beams_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param beams_dict: Beams dictionary containing information about beams</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span> <span class="o">=</span> <span class="n">beams_dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_beams</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Beams.get_beamlet_idx_2dgrid"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_beamlet_idx_2dgrid">[docs]</a>    <span class="k">def</span> <span class="nf">get_beamlet_idx_2dgrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param beam_id: beam_id for the beam</span>
+<span class="sd">        :return: 2d grid of beamlets in 2.5*2.5 resolution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;beamlet_idx_2dgrid&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.get_gantry_angle"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_gantry_angle">[docs]</a>    <span class="k">def</span> <span class="nf">get_gantry_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get gantry angle</span>
+
+<span class="sd">        :param beam_id: beam_id for the beam</span>
+<span class="sd">        :return: gantry angle for the beam_id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beam_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;gantry_angle&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beam_id</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;gantry_angle&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">beam_id</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.get_collimator_angle"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_collimator_angle">[docs]</a>    <span class="k">def</span> <span class="nf">get_collimator_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get collimator angle</span>
+
+<span class="sd">        :param beam_id: beam_id for the beam</span>
+<span class="sd">        :return: collimator angle for the beam_id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beam_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;collimator_angle&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">beam_id</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;collimator_angle&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">idx</span><span class="p">)]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">beam_id</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.sort_beamlets"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.sort_beamlets">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">sort_beamlets</span><span class="p">(</span><span class="n">b_map</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">b_map</span><span class="p">[</span><span class="n">b_map</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+        <span class="n">c_sort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">matrix_ind</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">b_map</span> <span class="o">==</span> <span class="n">c_i</span><span class="p">)</span> <span class="k">for</span> <span class="n">c_i</span> <span class="ow">in</span> <span class="n">c_sort</span><span class="p">]</span>
+        <span class="n">map_copy</span> <span class="o">=</span> <span class="n">b_map</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)):</span>
+            <span class="n">map_copy</span><span class="p">[</span><span class="n">matrix_ind</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">map_copy</span></div>
+
+<div class="viewcode-block" id="Beams.preprocess_beams"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.preprocess_beams">[docs]</a>    <span class="k">def</span> <span class="nf">preprocess_beams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">beam_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]):</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_id</span><span class="p">)</span>
+            <span class="n">beam_2d_grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_beamlet_idx_2d_grid</span><span class="p">(</span><span class="n">beam_id</span><span class="o">=</span><span class="n">beam_id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;beamlet_idx_2dgrid&#39;</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">beam_2d_grid</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Beams.get_original_map"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_original_map">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_original_map</span><span class="p">(</span><span class="n">beam_map</span><span class="p">):</span>
+        <span class="n">rowsNoRepeat</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">!=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">rowsNoRepeat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">:])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">rowsNoRepeat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">colsNoRepeat</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">beam_map</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">beam_map</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="n">beam_map</span><span class="p">[:,</span> <span class="n">colsNoRepeat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">colsNoRepeat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">beam_map</span> <span class="o">=</span> <span class="n">beam_map</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rowsNoRepeat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">colsNoRepeat</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">beam_map</span></div>
+
+<div class="viewcode-block" id="Beams.get_beamlet_width"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_beamlet_width">[docs]</a>    <span class="k">def</span> <span class="nf">get_beamlet_width</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        :return: beamlet width in the original beam</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">beamlets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;beamlets&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;width_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.get_beamlet_height"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_beamlet_height">[docs]</a>    <span class="k">def</span> <span class="nf">get_beamlet_height</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        :return: beamlet height in the original beam</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">beamlets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;beamlets&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;height_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.get_all_beam_ids"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.get_all_beam_ids">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_beam_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Beams.create_beamlet_idx_2d_grid"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.beam.Beams.create_beamlet_idx_2d_grid">[docs]</a>    <span class="k">def</span> <span class="nf">create_beamlet_idx_2d_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create 2d grid for the beamlets where each element is 2.5mm*2.5mm for the given beam id from x and y coordinates of beamlets.</span>
+
+<span class="sd">        :param beam_id: beam_id for the beam</span>
+<span class="sd">        :return: 2d grid of beamlets for the beam</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_id</span><span class="p">)</span>
+        <span class="n">beamlets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beams_dict</span><span class="p">[</span><span class="s1">&#39;beamlets&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+        <span class="n">x_positions</span> <span class="o">=</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;position_x_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;width_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>  <span class="c1"># x position is center of beamlet. Get left corner</span>
+        <span class="n">y_positions</span> <span class="o">=</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;position_y_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;height_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>  <span class="c1"># y position is center of beamlet. Get top corner</span>
+        <span class="n">right_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">x_positions</span><span class="p">)</span>
+        <span class="n">bottom_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span>
+        <span class="n">w_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x_positions</span><span class="p">,</span> <span class="n">y_positions</span><span class="p">))</span>  <span class="c1"># top left corners of all beamlets</span>
+        <span class="n">x_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">x_positions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x_positions</span><span class="p">)</span> <span class="o">+</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;width_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">right_ind</span><span class="p">],</span> <span class="mf">2.5</span><span class="p">)</span>
+        <span class="n">y_coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y_positions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span> <span class="o">-</span> <span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;height_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">bottom_ind</span><span class="p">],</span> <span class="o">-</span><span class="mf">2.5</span><span class="p">)</span>
+
+        <span class="c1"># create mesh grid in 2.5 mm resolution</span>
+        <span class="n">XX</span><span class="p">,</span> <span class="n">YY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_coord</span><span class="p">,</span> <span class="n">y_coord</span><span class="p">)</span>
+        <span class="n">beamlet_idx_2d_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">XX</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">beamlet_idx_2d_grid</span> <span class="o">=</span> <span class="n">beamlet_idx_2d_grid</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># make all elements to -1</span>
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">XX</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">XX</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">w_all</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">XX</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">w_all</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">YY</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]))</span>  <span class="c1"># find the position in matrix where we find the beamlet</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">num_width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;width_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span><span class="o">/</span><span class="mf">2.5</span><span class="p">)</span>
+                    <span class="n">num_height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">beamlets</span><span class="p">[</span><span class="s1">&#39;height_mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.5</span><span class="p">)</span>
+                    <span class="n">beamlet_idx_2d_grid</span><span class="p">[</span><span class="n">row</span><span class="p">:</span><span class="n">row</span><span class="o">+</span><span class="n">num_height</span><span class="p">,</span> <span class="n">col</span><span class="p">:</span><span class="n">col</span><span class="o">+</span><span class="n">num_width</span><span class="p">]</span> <span class="o">=</span> <span class="n">ind</span>
+        <span class="k">return</span> <span class="n">beamlet_idx_2d_grid</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

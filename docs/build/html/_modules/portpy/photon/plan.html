@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.plan &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.plan</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.plan</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.beam</span> <span class="kn">import</span> <span class="n">Beams</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.structures</span> <span class="kn">import</span> <span class="n">Structures</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.clinical_criteria</span> <span class="kn">import</span> <span class="n">ClinicalCriteria</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.influence_matrix</span> <span class="kn">import</span> <span class="n">InfluenceMatrix</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.visualization</span> <span class="kn">import</span> <span class="n">Visualization</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.optimization</span> <span class="kn">import</span> <span class="n">Optimization</span>
+<span class="kn">from</span> <span class="nn">portpy.photon.utils</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="Plan"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan">[docs]</a><span class="k">class</span> <span class="nc">Plan</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class representing a plan</span>
+
+<span class="sd">    - **Attributes** ::</span>
+
+<span class="sd">        :param opt_beamlets_PTV_margin_mm: For each beam, we often only include the beamlets that are within</span>
+<span class="sd">            few millimetres of the projection of the PTV (tumor) into that beam. It is because the beamlets</span>
+<span class="sd">            that are far from the PTV projection mainly deliver radiation to the healthy tissues not PTV. Default is 3mm</span>
+<span class="sd">        :type opt_beamlets_PTV_margin_mm: int</span>
+<span class="sd">        :param beams_dict: an object of class Beams that contains information about the beams_dict used in the treatment plan.</span>
+<span class="sd">        :type beams: object</span>
+<span class="sd">        :param structures: an object of class Structures that contains information about the structures present in the patient&#39;s CT scan.</span>
+<span class="sd">        :type structures: object</span>
+<span class="sd">        :param inf_matrix: object of class Influence matrix</span>
+<span class="sd">        :type inf_matrix: object</span>
+<span class="sd">        :param clinial_criteria: an object of class ClincialCriteria that contains information about the goals and constraints of the treatment plan</span>
+<span class="sd">        :type inf_matrix: object</span>
+<span class="sd">        :param ct: dictionary containing ct metadata. It includes metadata about important ct parameters like resolution, ct in HU etc.</span>
+<span class="sd">        :type ct: dict</span>
+
+<span class="sd">    - **Methods** ::</span>
+
+<span class="sd">        :create_inf_matrix(beamlet_width_mm, beamlet_height_mm,</span>
+<span class="sd">                          down_sample_xyz):</span>
+<span class="sd">            Create object of Influence Matrix class</span>
+<span class="sd">        :get_prescription():</span>
+<span class="sd">            Return prescription for the plan</span>
+<span class="sd">        :get_num_of_fractions()</span>
+<span class="sd">            Return number of fractions for the plan</span>
+
+
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patient_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">beam_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">opt_beamlets_PTV_margin_mm</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">load_inf_matrix_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">protocol_name</span><span class="o">=</span><span class="s1">&#39;Lung_Default_2Gy_30Fr&#39;</span><span class="p">,</span> <span class="n">protocol_type</span><span class="o">=</span><span class="s1">&#39;Default&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates an object of Plan class for the specified patient</span>
+
+<span class="sd">        :param patient_id: the patient that we&#39;re creating a plan for (name of the folder)</span>
+<span class="sd">        :param data_dir: the name of the folder that includes all the patients&#39; data.</span>
+<span class="sd">            If None, then &#39;&#39;current-folder\Data&#39;&#39; is used</span>
+<span class="sd">        :param beam_ids: the indices of the beams_dict used for creating the plan object.</span>
+<span class="sd">            If None, the beams_dict selected by an expert (human) physicist for the specified patient would be used</span>
+<span class="sd">        :param opt_beamlets_PTV_margin_mm: For each beam, we often only include the beamlets that are within</span>
+<span class="sd">            few millimetres of the projection of the PTV (tumor) into that beam. It is because the beamlets</span>
+<span class="sd">            that are far from the PTV projection mainly deliver radiation to the healthy tissues not PTV. Default is 3mm</span>
+<span class="sd">        :param load_inf_matrix_full: If set to true, it will load full influence matrix from the data</span>
+
+<span class="sd">        :Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; my_plan = Plan(patient_id = r&quot;Lung_Patient_1&quot;, path = r&quot;c:\Data&quot;, beam_ids = [0,1,2,3,4,5,6], opt_beamlets_PTV_margin_mm=3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">data_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+        <span class="n">patient_folder_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">patient_id</span><span class="p">)</span>
+
+        <span class="c1"># read all the meta data for the specified patient and protocol</span>
+        <span class="n">meta_data</span> <span class="o">=</span> <span class="n">load_metadata</span><span class="p">(</span><span class="n">patient_folder_path</span><span class="p">)</span>
+
+        <span class="c1"># filter metadata for the given beam_indices.</span>
+        <span class="c1"># The meta_data originally includes all the beams_dict.  get_plan_beams only keeps the requested beams_dict</span>
+        <span class="n">meta_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_plan_beams</span><span class="p">(</span><span class="n">beam_ids</span><span class="o">=</span><span class="n">beam_ids</span><span class="p">,</span> <span class="n">meta_data</span><span class="o">=</span><span class="n">meta_data</span><span class="p">)</span>
+        <span class="c1"># Load all the data (e.g., influence matrix, voxel coordinates).</span>
+        <span class="c1"># meta_data does not include the large numeric data stored in .h5 files</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">(</span><span class="n">meta_data</span><span class="o">=</span><span class="n">meta_data</span><span class="p">,</span> <span class="n">pat_dir</span><span class="o">=</span><span class="n">patient_folder_path</span><span class="p">,</span> <span class="n">load_inf_matrix_full</span><span class="o">=</span><span class="n">load_inf_matrix_full</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_beamlets_PTV_margin_mm</span> <span class="o">=</span> <span class="n">opt_beamlets_PTV_margin_mm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beams</span> <span class="o">=</span> <span class="n">Beams</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">])</span>  <span class="c1"># create beams_dict object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structures</span> <span class="o">=</span> <span class="n">Structures</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;structures&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;opt_voxels&#39;</span><span class="p">])</span>  <span class="c1"># create structures object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ct</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;ct&#39;</span><span class="p">]</span>  <span class="c1"># create ct attribute containing ct information as dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patient_id</span> <span class="o">=</span> <span class="n">patient_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span> <span class="o">=</span> <span class="n">ClinicalCriteria</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;clinical_criteria&#39;</span><span class="p">])</span>  <span class="c1"># create clinical criteria object</span>
+        <span class="n">is_full</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">load_inf_matrix_full</span><span class="p">:</span>  <span class="c1"># check if full influence matrix is requested</span>
+            <span class="n">is_full</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span> <span class="o">=</span> <span class="n">InfluenceMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_full</span><span class="o">=</span><span class="n">is_full</span><span class="p">)</span>  <span class="c1"># create influence matrix object</span>
+
+<div class="viewcode-block" id="Plan.get_plan_beams"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.get_plan_beams">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_plan_beams</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meta_data</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create and return a copy of meta_data with only including the requested beams_dict (beam_ids)</span>
+
+
+<span class="sd">        :param beam_ids: the indices of the beams_dict to be included. If None, the planner&#39;s beams_dict are used</span>
+<span class="sd">        :param meta_data: the dictionary including all the beams_dict</span>
+<span class="sd">        :return: returns the meta_data dictionary only including the requested beams_dict in format of:</span>
+<span class="sd">            dict: {</span>
+<span class="sd">                   &#39;structures&#39;: {&#39;name&#39;: list(str), &#39;volume_cc&#39;: list(float), }</span>
+<span class="sd">                   &#39;opt_voxels&#39;: {&#39;_ct_voxel_resolution_xyz_mm&#39;: list(float),}</span>
+<span class="sd">                  }</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">beam_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># if beam_ids not included, then the beams_dict</span>
+            <span class="c1"># selected by an expert human planner would be used</span>
+            <span class="n">beam_ids</span> <span class="o">=</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;planner_beam_ids&#39;</span><span class="p">][</span><span class="s1">&#39;IDs&#39;</span><span class="p">]</span>
+        <span class="n">meta_data_req</span> <span class="o">=</span> <span class="n">meta_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">meta_data_req</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]</span>  <span class="c1"># remove previous beams_dict</span>
+        <span class="n">beamReq</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">beam_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="s1">&#39;ID&#39;</span><span class="p">]:</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]:</span>
+                    <span class="n">beamReq</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="n">ind</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;beam id </span><span class="si">{}</span><span class="s1"> is not available&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">beam_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">meta_data_req</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">beamReq</span>
+        <span class="k">return</span> <span class="n">meta_data_req</span></div>
+
+<div class="viewcode-block" id="Plan.save_plan"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.save_plan">[docs]</a>    <span class="k">def</span> <span class="nf">save_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Save pickled file for plan object</span>
+
+<span class="sd">        :param plan_name: create the name of the pickled file of plan object. If none, it will save with the name as &#39;my_plan&#39;</span>
+<span class="sd">        :param path: if path is set, plan object will be pickled and saved in path directory else it will save current project directory</span>
+<span class="sd">        :return: save pickled object of class Plan</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; my_plan.save_plan(plan_name=&#39;my_plan&#39;, path=r&quot;path/to/save_plan&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">save_plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plan_name</span><span class="o">=</span><span class="n">plan_name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.load_plan"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.load_plan">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_plan</span><span class="p">(</span><span class="n">plan_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load pickle file of the plan object.</span>
+
+<span class="sd">        :param plan_name: plan_name of the object of class Plan. It None, it will try to look for plan name called &#39;my_plan&#39;</span>
+<span class="sd">        :param path: if path is set, plan object will be load from path directory else current project directory</span>
+<span class="sd">        :return: load pickled object of class Plan</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; Plan.load_plan(plan_name=&#39;my_plan&#39;, path=r&quot;path/for/loading_plan&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">load_plan</span><span class="p">(</span><span class="n">plan_name</span><span class="o">=</span><span class="n">plan_name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.load_optimal_sol"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.load_optimal_sol">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_optimal_sol</span><span class="p">(</span><span class="n">sol_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Load optimal solution dictionary got from optimization</span>
+
+<span class="sd">        :param sol_name: name of the optimal solution to be loaded.</span>
+<span class="sd">        :param path: if path is set, plan object will be load from path directory else current directory</span>
+<span class="sd">        :return: load solution</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; sol = Plan.load_optimal_sol(sol_name=&#39;sol&#39;, path=r&#39;path/for/loading_sol&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">load_optimal_sol</span><span class="p">(</span><span class="n">sol_name</span><span class="o">=</span><span class="n">sol_name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.save_optimal_sol"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.save_optimal_sol">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">save_optimal_sol</span><span class="p">(</span><span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">sol_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save the optimal solution dictionary from optimization</span>
+
+<span class="sd">        :param sol: optimal solution dictionary</span>
+<span class="sd">        :param sol_name: name of the optimal solution saved</span>
+<span class="sd">        :param path: if path is set, plan object will be load from path directory else current directory</span>
+<span class="sd">        :return: save pickled file of optimal solution dictionary</span>
+
+<span class="sd">        :Example:</span>
+<span class="sd">        &gt;&gt;&gt; my_plan.save_optimal_sol(sol=sol, sol_name=&#39;sol&#39;, path=r&#39;path/to/save_solution&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">save_optimal_sol</span><span class="p">(</span><span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="n">sol_name</span><span class="o">=</span><span class="n">sol_name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.create_inf_matrix"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.create_inf_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">create_inf_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beamlet_width_mm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.5</span><span class="p">,</span> <span class="n">beamlet_height_mm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.5</span><span class="p">,</span>
+                          <span class="n">opt_vox_xyz_res_mm</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">structure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;PTV&#39;</span><span class="p">,</span> <span class="n">is_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InfluenceMatrix</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Create a influence matrix object for Influence Matrix class</span>
+
+<span class="sd">                :param is_full: Defaults to False. If True, it will create full influence matrix</span>
+<span class="sd">                :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5</span>
+<span class="sd">                :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5</span>
+<span class="sd">                :param structure: target structure for creating BEV beamlets, defaults to &#39;PTV&#39;</span>
+<span class="sd">                :param opt_vox_xyz_res_mm: It down-samples optimization voxels as factor of ct resolution</span>
+<span class="sd">                    e.g. opt_vox_xyz_res = [5*ct.res.x,5*ct.res.y,1*ct.res.z]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.</span>
+<span class="sd">                    defaults to None. When None it will use the original optimization voxel resolution.</span>
+<span class="sd">                :returns: object of influence Matrix class</span>
+
+<span class="sd">                :Example:</span>
+<span class="sd">                &gt;&gt;&gt; inf_matrix = my_plan.create_inf_matrix(beamlet_width_mm=5, beamlet_height_mm=5, opt_vox_xyz_res_mm=[5,5,1], structure=structure)</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">InfluenceMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beamlet_width_mm</span><span class="o">=</span><span class="n">beamlet_width_mm</span><span class="p">,</span> <span class="n">beamlet_height_mm</span><span class="o">=</span><span class="n">beamlet_height_mm</span><span class="p">,</span>
+                               <span class="n">opt_vox_xyz_res_mm</span><span class="o">=</span><span class="n">opt_vox_xyz_res_mm</span><span class="p">,</span> <span class="n">is_full</span><span class="o">=</span><span class="n">is_full</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.get_prescription"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.get_prescription">[docs]</a>    <span class="k">def</span> <span class="nf">get_prescription</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :return: prescription in Gy</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;pres_per_fraction_gy&#39;</span><span class="p">]</span> <span class="o">*</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span>
+                   <span class="s1">&#39;num_of_fractions&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">pres</span></div>
+
+<div class="viewcode-block" id="Plan.get_num_of_fractions"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.get_num_of_fractions">[docs]</a>    <span class="k">def</span> <span class="nf">get_num_of_fractions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :return: number of fractions to be delivered</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;num_of_fractions&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Plan.get_disease_site"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.get_disease_site">[docs]</a>    <span class="k">def</span> <span class="nf">get_disease_site</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :return: number of fractions to be delivered</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">clinical_criteria_dict</span><span class="p">[</span><span class="s1">&#39;disease_site&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Plan.get_ct_res_xyz_mm"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.get_ct_res_xyz_mm">[docs]</a>    <span class="k">def</span> <span class="nf">get_ct_res_xyz_mm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :return: number of fractions to be delivered</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ct</span><span class="p">[</span><span class="s1">&#39;resolution_xyz_mm&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Plan.plot_dvh"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.plot_dvh">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dvh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">structs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dose_scale</span><span class="p">:</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">dose_type</span> <span class="o">=</span> <span class="s2">&quot;Absolute(Gy)&quot;</span><span class="p">,</span>
+                 <span class="n">volume_scale</span><span class="p">:</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">volume_type</span> <span class="o">=</span> <span class="s2">&quot;Relative(%)&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Create dvh plot for the selected structures</span>
+
+<span class="sd">                :param sol: optimal sol dictionary</span>
+<span class="sd">                :param dose_1d: dose_1d in 1d voxels</span>
+<span class="sd">                :param structs: structures to be included in dvh plot</span>
+<span class="sd">                :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = &quot;Absolute(cc)&quot; or volume_scale = &quot;Relative(%)&quot;</span>
+<span class="sd">                :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = &quot;Absolute(Gy)&quot; or dose_scale = &quot;Relative(%)&quot;</span>
+<span class="sd">                :keyword style (str): line style for dvh curve. default &quot;solid&quot;. can be &quot;dotted&quot;, &quot;dash-dotted&quot;.</span>
+<span class="sd">                :keyword width (int): width of line. Default 2</span>
+<span class="sd">                :keyword colors(list): list of colors</span>
+<span class="sd">                :keyword legend_font_size: Set legend_font_size. default 10</span>
+<span class="sd">                :keyword figsize: Set figure size for the plot. Default figure size (12,8)</span>
+<span class="sd">                :keyword create_fig: Create a new figure. Default True. If False, append to the previous figure</span>
+<span class="sd">                :keyword title: Title for the figure</span>
+<span class="sd">                :keyword filename: Name of the file to save the figure in current directory</span>
+<span class="sd">                :keyword show: Show the figure. Default is True. If false, next plot can be append to it</span>
+<span class="sd">                :keyword norm_flag: Use to normalize the plan. Default is False.</span>
+<span class="sd">                :keyword norm_volume: Use to set normalization volume. default is 90 percentile.</span>
+<span class="sd">                :return: dvh plot for the selected structures</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+
+        <span class="n">Visualization</span><span class="o">.</span><span class="n">plot_dvh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="n">dose_1d</span><span class="o">=</span><span class="n">dose_1d</span><span class="p">,</span> <span class="n">structs</span><span class="o">=</span><span class="n">structs</span><span class="p">,</span> <span class="n">dose_scale</span><span class="o">=</span><span class="n">dose_scale</span><span class="p">,</span>
+                               <span class="n">volume_scale</span><span class="o">=</span><span class="n">volume_scale</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.run_IMRT_fluence_map_CVXPy"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.run_IMRT_fluence_map_CVXPy">[docs]</a>    <span class="k">def</span> <span class="nf">run_IMRT_fluence_map_CVXPy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inf_matrix</span><span class="p">:</span> <span class="n">InfluenceMatrix</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;MOSEK&#39;</span><span class="p">):</span>
+        <span class="n">Optimization</span><span class="o">.</span><span class="n">run_IMRT_fluence_map_CVXPy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inf_matrix</span><span class="o">=</span><span class="n">inf_matrix</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.add_rinds"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.add_rinds">[docs]</a>    <span class="k">def</span> <span class="nf">add_rinds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rind_params</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">inf_matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Example for</span>
+<span class="sd">        rind_params = [{&#39;rind_name&#39;: &#39;RIND_0&#39;, &#39;ref_structure&#39;: &#39;PTV, &#39;margin_start_mm&#39;: 2, &#39;margin_end_mm&#39;: 10, &#39;max_dose_gy&#39;: 10}]</span>
+
+<span class="sd">        :param rind_params: rind_params as dictionary</span>
+<span class="sd">        :param inf_matrix: object of class inf_matrix</span>
+<span class="sd">        :return: save rinds to plan object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">inf_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">inf_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inf_matrix</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;creating rinds..&#39;</span><span class="p">)</span>
+
+        <span class="n">ct_to_dose_map</span> <span class="o">=</span> <span class="n">inf_matrix</span><span class="o">.</span><span class="n">opt_voxels_dict</span><span class="p">[</span><span class="s1">&#39;ct_to_dose_voxel_map&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dose_mask</span> <span class="o">=</span> <span class="n">ct_to_dose_map</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+        <span class="n">dose_mask</span> <span class="o">=</span> <span class="n">dose_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">create_structure</span><span class="p">(</span><span class="s1">&#39;dose_mask&#39;</span><span class="p">,</span> <span class="n">dose_mask</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rind_params</span><span class="p">):</span>
+            <span class="n">rind_name</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;rind_name&#39;</span><span class="p">]</span>
+            <span class="n">first_dummy_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;ref_structure&#39;</span><span class="p">],</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_start_mm&#39;</span><span class="p">])</span>
+            <span class="n">second_dummy_name</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;ref_structure&#39;</span><span class="p">],</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_end_mm&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;ref_structure&#39;</span><span class="p">],</span> <span class="n">margin_mm</span><span class="o">=</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_start_mm&#39;</span><span class="p">],</span>
+                                   <span class="n">new_structure</span><span class="o">=</span><span class="n">first_dummy_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_end_mm&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;inf&#39;</span><span class="p">:</span>
+                <span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_end_mm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;ref_structure&#39;</span><span class="p">],</span> <span class="n">margin_mm</span><span class="o">=</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;margin_end_mm&#39;</span><span class="p">],</span>
+                                   <span class="n">new_structure</span><span class="o">=</span><span class="n">second_dummy_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">second_dummy_name</span><span class="p">,</span> <span class="n">first_dummy_name</span><span class="p">,</span> <span class="n">str1_sub_str2</span><span class="o">=</span><span class="n">rind_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">delete_structure</span><span class="p">(</span><span class="n">first_dummy_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">delete_structure</span><span class="p">(</span><span class="n">second_dummy_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">rind_name</span><span class="p">,</span> <span class="s1">&#39;dose_mask&#39;</span><span class="p">,</span> <span class="n">str1_and_str2</span><span class="o">=</span><span class="n">rind_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structures</span><span class="o">.</span><span class="n">delete_structure</span><span class="p">(</span><span class="s1">&#39;dose_mask&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;rinds created!!&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">rind_params</span><span class="p">:</span>
+            <span class="n">inf_matrix</span><span class="o">.</span><span class="n">set_opt_voxel_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_name</span><span class="o">=</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;rind_name&#39;</span><span class="p">])</span>
+            <span class="c1"># add rind constraint</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;structure_name&#39;</span><span class="p">:</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;rind_name&#39;</span><span class="p">]}</span>
+            <span class="c1"># total_pres = self.get_prescription()</span>
+            <span class="k">if</span> <span class="s1">&#39;max_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">param</span><span class="p">:</span>
+                <span class="n">constraints</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;limit_dose_gy&#39;</span><span class="p">:</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;max_dose_gy&#39;</span><span class="p">]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">add_criterion</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;max_dose&#39;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                                                     <span class="n">constraints</span><span class="o">=</span><span class="n">constraints</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;mean_dose_gy&#39;</span> <span class="ow">in</span> <span class="n">param</span><span class="p">:</span>
+                <span class="n">constraints</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;limit_dose_gy&#39;</span><span class="p">:</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;mean_dose_gy&#39;</span><span class="p">]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clinical_criteria</span><span class="o">.</span><span class="n">add_criterion</span><span class="p">(</span><span class="n">criterion</span><span class="o">=</span><span class="s1">&#39;mean_dose&#39;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                                                     <span class="n">constraints</span><span class="o">=</span><span class="n">constraints</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.plot_fluence_2d"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.plot_fluence_2d">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_fluence_2d</span><span class="p">(</span><span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        plot fluence in 2d for beam_id</span>
+<span class="sd">        :param beam_id: beam_id of the beam</span>
+<span class="sd">        :param sol: solution dictionary after optimization</span>
+<span class="sd">        :return: 2d optimal fluence plot</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">plot_fluence_2d</span><span class="p">(</span><span class="n">beam_id</span><span class="o">=</span><span class="n">beam_id</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.plot_fluence_3d"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.plot_fluence_3d">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">plot_fluence_3d</span><span class="p">(</span><span class="n">beam_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        plot fluence in 3d for beam_id</span>
+<span class="sd">        :param sol: solution after optimization</span>
+<span class="sd">        :param beam_id: beam_id of the beam</span>
+<span class="sd">        :return: 3d optimal fluence plot</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Visualization</span><span class="o">.</span><span class="n">plot_fluence_3d</span><span class="p">(</span><span class="n">beam_id</span><span class="o">=</span><span class="n">beam_id</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.save_nrrd"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.save_nrrd">[docs]</a>    <span class="k">def</span> <span class="nf">save_nrrd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        save nrrd in the path directory else save in patient data directory</span>
+<span class="sd">        :param sol: optimal solution dict</span>
+<span class="sd">        :param data_dir: save nrrd images of ct, dose_1d and structure set in path directory</span>
+<span class="sd">        :return: save nrrd images in path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">save_nrrd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sol</span><span class="o">=</span><span class="n">sol</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Plan.view_in_slicer"><a class="viewcode-back" href="../../../portpy.photon.html#portpy.photon.plan.Plan.view_in_slicer">[docs]</a>    <span class="k">def</span> <span class="nf">view_in_slicer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slicer_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">img_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        view ct, dose_1d and structures in slicer</span>
+<span class="sd">        :param slicer_path:</span>
+<span class="sd">        :param img_dir:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Visualization</span><span class="o">.</span><span class="n">view_in_slicer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slicer_path</span><span class="o">=</span><span class="n">slicer_path</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="n">img_dir</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

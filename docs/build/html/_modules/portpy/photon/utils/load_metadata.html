@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portpy.photon.utils.load_metadata &mdash; PortPy 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            PortPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">portpy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">PortPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">portpy.photon.utils.load_metadata</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for portpy.photon.utils.load_metadata</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">natsort</span> <span class="kn">import</span> <span class="n">natsorted</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+
+<div class="viewcode-block" id="list_to_dict"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.load_metadata.list_to_dict">[docs]</a><span class="k">def</span> <span class="nf">list_to_dict</span><span class="p">(</span><span class="n">json_data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A recursive function which constructs dictionary from list</span>
+<span class="sd">    :param json_data: data in json or list format</span>
+<span class="sd">    :return: data in dictionary format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">json_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">json_data</span><span class="p">)):</span>
+            <span class="n">elem</span> <span class="o">=</span> <span class="n">json_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">json_dict</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">elem</span><span class="p">:</span>
+                    <span class="n">json_dict</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">json_dict</span> <span class="o">=</span> <span class="n">json_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">json_dict</span></div>
+
+
+<div class="viewcode-block" id="load_metadata"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.load_metadata.load_metadata">[docs]</a><span class="k">def</span> <span class="nf">load_metadata</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Loads metadata of a patient located in path and returns the metadata as a dictionary</span>
+
+<span class="sd">    The data are loaded from the following .Json files:</span>
+<span class="sd">    1- StructureSet_MetaData.json</span>
+<span class="sd">        including data about the structures (e.g., PTV, Kidney, Lung)</span>
+<span class="sd">    2- OptimizationVoxels_MetaData.json</span>
+<span class="sd">        including patient voxel data (3D cubic voxels of patient body)</span>
+<span class="sd">    3- CT_MetaData.json</span>
+<span class="sd">        including patient CT scan data (e.g., size, resolution, ct hounsfield units)</span>
+<span class="sd">    4- PlannerBeams.json</span>
+<span class="sd">        including the indices of the beams_dict selected by an expert planner based on the geometry/shape/location of tumor/healthy-tissues</span>
+<span class="sd">    5- ClinicalCriteria_MetaData.json</span>
+<span class="sd">        including clinically relevant metrics used to evaluate a plan (e.g., Kidney mean dose_1d &lt;= 20Gy, Cord max dose_1d &lt;= 10 Gy)</span>
+<span class="sd">    6- Beams.json</span>
+<span class="sd">        including beam information (e.g., gantry angle, collimator angle)</span>
+
+<span class="sd">    :param pat_dir: full path of patient folder</span>
+<span class="sd">    :return: a dictionary including all metadata</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">meta_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>  <span class="c1"># initialization</span>
+
+    <span class="c1"># read information regarding the structures</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;StructureSet_MetaData.json&#39;</span><span class="p">)</span>
+    <span class="c1"># Opening JSON file</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;structures&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">jsondata</span><span class="p">)</span>
+
+    <span class="c1"># read information regarding the voxels</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;OptimizationVoxels_MetaData.json&#39;</span><span class="p">)</span>
+    <span class="c1"># Opening JSON file</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;opt_voxels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">jsondata</span><span class="p">)</span>
+
+    <span class="c1"># read information regarding the CT voxels</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;CT_MetaData.json&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="c1"># Opening JSON file</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;ct&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">jsondata</span><span class="p">)</span>
+
+    <span class="c1"># read information regarding beam angles selected by an expert planner</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;PlannerBeams.json&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="c1"># Opening JSON file</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;planner_beam_ids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">jsondata</span><span class="p">)</span>
+
+    <span class="c1"># read information regarding the clinical evaluation metrics</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;ClinicalCriteria_MetaData.json&#39;</span><span class="p">)</span>
+    <span class="c1"># Opening JSON file</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;clinical_criteria&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_to_dict</span><span class="p">(</span><span class="n">jsondata</span><span class="p">)</span>
+
+    <span class="c1"># read information regarding the beams_dict</span>
+    <span class="n">beamFolder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pat_dir</span><span class="p">,</span> <span class="s1">&#39;Beams&#39;</span><span class="p">)</span>
+    <span class="n">beamsJson</span> <span class="o">=</span> <span class="p">[</span><span class="n">pos_json</span> <span class="k">for</span> <span class="n">pos_json</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">beamFolder</span><span class="p">)</span> <span class="k">if</span> <span class="n">pos_json</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.json&#39;</span><span class="p">)]</span>
+
+    <span class="n">beamsJson</span> <span class="o">=</span> <span class="n">natsorted</span><span class="p">(</span><span class="n">beamsJson</span><span class="p">)</span>
+    <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="c1"># the information for each beam is stored in an individual .json file, so we loop through them</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beamsJson</span><span class="p">)):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">beamFolder</span><span class="p">,</span> <span class="n">beamsJson</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">jsondata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">jsondata</span><span class="p">:</span>
+            <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;beams_dict&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jsondata</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="c1"># dataMeta[&#39;beamsMetaData&#39;][key].append(json_data[key])</span>
+
+    <span class="n">meta_data</span><span class="p">[</span><span class="s1">&#39;patient_folder_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pat_dir</span>
+    <span class="k">return</span> <span class="n">meta_data</span></div>
+
+
+<div class="viewcode-block" id="load_config_planner_metadata"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.load_metadata.load_config_planner_metadata">[docs]</a><span class="k">def</span> <span class="nf">load_config_planner_metadata</span><span class="p">(</span><span class="n">patient_id</span><span class="p">):</span>
+    <span class="c1"># load planner_plan config metadata</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;config_files&#39;</span><span class="p">,</span> <span class="s1">&#39;planner_plan&#39;</span><span class="p">,</span> <span class="n">patient_id</span><span class="p">,</span> <span class="s1">&#39;planner_plan.json&#39;</span><span class="p">)</span>
+    <span class="c1"># fname = os.path.join(&#39;..&#39;, &#39;config_files&#39;, &#39;planner_plan&#39;, patient_id, &#39;planner_plan.json&#39;)</span>
+    <span class="c1"># Opening JSON file</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">planner_metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">planner_metadata</span></div>
+
+
+<div class="viewcode-block" id="load_config_clinical_criteria"><a class="viewcode-back" href="../../../../portpy.photon.utils.html#portpy.photon.utils.load_metadata.load_config_clinical_criteria">[docs]</a><span class="k">def</span> <span class="nf">load_config_clinical_criteria</span><span class="p">(</span><span class="n">protocol_type</span><span class="p">,</span> <span class="n">protocol_name</span><span class="p">):</span>
+    <span class="c1"># load planner_plan config metadata</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;config_files&#39;</span><span class="p">,</span> <span class="s1">&#39;clinical_criteria&#39;</span><span class="p">,</span>
+                         <span class="n">protocol_type</span><span class="p">,</span> <span class="n">protocol_name</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span><span class="p">)</span>
+    <span class="c1"># fname = os.path.join(&#39;..&#39;, &#39;config_files&#39;, &#39;planner_plan&#39;, patient_id, &#39;planner_plan.json&#39;)</span>
+    <span class="c1"># Opening JSON file</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">metadata</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Gourav Jhanwar, Mojtaba Tefagh, Vicki Trier Taasti, Sadegh Alam, Seppo Tuomaala, Saad Nadeem and Masoud Zarepisheh.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
