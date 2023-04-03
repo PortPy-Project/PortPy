@@ -452,7 +452,7 @@ class Visualization:
         if slicer_path is None:
             slicer_path = r'C:\ProgramData\NA-MIC\Slicer 4.11.20210226\Slicer.exe'
         if data_dir is None:
-            data_dir = os.path.join('../..', 'data', my_plan.patient_id)
+            data_dir = os.path.join('..', 'data', my_plan.patient_id)
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         slicer_script_dir = os.path.join(Path(__file__).parents[0], 'utils', 'slicer_script.py')
@@ -506,7 +506,7 @@ class Visualization:
         """
 
         if data_dir is None:
-            data_dir = os.path.join('../..', 'data')
+            data_dir = os.path.join('..', '..', 'data')
             data_dir = os.path.join(data_dir, patient_id)
         else:
             data_dir = os.path.join(data_dir, patient_id)
@@ -612,7 +612,7 @@ class Visualization:
 
         display_dict = {}  # we add all the relevant information from meta_data to this dictionary
         if data_dir is None:  # if data directory not provided, then use the subfolder named "data" in the current directory
-            data_dir = os.path.join('../..', 'data')
+            data_dir = os.path.join('..', 'data')
         if not os.path.exists(data_dir):  # check if valid directory
             raise Exception("Invalid data directory. Please input valid directory")
         pat_ids = os.listdir(data_dir)
@@ -636,7 +636,7 @@ class Visualization:
         if return_df:
             return df
         if in_browser:
-            style_file = os.path.join('../..', 'df_style.css')  # get style file path
+            style_file = os.path.join('..', 'df_style.css')  # get style file path
             html_string = '''
                     <html>
                       <head><title>Portpy MetaData</title></head>

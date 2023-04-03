@@ -67,7 +67,7 @@ class Plan:
         """
 
         if data_dir is None:
-            data_dir = os.path.join('../..', 'data')
+            data_dir = os.path.join('..', 'data')
         patient_folder_path = os.path.join(data_dir, patient_id)
 
         # read all the meta data for the specified patient and protocol
