@@ -834,7 +834,7 @@ class InfluenceMatrix:
         mat = ax.matshow(optimal_fluence_2d[ind[0]])
         ax.set_xlabel('x-axis (beamlets column)')
         ax.set_ylabel('y-axis (beamlets row)')
-        plt.colorbar(mat)
+        plt.colorbar(mat, ax=ax)
         if title is not None:
             ax.set_title('{}'.format(title))
         if filename is not None:

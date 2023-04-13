@@ -122,6 +122,7 @@ class CvxPyProb(object):
     def add_max(self, struct: str, dose_gy: float):
         """
         Add max constraints to the problem
+
         :param struct: structure name
         :param dose_gy: dose in Gy per fraction.
         :return:
@@ -136,6 +137,7 @@ class CvxPyProb(object):
     def add_mean(self, struct: str, dose_gy: float):
         """
         Add mean constraints to the problem
+
         :param struct: structure name
         :param dose_gy: dose in Gy per fraction.
         :return:
@@ -153,6 +155,7 @@ class CvxPyProb(object):
     def add_overdose_quad(self, struct: str, dose_gy: float, weight: float = 10000):
         """
         Add quadratic loss for the overdose voxels of the structure
+
         :param struct: structure name
         :param dose_gy: dose in Gy per fraction.
         :param weight: penalty/weight in the objective for overdose
@@ -170,6 +173,7 @@ class CvxPyProb(object):
     def add_underdose_quad(self, struct: str, dose_gy: float, weight: float = 100000):
         """
         Add quadratic loss for the underdose voxels of the structure
+
         :param struct: structure name
         :param dose_gy: dose in Gy per fraction.
         :param weight: penalty/weight in the objective for underdose
@@ -189,6 +193,7 @@ class CvxPyProb(object):
 
         """
         Add quadratic objective to the optimization problem
+
         :param struct: structure for which quadratic loss is added to objective function
         :param voxels: Default to None. If set, quadratic loss will be added for the given voxels
         :param weight: Default to 10. penalty in the objective function for the given structure.
@@ -213,6 +218,7 @@ class CvxPyProb(object):
     def add_smoothness_quad(self, weight: int = 10, smoothness_X_weight: int = 0.6, smoothness_Y_weight: int = 0.4):
         """
         Add quadratic smoothness to the optimization problem
+
         :param weight: smoothness weight
         :param smoothness_X_weight: weight in X direction of MLC (parallel to MLC)
         :param smoothness_Y_weight: weight in Y direction of MLC (perpendicular to MLC)
@@ -230,7 +236,8 @@ class CvxPyProb(object):
 
     def add_constraints(self, constraints: list):
         """
-        Add constraint to the problem
+        Add constraint to the constraint list of problem
+
         :param constraints: list of constraints
         :return:
         """
@@ -238,7 +245,8 @@ class CvxPyProb(object):
 
     def add_objective(self, obj):
         """
-        Add objective function to the problem
+        Add objective function to objective list of the problem
+
         :param obj: objective function expression using cvxpy
         :return:
         """
@@ -250,6 +258,7 @@ class CvxPyProb(object):
     def add_boo(self, num_beams: int):
         """
         Select optimal beams from set of beams using MIP
+
         :param num_beams: number of beams to be selected
         :return:
         """
@@ -277,7 +286,13 @@ class CvxPyProb(object):
     def get_sol(self) -> dict:
         """
         Return optimal solution and influence matrix associated with it in the form of dictionary
-        :return:
+
+        :Example
+                dict = {"optimal_fluence": [..],
+                "inf_matrix": my_plan.inf_marix
+                }
+
+        :return: solution dictionary
         """
         return {'optimal_intensity': self.x.value, 'inf_matrix': self.inf_matrix}
 
