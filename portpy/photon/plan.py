@@ -59,7 +59,8 @@ class Plan:
         :param opt_beamlets_PTV_margin_mm: For each beam, we often only include the beamlets that are within
             few millimetres of the projection of the PTV (tumor) into that beam. It is because the beamlets
             that are far from the PTV projection mainly deliver radiation to the healthy tissues not PTV. Default is 3mm
-        :param load_inf_matrix_full: If set to true, it will load full influence matrix from the data
+        :param load_inf_matrix_full: If true, it will load the full dense influence matrix from the data.
+            If false (Default option), it only loads the truncated sparse matrix for computational efficiency.
 
         :Example:
 

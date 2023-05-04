@@ -22,9 +22,6 @@ except ImportError:
     from typing_extensions import Literal
 
 
-# mpl.use('TkAgg')  # or can use 'Qt5Agg', whatever you have/prefer
-
-
 class Visualization:
     dose_type = Literal["Absolute(Gy)", "Relative(%)"]
     volume_type = Literal["Absolute(cc)", "Relative(%)"]
@@ -490,7 +487,7 @@ class Visualization:
     def display_patient_metadata(patient_id: str, data_dir: str = None,
                                  in_browser: bool = False, return_beams_df: bool = False,
                                  return_structs_df: bool = False):
-        """Displays the patient information in console or html format. If in_browswer is enabled
+        """Displays the patient information in console or browser. If in_browser is true,
         it creates a temporary html file and lnunches your browser
 
         :param patient_id: the patient id
@@ -565,6 +562,7 @@ class Visualization:
                       </body>
                     </html>.
                     '''  # create html body and append table to it
+            # create a temporary html file to store data for visualization in browser
             with open('temp.html', 'w') as f:
                 f.write(html_string.format(table_1=beams_df.to_html(index=False, header=True, classes='mystyle'),
                                            table_2=struct_df.to_html(index=False, header=True, classes='mystyle'),
@@ -598,15 +596,19 @@ class Visualization:
     @staticmethod
     def display_patients(data_dir: str = None, in_browser: bool = False, return_df: bool = False):
         """
-        Displays the list of patients included in data_dir folder
+        Displays the list of patients included in data_dir folder in console (by default) or browser (if in_browser=true).
+        If in_browser is true, it creates a temporary html file and lunches your browser
 
         :param data_dir: folder including patient data.
             If it is None, then it assumes the data is in the current directory under sub-folder named "data"
-        :param in_browser: visualize in pretty way in browser. default to False. If false, plot table in console
+        :param in_browser: If true, it first saves the data in a temporary html file and then lunches the browser to visualize the data (this provides better visualization). Default to False. If false, plot table in console
         :param return_df: return dataframe instead of visualization
         :raises invalid directory error: raises an exception if invalid data directory.
 
-        :return display patient information in table
+        :return patient data in Panda table
+
+        :Example:
+        >>> Visualization.display_patients(data_dir='path/to/data', in_browser=True)
 
         """
 
@@ -647,6 +649,7 @@ class Visualization:
                       </body>
                     </html>.
                     '''  # create html body and append table to it
+            # create a temporary html file to store data for visualization in browser
             with open('temp.html', 'w') as f:
                 f.write(
                     html_string.format(table=df.to_html(index=False, header=True, classes='mystyle'), style=style_file))
