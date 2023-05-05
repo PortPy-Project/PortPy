@@ -13,7 +13,10 @@ This example demonstrates the following main functionalities of portpy_photon:
     4- Evaluating the plan (e.g., max/mean/DVH points, established clinical metrics)
         (Evaluation class)
 
-    5- Advanced plan visualization through integration with a popular 3D-Slicer package
+    5- Saving the plan and solution for future uses
+        (Utils)
+
+    6- Advanced plan visualization through integration with a popular 3D-Slicer package
         (Visualization class)
 
 

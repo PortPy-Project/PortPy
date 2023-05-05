@@ -1,16 +1,9 @@
 """
-### This example demonstrates performing the following tasks using portpy:
-
-1. Query the existing patients in the database
-    (you first need to download the patient database from the link provided in the GitHub page).
-2. Query the data provided for a specified patient in the database.
-3. Create a simple IMRT plan using CVXPy package. You can call different opensource/commercial optimization engines
-    from CVXPy,but you first need to download them and obtain an appropriate license.
-    Most commercial optimization engines (e.g., Mosek, Gorubi) give free academic license if you have .edu email
-    address
-4. Visualise the plan based on down sampled beamlets and voxels (dose_1d distribution, fluence)
-5. Evaluate the plan based on down sampled beamlets and voxels
-
+### PortPy provides pre-computed data with pre-defined resolutions. This example demonstrates the following down-sampling processes:
+ 1- Down-sampling beamlets
+ 2- Calculating the plan quality cost associated with beamlet down-sampling
+ 3- Down-sampling the voxels
+ 4- Calculating the plan quality cost associated with voxel down-sampling
 
 """
 
@@ -18,27 +11,30 @@ import numpy as np
 import portpy.photon as pp
 import matplotlib.pyplot as plt
 
-# ### Create plan
+# ***************** 0) Creating a plan using the original data resolution **************************
 # Create my_plan object for the planner beams.
-# For the customized beams_dict, you can pass the argument beam_ids
-# e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,10,20,30,40,50,60])
 data_dir = r'../data'
 patient_id = 'Lung_Phantom_Patient_1'
 my_plan = pp.Plan(patient_id, data_dir=data_dir)
 
-# PortPy can down-sample beamlets as factor of original finest beamlet resolution.
-# e.g if the finest beamlet resolution is 2.5mm then down sampled beamlet resolution can be 5, 7.5, 10mm..
-# Example create a influence matrix down sampled beamlets of width and height 5mm
+
+# ***************** 1) Down-sampling beamlets **************************
+# Note: PortPy only allows down-sampling beamlets as a factor of original finest beamlet resolution
+#   e.g if the finest beamlet resolution is 2.5mm (often the case) then down sampled beamlet can be 5, 7.5, 10mm
+# Down sample beamlets by a factor of 4
 beamlet_down_sample_factor = 4
+# Calculate the new beamlet resolution
 beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * beamlet_down_sample_factor
 beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * beamlet_down_sample_factor
+# Calculate the new beamlet resolution
 inf_matrix_db = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm)
 
+# ***************** 2) Down-sampling voxels **************************
+# Note: PortPy only allows down-sampling voxels as a factor of ct voxel resolutions resolution
 # PortPy can down-sample optimization voxels as factor of ct voxels.
-# Example: create another influence matrix for down sampled voxels combining 7 ct voxels in x,y direction and 1 ct voxel in z direction.
-# It can be done by passing the argument opt_vox_xyz_res_mm = ct_res_xyz * down_sample_factor
-down_sample_factor = [7, 7, 1]
-opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), down_sample_factor)]
+# Down sample voxels by a factor of 7 in x, y and 1 in z direction
+voxel_down_sample_factors = [7, 7, 1]
+opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
 inf_matrix_dv = my_plan.create_inf_matrix(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
 # Now, let us also down sample both voxels and beamlets
@@ -113,6 +109,7 @@ sol_dv = pp.load_optimal_sol('sol_dv', path=r'C:\temp\db4_dv661')
 sol_dbv = pp.load_optimal_sol('sol_dbv', path=r'C:\temp\db4_dv661')
 
 # To know the cost of down sampling beamlets, lets compare the dvh of down sampled beamlets with original
+#
 structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
 fig, ax = plt.subplots(figsize=(12, 8))
