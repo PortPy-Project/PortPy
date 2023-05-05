@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 # ***************** 0) Creating a plan using the original data resolution **************************
 # Create my_plan object for the planner beams.
-data_dir = r'../data'
+data_dir = r'../../data'
 patient_id = 'Lung_Phantom_Patient_1'
 my_plan = pp.Plan(patient_id, data_dir=data_dir)
 

@@ -1,64 +1,60 @@
+"""
+### PortPy provides full dense influence matrix (i.e., including all scattering components) and a truncated sparse
+    version (used for computational efficiency). This example clarifies the relationship and differences between
+    these matrices by showing the followings:
+    1- generating a plan using the sparse matrix (default matrix in PortPy)
+    2- calculating the full dose for the plan using the full matrix
+    3- manually calculating the sparse matrix from the full matrix
+
+"""
+
 import portpy.photon as pp
 import numpy as np
 from copy import deepcopy
 
 
 def ex_4_inf_matrix_sparsification():
-    # specify the patient data location
-    # (you first need to download the patient database from the link provided in the GitHub page)
-    data_dir = r'../data'
-    # display the existing patients. To display it in browser rather than console, turn on in_browser=True
-    pp.Visualize.display_patients(data_dir=data_dir)
 
-    # pick a patient from the existing patient list to get detailed info about the patient data (e.g., beams_dict, structures, )
+    # ***************** 1) generating a plan using the sparse matrix (default matrix in PortPy)************************
+    # Create plan_sparse object
+    # By default, load_inf_matrix_full=False, and it only loads the spase matrix
+    data_dir = r'../../data'
     patient_id = 'Lung_Phantom_Patient_1'
-    pp.Visualize.display_patient_metadata(patient_id, data_dir=data_dir)
-
-    # create my_plan object with full influence matrix for the planner beams
-    # for the customized beams_dict, you can pass the argument beam_ids
-    # e.g. my_plan = pp.Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    plan_full = pp.Plan(patient_id, load_inf_matrix_full=True)
-
-    plan_sparse = pp.Plan(patient_id)  # create plan with sparse matrix
-    A_sparse = deepcopy(plan_sparse.inf_matrix.A)  # deepcopy so it doesnt modify the object
-    A_sparse = A_sparse.todense()  # convert sparse to dense
-
-    # Creating sparse from full influence matrix
-    A_full = deepcopy(plan_full.inf_matrix.A)  # deepcopy so it doesnt modify the object
-    sparse_tol = plan_sparse.inf_matrix.sparse_tol
-    A_full[A_full <= sparse_tol] = 0  # set all the values in full matrix to zero which are less than sparse_tol
-    test = np.abs(A_full - A_sparse) <= 1e-3
-    assert test.all()  # check if both the influence matrix are similar. if True, then both are similar
-
-    # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
-    # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
-    # For optimization problems with non-linear objective and/or constraints, MOSEK often performs well
-    # For mixed integer programs, GUROBI/CPLEX are good choices
-    # If you have .edu email address, you can get free academic license for commercial solvers
-    # we recommend the commercial solver MOSEK as your solver for the problems in this example,
-    # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
-    # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
-    # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
+    plan_sparse = pp.Plan(patient_id, data_dir=data_dir)
     sol_sparse = pp.Optimize.run_IMRT_fluence_map_CVXPy(plan_sparse, solver='MOSEK')
+    # Calculate the dose using the sparse matrix
+    dose_sparse_1d = plan_sparse.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_sparse.get_num_of_fractions())
 
-    # above solution is obtained using the sparse influence matrix
+    # ***************** 2) calculating the full dose for the plan using the full matrix***********************
+    # Note: It is often computationally impractical to use the full matrix for optimization. We just use the
+    #   full matrix to calculate the dose for the solution obtained by sparse matrix and show the resultant discrepancy
 
-    # sol_full = pp.sol_change_inf_matrix(sol, inf_matrix_full)  # create a new solution with full influence matrix
-    # my_plan = pp.Plan.load_plan(path=r'C:\temp')
-    # sol_sparse = pp.load_optimal_sol('sol_sparse', path=r'C:\temp')
-    # sol_full = pp.load_optimal_sol('sol_full', path=r'C:\temp')
-    # my_plan.save_plan(path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_sparse, sol_name='sol_sparse', path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_full, sol_name='sol_full', path=r'C:\temp')
-
-    # Now, let us compare the dvh using sparse and full influence matrix
+    # create plan_full object by specifying load_inf_matrix_full=True
+    plan_full = pp.Plan(patient_id, load_inf_matrix_full=True)
+    # use the full influence matrix to calculate the dose for the plan obtained by sparse matrix
+    dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())
+    # Visualize the DVH discrepancy
     structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-
-    dose_sparse_1d = plan_sparse.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_sparse.get_num_of_fractions())  # getting dose in 1d for sparse matrix
-    dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())  # getting dose in 1d for full matrix
-    pp.Visualize.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=structs, style='solid', show=False, norm_flag=True) # plot dvh using the above dose
+    pp.Visualize.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=structs, style='solid', show=False, norm_flag=True)
     pp.Visualize.plot_dvh(plan_full, dose_1d=dose_full_1d, structs=structs, style='dotted', create_fig=False, norm_flag=True)
     print('Done')
+
+    # ***************** 3) manually calculating the sparse matrix from the full matrix***********************
+    # The sparse and full matrices are both pre-calculated and included in PorPy data.
+    #   The sparse matrix; however, was obtained by simply zeroing out the small elements in the full matrix that were
+    #   less than a threshold specified in "my_plan.inf_matrix.sparse_tol". Here, we manually generate the sparse
+    #   matrix from the full matrix using this threshold to clarify the process
+
+    #  Get A_sparse and A_full
+    A_full = plan_full.inf_matrix.A
+    A_sparse = plan_sparse.inf_matrix.A
+    # Get the threshold value used by PortPy to truncate the matrix
+    sparse_tol = plan_sparse.inf_matrix.sparse_tol
+    # Truncate the full matrix
+    A_full[A_full <= sparse_tol] = 0
+    test = np.abs(A_full - A_sparse.todense()) <= 1e-3
+    # Check if both influence matrices agree
+    assert test.all()
 
 
 if __name__ == "__main__":
