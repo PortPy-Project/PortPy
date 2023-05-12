@@ -16,7 +16,7 @@ def view_in_slicer_jupyter(my_plan, dose_1d: np.ndarray = None, sol: dict = None
     :param ct_name: Default to 'ct'. name of the ct node in 3D slicer
     :param dose_name: Default to 'dose'. name of the dose node in 3D slicer
     :param struct_set_name: name of the rtstruct
-    :param show_structs: default to True. If false, will not create structure node
+    :param show_structs: default to True. If false, will not create struct_name node
     :param show_dose: default to True. If false, will not create dose node
     :param show_ct:default to True. If false, will not create ct node
     :return: visualize in slicer jupyter
@@ -65,7 +65,7 @@ def view_in_slicer_jupyter(my_plan, dose_1d: np.ndarray = None, sol: dict = None
     if show_structs:
         structure_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", struct_set_name)
         for i, struct_name in enumerate(my_plan.structures.structures_dict['name']):
-            print('Importing structure : ' + struct_name)
+            print('Importing struct_name : ' + struct_name)
             slicer.util.addVolumeFromArray(my_plan.structures.structures_dict['structure_mask_3d'][i] * (i + 1),
                                            name=struct_name, nodeClassName="vtkMRMLLabelMapVolumeNode")
             lmap = slicer.util.getNode(struct_name)

@@ -7,18 +7,24 @@ import portpy.photon as pp
 
 
 def ex_3_structure_operations():
-    # Enter patient name
-    # ***************** 0) Creating a plan using the original data resolution **************************
-    # Create my_plan object for the planner beams.
-    data_dir = r'../../data'
-    patient_id = 'Lung_Phantom_Patient_1'
-    my_plan = pp.Plan(patient_id, data_dir=data_dir)
+    # specify the patient data location.
+    data_dir = r'../data'
+    # display the existing patients in console or browser.
+    data = pp.DataExplorer(data_dir=data_dir)
+
+    # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
+    data.patient_id = 'Lung_Phantom_Patient_1'
+
+    # Load ct, structure and beams as an object
+    ct = pp.CT(data)
+    structs = pp.Structures(data)
 
     # boolean or create margin_mm around structures
-    my_plan.structures.union(str_1='PTV', str_2='GTV', str1_or_str2='dummy')
-    my_plan.structures.intersect(str_1='PTV', str_2='GTV', str1_and_str2='dummy')
-    my_plan.structures.subtract(str_1='PTV', str_2='GTV', str1_sub_str2='dummy')
-    my_plan.structures.expand(structure='PTV', margin_mm=5, new_structure='dummy')
+    structs.subtract(struct_1_name='PTV', struct_2_name='GTV', new_struct_name='PTV_GTV')
+    pp.Visualization.plot_2d_slice(ct=ct, structs=structs, slice_num=60, struct_names=['PTV', 'PTV_GTV'])
+
+    structs.expand(struct_name='PTV', margin_mm=5, new_struct_name='PTV')
+    pp.Visualization.plot_2d_slice(ct=ct, structs=structs, slice_num=60, struct_names=['PTV'])
 
 
 if __name__ == "__main__":

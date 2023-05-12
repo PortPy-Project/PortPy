@@ -30,4 +30,4 @@ for i in range(len(struct_list)):
     segment = segmentation.GetNthSegment(i)
     segment.SetName(struct_list[i])
 
-# structure node
+# struct_name node

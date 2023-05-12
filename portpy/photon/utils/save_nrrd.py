@@ -14,7 +14,7 @@ def save_nrrd(my_plan: Plan, sol: dict, data_dir: str = None, ct_filename: str =
 
     :param my_plan: object of class Plan
     :param sol: optimal solution dict
-    :param data_dir: save nrrd images of ct, dose_1d and structure set in path directory
+    :param data_dir: save nrrd images of ct, dose_1d and struct_name set in path directory
     :param ct_filename: ct file name
     :param dose_filename: dose file name
     :param rt_struct_filename: rt_struct file name

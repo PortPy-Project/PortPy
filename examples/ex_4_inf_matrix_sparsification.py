@@ -5,12 +5,11 @@
     1- generating a plan using the sparse matrix (default matrix in PortPy)
     2- calculating the full dose for the plan using the full matrix
     3- manually calculating the sparse matrix from the full matrix
-
 """
 
 import portpy.photon as pp
 import numpy as np
-from copy import deepcopy
+import matplotlib.pyplot as plt
 
 
 def ex_4_inf_matrix_sparsification():
@@ -18,10 +17,45 @@ def ex_4_inf_matrix_sparsification():
     # ***************** 1) generating a plan using the sparse matrix (default matrix in PortPy)************************
     # Create plan_sparse object
     # By default, load_inf_matrix_full=False, and it only loads the spase matrix
-    data_dir = r'../../data'
+    data_dir = r'../data'
+    data = pp.DataExplorer(data_dir=data_dir)
     patient_id = 'Lung_Phantom_Patient_1'
-    plan_sparse = pp.Plan(patient_id, data_dir=data_dir)
-    sol_sparse = pp.Optimize.run_IMRT_fluence_map_CVXPy(plan_sparse, solver='MOSEK')
+    data.patient_id = patient_id
+
+    # Load ct, structure and beams as an object
+    ct = pp.CT(data)
+    structs = pp.Structures(data)
+    beams = pp.Beams(data)
+
+    # create rinds based upon rind definition in optimization params
+    opt_params = data.load_config_opt_params(protocol_name='Lung_2Gy_30Fx')
+    structs.create_rinds(opt_params)
+
+    # load influence matrix based upon beams and structure set
+    inf_matrix_sparse = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+
+    # load clinical criteria from the config files for which plan to be optimized
+    protocol_name = 'Lung_2Gy_30Fx'
+    clinical_criteria_dict = data.load_config_clinical_criteria(protocol_name)
+    clinical_criteria = pp.ClinicalCriteria(clinical_criteria_dict)
+
+    # ***************** 2) creating a simple IMRT plan using CVXPy (Plan class, Optimization class)*********************
+    # Note: you can call different opensource / commercial optimization engines from CVXPy.
+    #   For commercial engines (e.g., Mosek, Gorubi, CPLEX), you first need to obtain an appropriate license.
+    #   Most commercial optimization engines give free academic license.
+
+    # Create my_plan object which would load and store all the data needed for optimization
+    #   (e.g., influence matrix, structures and their voxels, beams and their beamlets).
+    # If the list of beams are not provided, it uses the beams selected manually
+    #   by a human expert planner for the patient (manually selected beams are stored in portpy data).
+    plan_sparse = pp.Plan(ct, structs, beams, inf_matrix_sparse, clinical_criteria)
+
+    # create cvxpy problem using the clinical criteria and optimization parameters
+    opt = pp.Optimization(plan_sparse, opt_params=opt_params)
+    opt.create_cvxpy_problem()
+
+    sol_sparse = opt.solve(solver='MOSEK', verbose=True)
+
     # Calculate the dose using the sparse matrix
     dose_sparse_1d = plan_sparse.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_sparse.get_num_of_fractions())
 
@@ -30,13 +64,20 @@ def ex_4_inf_matrix_sparsification():
     #   full matrix to calculate the dose for the solution obtained by sparse matrix and show the resultant discrepancy
 
     # create plan_full object by specifying load_inf_matrix_full=True
-    plan_full = pp.Plan(patient_id, load_inf_matrix_full=True)
+    beams_full = pp.Beams(data, load_inf_matrix_full=True)
+    # load influence matrix based upon beams and structure set
+    inf_matrix_full = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams_full)
+    plan_full = pp.Plan(ct, structs, beams, inf_matrix_full, clinical_criteria)
     # use the full influence matrix to calculate the dose for the plan obtained by sparse matrix
     dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())
+
     # Visualize the DVH discrepancy
-    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-    pp.Visualize.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=structs, style='solid', show=False, norm_flag=True)
-    pp.Visualize.plot_dvh(plan_full, dose_1d=dose_full_1d, structs=structs, style='dotted', create_fig=False, norm_flag=True)
+    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax = pp.Visualization.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(plan_full, dose_1d=dose_full_1d, structs=struct_names, style='dotted', ax=ax)
+    ax.set_title('- Sparse .. Full')
+    plt.show()
     print('Done')
 
     # ***************** 3) manually calculating the sparse matrix from the full matrix***********************

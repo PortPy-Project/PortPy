@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Union
-
+from .data_explorer import DataExplorer
 
 class Beams:
     """
@@ -26,12 +26,15 @@ class Beams:
 
     """
 
-    def __init__(self, beams_dict):
+    def __init__(self, data: DataExplorer, beam_ids: List[int] = None, load_inf_matrix_full: bool = False):
         """
 
         :param beams_dict: Beams dictionary containing information about beams
         """
 
+        metadata = data.load_metadata()
+        metadata = self.get_plan_beams(beam_ids=beam_ids, meta_data=metadata)
+        beams_dict = data.load_data(meta_data=metadata['beams'], load_inf_matrix_full=load_inf_matrix_full)
         self.beams_dict = beams_dict
         self.preprocess_beams()
 
@@ -100,6 +103,24 @@ class Beams:
         beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
         return beam_map
 
+    @staticmethod
+    def get_finest_beamlet_width() -> float:
+        """
+
+        :return: beamlet width in the original beam
+        """
+
+        return 2.5
+
+    @staticmethod
+    def get_finest_beamlet_height() -> float:
+        """
+
+        :return: beamlet height in the original beam
+        """
+
+        return 2.5
+
     def get_beamlet_width(self) -> float:
         """
         
@@ -151,3 +172,33 @@ class Beams:
                     num_height = int(beamlets['height_mm'][0][ind] / 2.5)
                     beamlet_idx_2d_grid[row:row+num_height, col:col+num_width] = ind
         return beamlet_idx_2d_grid
+
+    @staticmethod
+    def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:
+        """
+        Create and return a copy of meta_data with only including the requested beams_dict (beam_ids)
+
+
+        :param beam_ids: the indices of the beams_dict to be included. If None, the planner's beams_dict are used
+        :param meta_data: the dictionary including all the beams_dict
+        :return: returns the meta_data dictionary only including the requested beams_dict in format of:
+            dict: {
+                   'structures': {'name': list(str), 'volume_cc': list(float), }
+                   'opt_voxels': {'_ct_voxel_resolution_xyz_mm': list(float),}
+                  }
+        """
+        if beam_ids is None:  # if beam_ids not included, then the beams_dict
+            # selected by an expert human planner would be used
+            beam_ids = meta_data['planner_beam_ids']['IDs']
+        meta_data_req = meta_data.copy()
+        del meta_data_req['beams']  # remove previous beams_dict
+        beamReq = dict()
+        for i in range(len(beam_ids)):
+            if beam_ids[i] in meta_data['beams']['ID']:
+                ind = meta_data['beams']['ID'].index(beam_ids[i])
+                for key in meta_data['beams']:
+                    beamReq.setdefault(key, []).append(meta_data['beams'][key][ind])
+            else:
+                print('beam id {} is not available'.format(beam_ids[i]))
+        meta_data_req['beams'] = beamReq
+        return meta_data_req

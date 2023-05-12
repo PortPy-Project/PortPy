@@ -35,6 +35,23 @@ class ClinicalCriteria:
         """
         self.clinical_criteria_dict = clinical_criteria
 
+    def get_prescription(self) -> float:
+        """
+
+        :return: prescription in Gy
+        """
+        pres = self.clinical_criteria_dict['pres_per_fraction_gy'] * \
+               self.clinical_criteria_dict[
+                   'num_of_fractions']
+        return pres
+
+    def get_num_of_fractions(self) -> float:
+        """
+
+        :return: number of fractions to be delivered
+        """
+        return self.clinical_criteria_dict['num_of_fractions']
+
     def add_criterion(self, criterion: str, parameters: dict, constraints: dict) -> None:
         """
         Add criterion to the clinical criteria dictionary
