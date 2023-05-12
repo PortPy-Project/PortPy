@@ -1,0 +1,97 @@
+{
+  "prescription_gy": 60,
+  "rind_structures": [
+	{"name": "RIND_0", "ref_structure": "PTV", "margin_start_mm": 0, "margin_end_mm":5},
+	{"name": "RIND_1", "ref_structure": "PTV", "margin_start_mm": 5, "margin_end_mm":10},
+	{"name": "RIND_2", "ref_structure": "PTV", "margin_start_mm": 10, "margin_end_mm":30},
+	{"name": "RIND_3", "ref_structure": "PTV", "margin_start_mm": 30, "margin_end_mm":50},
+	{"name": "RIND_4", "ref_structure": "PTV", "margin_start_mm": 50, "margin_end_mm":"inf"}
+	],
+
+  "objective_functions": [	
+	{
+		"type": "quadratic-overdose",     
+		"structure_name": "PTV",
+		"weight": 10000,
+		"dose_gy": "prescription_gy"
+    },
+    {
+		"type": "quadratic-underdose",
+		"structure_name": "PTV",
+        "weight": 100000,
+        "dose_gy": "prescription_gy"
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "CORD",
+        "weight": 10
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "ESOPHAGUS",
+        "weight": 20
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "RIND_0",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_1",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_2",
+        "weight": 3
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_3",
+        "weight": 3
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_4",
+        "weight": 3
+    },
+    {
+		"type": "quadratic",     
+		"structure_name": "HEART",
+        "weight": 20
+    },
+	{
+		"type": "smoothness-quadratic",    
+        "weight": 10
+    }
+	],
+	"constraints":[
+	{
+		"type": "max",
+		"structure_name": "RIND_0",
+        "upper_limit": "1.1*prescription_gy"
+    },
+	{
+		"type": "max",
+		"structure_name": "RIND_1",
+        "upper_limit": "1.05*prescription_gy"
+    },
+	{
+		"type": "max",
+		"structure_name": "RIND_2",
+        "upper_limit": "0.9*prescription_gy"
+    },
+	{
+		"type": "max",
+		"structure_name": "RIND_3",
+        "upper_limit": "0.85*prescription_gy"
+    },
+	{
+		"type": "max",
+		"structure_name": "RIND_4",
+        "upper_limit": "0.75*prescription_gy"
+    }
+]
+
+}

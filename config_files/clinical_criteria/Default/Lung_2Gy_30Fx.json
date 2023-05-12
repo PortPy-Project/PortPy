@@ -1,0 +1,133 @@
+{
+  "disease_site": "Lung",
+  "protocol_name": "Lung_Default_2Gy_30Fr",
+  "pres_per_fraction_gy": 2,
+  "num_of_fractions": 30,
+  "criteria": [
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "GTV"
+      },
+      "constraints": {
+        "limit_dose_gy": 69,
+        "goal_dose_gy": 66
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "PTV"
+      },
+      "constraints": {
+        "limit_dose_gy": 69,
+        "goal_dose_gy": 66
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "ESOPHAGUS"
+      },
+      "constraints": {
+        "limit_dose_gy": 66
+      }
+    },
+    {
+      "name": "mean_dose",
+      "parameters": {
+        "structure_name": "ESOPHAGUS"
+      },
+      "constraints": {
+        "limit_dose_gy": 34,
+        "goal_dose_gy": 21
+      }
+    },
+    {
+      "name": "dose_volume_V",
+      "parameters": {
+        "structure_name": "ESOPHAGUS",
+        "dose_gy": 60
+      },
+      "constraints": {
+        "limit_volume_perc": 17
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "HEART"
+      },
+      "constraints": {
+        "limit_dose_gy": 66
+      }
+    },
+    {
+      "name": "mean_dose",
+      "parameters": {
+        "structure_name": "HEART"
+      },
+      "constraints": {
+        "limit_dose_gy": 27,
+        "goal_dose_gy": 20
+      }
+    },
+    {
+      "name": "dose_volume_V",
+      "parameters": {
+        "structure_name": "HEART",
+        "dose_gy": 30
+      },
+      "constraints": {
+        "limit_volume_perc": 50
+      }
+    },
+    {
+      "name": "dose_volume_V",
+      "parameters": {
+        "structure_name": "HEART",
+        "dose_gy": 30
+      },
+      "constraints": {
+        "goal_volume_perc": 48
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 66
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 66
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "CORD"
+      },
+      "constraints": {
+        "limit_dose_gy": 50,
+        "goal_dose_gy": 48
+      }
+    },
+    {
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "SKIN"
+      },
+      "constraints": {
+        "limit_dose_gy": 60
+      }
+    }
+  ]
+}
