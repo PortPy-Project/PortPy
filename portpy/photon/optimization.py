@@ -24,7 +24,7 @@ class Optimization(object):
     def __init__(self, my_plan: Plan, inf_matrix: InfluenceMatrix = None,
                  clinical_criteria: ClinicalCriteria = None,
                  opt_params: dict = None):
-        self.x = None
+        # self.x = None
         self.my_plan = my_plan
         if inf_matrix is None:
             inf_matrix = my_plan.inf_matrix
@@ -36,6 +36,7 @@ class Optimization(object):
         self.prescription_gy = opt_params['prescription_gy']
         self.obj = []
         self.constraints = []
+        self.vars = {}
 
     def create_cvxpy_problem(self):
         """
@@ -70,7 +71,8 @@ class Optimization(object):
         obj = []
         constraints = []
         x = cp.Variable(A.shape[1], pos=True, name='x')
-        self.x = x
+
+        self.vars = {'x': x}
 
         # Generating objective functions
         print('Objective Start')
@@ -148,8 +150,8 @@ class Optimization(object):
                     org = mean_constraints[i]['parameters']['structure_name']
                     # mean constraints using voxel weights
                     if org in my_plan.structures.structures_dict['name']:
-                        constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
-                                        (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
+                        constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
+                                        (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org), A[st.get_opt_voxels_idx(org),
                                                                                           :] @ x)))) <= limit / num_fractions]
 
                     else:
@@ -198,7 +200,7 @@ class Optimization(object):
         """
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         max_constraint = [A[st.get_opt_voxels_idx(struct), :] @ x <= dose_gy]
         self.add_constraints(max_constraint)
@@ -213,10 +215,10 @@ class Optimization(object):
         """
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
-        mean_constraint = [(1 / sum(st.get_opt_voxels_size(struct))) *
-                           (cp.sum((cp.multiply(st.get_opt_voxels_size(struct),
+        mean_constraint = [(1 / sum(st.get_opt_voxels_volume_cc(struct))) *
+                           (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(struct),
                                                 A[st.get_opt_voxels_idx(struct),
                                                 :] @ x)))) <= dose_gy]
         self.add_constraints(mean_constraint)
@@ -232,7 +234,7 @@ class Optimization(object):
         """
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         dO = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True, name='{}_overdose'.format(struct))
         obj = (1 / len(st.get_opt_voxels_idx(struct))) * (weight * cp.sum_squares(dO))
@@ -250,7 +252,7 @@ class Optimization(object):
         """
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         dU = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True, name='{}_underdose'.format(struct))
         obj = (1 / len(st.get_opt_voxels_idx(struct))) * (weight * cp.sum_squares(dU))
@@ -271,7 +273,7 @@ class Optimization(object):
         """
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         obj = 0
         if voxels is not None:
@@ -295,7 +297,7 @@ class Optimization(object):
         """
 
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         [Qx, Qy, num_rows, num_cols] = self.get_smoothness_matrix(st.beamlets_dict)
         obj = weight * (
@@ -332,7 +334,7 @@ class Optimization(object):
         :return:
         """
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         #  Constraints for selecting beams
         # binary variable for selecting beams
@@ -341,10 +343,10 @@ class Optimization(object):
         constraints = []
         constraints += [cp.sum(b) <= num_beams]
         for i in range(len(st.beamlets_dict)):
-            start_beamlet = st.beamlets_dict[i]['start_beamlet']
-            end_beamlet = st.beamlets_dict[i]['end_beamlet']
+            start_beamlet = st.beamlets_dict[i]['start_beamlet_idx']
+            end_beamlet_idx = st.beamlets_dict[i]['end_beamlet_idx']
             M = 50  # upper bound on the beamlet intensity
-            constraints += [x[start_beamlet:end_beamlet] <= b[i] * M]
+            constraints += [x[start_beamlet:end_beamlet_idx] <= b[i] * M]
 
         self.add_constraints(constraints)
 
@@ -362,7 +364,7 @@ class Optimization(object):
 
         problem = cp.Problem(cp.Minimize(sum(self.obj)), constraints=self.constraints)
         problem.solve(*args, **kwargs)
-        return {'optimal_intensity': self.x.value, 'inf_matrix': self.inf_matrix}
+        return {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix}
 
     def get_sol(self) -> dict:
         """
@@ -375,13 +377,13 @@ class Optimization(object):
 
         :return: solution dictionary
         """
-        return {'optimal_intensity': self.x.value, 'inf_matrix': self.inf_matrix}
+        return {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix}
 
     def add_dvh(self, dvh_constraint: list):
 
         A = self.inf_matrix.A
         st = self.inf_matrix
-        x = self.x
+        x = self.vars['x']
 
         import pandas as pd
         df_dvh_criteria = pd.DataFrame()
@@ -422,8 +424,8 @@ class Optimization(object):
             constraints += [
                 A[st.get_opt_voxels_idx(struct), :] @ x <= limit / self.my_plan.get_num_of_fractions()
                 + b_dvh[start:end] * M / self.my_plan.get_num_of_fractions()]
-            constraints += [b_dvh @ st.get_opt_voxels_size(struct) <= (v / frac) / 100 * sum(
-                st.get_opt_voxels_size(struct))]
+            constraints += [b_dvh @ st.get_opt_voxels_volume_cc(struct) <= (v / frac) / 100 * sum(
+                st.get_opt_voxels_volume_cc(struct))]
             start = end
         self.add_constraints(constraints=constraints)
 
@@ -443,12 +445,12 @@ class Optimization(object):
               [0 0 0 0 1 -1]]
 
         """
-        sRow = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
-        sCol = np.zeros((beamReq[-1]['end_beamlet'] + 1, beamReq[-1]['end_beamlet'] + 1), dtype=int)
+        sRow = np.zeros((beamReq[-1]['end_beamlet_idx'] + 1, beamReq[-1]['end_beamlet_idx'] + 1), dtype=int)
+        sCol = np.zeros((beamReq[-1]['end_beamlet_idx'] + 1, beamReq[-1]['end_beamlet_idx'] + 1), dtype=int)
         num_rows = 0
         num_cols = 0
         for b in range(len(beamReq)):
-            beam_map = beamReq[b]['beamlet_idx_2dgrid']
+            beam_map = beamReq[b]['beamlet_idx_2d_finest_grid']
 
             rowsNoRepeat = [0]
             for i in range(1, np.size(beam_map, 0)):

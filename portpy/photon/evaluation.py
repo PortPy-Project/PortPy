@@ -97,7 +97,7 @@ class Evaluation:
             # org_points_sort_volume = org_points_sort_spacing[:, 0] * org_points_sort_spacing[:,
             #                                                          1] * org_points_sort_spacing[:, 2]
             # sum_weight = np.sum(org_points_sort_volume)
-            org_weights = inf_matrix.get_opt_voxels_size(struct)
+            org_weights = inf_matrix.get_opt_voxels_volume_cc(struct)
             org_sort_weights = org_weights[sort_ind]
             sum_weight = np.sum(org_sort_weights)
             y = [1]

@@ -67,6 +67,7 @@ class Plan:
         self.ct = ct  # create ct attribute containing ct information as dictionary
         self.inf_matrix = inf_matrix
         self.clinical_criteria = clinical_criteria
+        self.patient_id = ct.patient_id
 
     def save_plan(self, plan_name: str = None, path: str = None) -> None:
         """

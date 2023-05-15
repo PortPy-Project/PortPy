@@ -104,8 +104,8 @@ class CvxPyProb(object):
                     org = mean_constraints[i]['parameters']['structure_name']
                     # mean constraints using voxel weights
                     if org in my_plan.structures.structures_dict['name']:
-                        constraints += [(1 / sum(st.get_opt_voxels_size(org))) *
-                                        (cp.sum((cp.multiply(st.get_opt_voxels_size(org), A[st.get_opt_voxels_idx(org),
+                        constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
+                                        (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org), A[st.get_opt_voxels_idx(org),
                                                                                           :] @ x)))) <= limit / num_fractions]
 
                     else:
@@ -146,8 +146,8 @@ class CvxPyProb(object):
         st = self.inf_matrix
         x = self.x
 
-        mean_constraint = [(1 / sum(st.get_opt_voxels_size(struct))) *
-                           (cp.sum((cp.multiply(st.get_opt_voxels_size(struct),
+        mean_constraint = [(1 / sum(st.get_opt_voxels_volume_cc(struct))) *
+                           (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(struct),
                                                 A[st.get_opt_voxels_idx(struct),
                                                 :] @ x)))) <= dose_gy]
         self.add_constraints(mean_constraint)
@@ -341,8 +341,8 @@ class CvxPyProb(object):
             constraints += [
                 A[st.get_opt_voxels_idx(struct), :] @ x <= limit / self.my_plan.get_num_of_fractions()
                 + b_dvh[start:end] * M / self.my_plan.get_num_of_fractions()]
-            constraints += [b_dvh @ st.get_opt_voxels_size(struct) <= (v / frac) / 100 * sum(
-                st.get_opt_voxels_size(struct))]
+            constraints += [b_dvh @ st.get_opt_voxels_volume_cc(struct) <= (v / frac) / 100 * sum(
+                st.get_opt_voxels_volume_cc(struct))]
             start = end
         self.add_constraints(constraints=constraints)
 

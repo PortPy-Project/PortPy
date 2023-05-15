@@ -25,7 +25,7 @@ class Visualization:
     volume_type = Literal["Absolute(cc)", "Relative(%)"]
 
     @staticmethod
-    def plot_dvh(my_plan: Plan, sol: dict = None, dose_1d: np.ndarray = None, structs: List[str] = None,
+    def plot_dvh(my_plan: Plan, sol: dict = None, dose_1d: np.ndarray = None, struct_names: List[str] = None,
                  dose_scale: dose_type = "Absolute(Gy)",
                  volume_scale: volume_type = "Relative(%)", **options):
         """
@@ -34,7 +34,7 @@ class Visualization:
         :param my_plan: object of class Plan
         :param sol: optimal sol dictionary
         :param dose_1d: dose_1d in 1d voxels
-        :param structs: structures to be included in dvh plot
+        :param struct_names: structures to be included in dvh plot
         :param volume_scale: volume scale on y-axis. Default= Absolute(cc). e.g. volume_scale = "Absolute(cc)" or volume_scale = "Relative(%)"
         :param dose_scale: dose_1d scale on x axis. Default= Absolute(Gy). e.g. dose_scale = "Absolute(Gy)" or dose_scale = "Relative(%)"
         :keyword style (str): line style for dvh curve. default "solid". can be "dotted", "dash-dotted".
@@ -51,7 +51,7 @@ class Visualization:
         :return: dvh plot for the selected structures
 
         :Example:
-        >>> Visualization.plot_dvh(my_plan, sol=sol, structs=['PTV', 'ESOPHAGUS'], dose_scale='Absolute(Gy)',volume_scale="Relative(%)", show=False, create_fig=True )
+        >>> Visualization.plot_dvh(my_plan, sol=sol, struct_names=['PTV', 'ESOPHAGUS'], dose_scale='Absolute(Gy)',volume_scale="Relative(%)", show=False, create_fig=True )
         """
 
         if dose_1d is None:
@@ -90,9 +90,9 @@ class Visualization:
                 width = 2
         if colors is None:
             colors = Visualization.get_colors()
-        if structs is None:
+        if struct_names is None:
             # orgs = []
-            structs = my_plan.structures.structures_dict['name']
+            struct_names = my_plan.structures.structures_dict['name']
         max_dose = 0.0
         max_vol = 0.0
         all_orgs = my_plan.structures.structures_dict['name']
@@ -106,7 +106,7 @@ class Visualization:
             norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
         for i in range(np.size(all_orgs)):
-            if all_orgs[i] not in structs:
+            if all_orgs[i] not in struct_names:
                 continue
             # for dose_1d in dose_list:
             #

@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Union
 from .data_explorer import DataExplorer
 
+
 class Beams:
     """
     A class representing beams_dict.
@@ -38,14 +39,14 @@ class Beams:
         self.beams_dict = beams_dict
         self.preprocess_beams()
 
-    def get_beamlet_idx_2dgrid(self, beam_id: int) -> np.ndarray:
+    def get_beamlet_idx_2d_finest_grid(self, beam_id: int) -> np.ndarray:
         """
 
         :param beam_id: beam_id for the beam
         :return: 2d grid of beamlets in 2.5*2.5 resolution
         """
         ind = self.beams_dict['ID'].index(beam_id)
-        return self.beams_dict['beamlet_idx_2dgrid'][ind]
+        return self.beams_dict['beamlet_idx_2d_finest_grid'][ind]
 
     def get_gantry_angle(self, beam_id: Union[int, List[int]]) -> Union[int, List[int]]:
         """
@@ -87,8 +88,8 @@ class Beams:
     def preprocess_beams(self):
         for i, beam_id in enumerate(self.beams_dict['ID']):
             ind = self.beams_dict['ID'].index(beam_id)
-            beam_2d_grid = self.create_beamlet_idx_2d_grid(beam_id=beam_id)
-            self.beams_dict.setdefault('beamlet_idx_2dgrid', []).append(beam_2d_grid)
+            beam_2d_grid = self.create_beamlet_idx_2d_finest_grid(beam_id=beam_id)
+            self.beams_dict.setdefault('beamlet_idx_2d_finest_grid', []).append(beam_2d_grid)
 
     @staticmethod
     def get_original_map(beam_map):
@@ -140,7 +141,7 @@ class Beams:
     def get_all_beam_ids(self) -> List[int]:
         return self.beams_dict['ID']
 
-    def create_beamlet_idx_2d_grid(self, beam_id: int) -> np.ndarray:
+    def create_beamlet_idx_2d_finest_grid(self, beam_id: int) -> np.ndarray:
         """
         Create 2d grid for the beamlets where each element is 2.5mm*2.5mm for the given beam id from x and y coordinates of beamlets.
 
@@ -160,8 +161,8 @@ class Beams:
 
         # create mesh grid in 2.5 mm resolution
         XX, YY = np.meshgrid(x_coord, y_coord)
-        beamlet_idx_2d_grid = np.ones_like(XX, dtype=int)
-        beamlet_idx_2d_grid = beamlet_idx_2d_grid * int(-1)  # make all elements to -1
+        beamlet_idx_2d_finest_grid = np.ones_like(XX, dtype=int)
+        beamlet_idx_2d_finest_grid = beamlet_idx_2d_finest_grid * int(-1)  # make all elements to -1
 
         for row in range(XX.shape[0]):
             for col in range(XX.shape[1]):
@@ -170,8 +171,8 @@ class Beams:
                     ind = ind[0][0]
                     num_width = int(beamlets['width_mm'][0][ind]/2.5)
                     num_height = int(beamlets['height_mm'][0][ind] / 2.5)
-                    beamlet_idx_2d_grid[row:row+num_height, col:col+num_width] = ind
-        return beamlet_idx_2d_grid
+                    beamlet_idx_2d_finest_grid[row:row+num_height, col:col+num_width] = ind
+        return beamlet_idx_2d_finest_grid
 
     @staticmethod
     def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:

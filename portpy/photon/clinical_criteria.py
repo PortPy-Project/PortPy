@@ -1,5 +1,5 @@
 from typing import List
-
+from .data_explorer import DataExplorer
 
 class ClinicalCriteria:
     """
@@ -27,13 +27,14 @@ class ClinicalCriteria:
 
     """
 
-    def __init__(self, clinical_criteria):
+    def __init__(self, data: DataExplorer, protocol_name: str = None, protocol_type: str = 'Default'):
         """
 
         :param clinical_criteria: dictionary containing information about clinical criteria
 
         """
-        self.clinical_criteria_dict = clinical_criteria
+        clinical_criteria_dict = data.load_config_clinical_criteria(protocol_name, protocol_type=protocol_type)
+        self.clinical_criteria_dict = clinical_criteria_dict
 
     def get_prescription(self) -> float:
         """

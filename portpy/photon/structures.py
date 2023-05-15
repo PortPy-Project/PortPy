@@ -78,15 +78,16 @@ class Structures:
         :return:
         """
         self.opt_voxels_dict['voxel_idx'] = [None] * len(self.structures_dict['name'])
-        self.opt_voxels_dict['voxel_size'] = [None] * len(self.structures_dict['name'])
+        self.opt_voxels_dict['voxel_volume_cc'] = [None] * len(self.structures_dict['name'])
         for i in range(len(self.structures_dict['name'])):
-
             vox_3d = self.structures_dict['structure_mask_3d'][i] * self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
             # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
             vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
             self.opt_voxels_dict['voxel_idx'][i] = vox
-            self.opt_voxels_dict['voxel_size'][i] = counts * np.prod(self._ct_voxel_resolution_xyz_mm)  # calculate weight for each voxel
-            # self.opt_voxels_dict['voxel_size'][i] = counts / np.max(counts)  # calculate weight for each voxel
+            self.opt_voxels_dict['voxel_volume_cc'][i] = counts * np.prod(
+                self._ct_voxel_resolution_xyz_mm)/1000  # calculate weight for each voxel
+            # dividing by 1000 due to conversion from mm3 to cm3
+            # self.opt_voxels_dict['voxel_volume_cc'][i] = counts / np.max(counts)  # calculate weight for each voxel
 
     def create_structure(self, new_struct_name: str, mask_3d: np.ndarray) -> None:
         """
@@ -274,29 +275,31 @@ class Structures:
         else:
             self.modify_structure(struct_name=struct_name, mask_3d=margin_mask_3d)
 
-    def create_rinds(self, opt_params):
+    def create_opt_structures(self, opt_params):
         # create rinds for optimization
-        rind_params = opt_params['rind_structures']
+        opt_params = opt_params['opt_structures']
         ct_to_dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
         dose_mask = ct_to_dose_map >= 0
         dose_mask = dose_mask.astype(int)
         self.create_structure('dose_mask', dose_mask)
 
         print('creating rinds.. This step may take some time due to dilation')
-        for ind, param in enumerate(rind_params):
-            rind_name = param['name']
-            first_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_start_mm'])
-            second_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_end_mm'])
-            self.expand(param['ref_structure'], margin_mm=param['margin_start_mm'],
-                                           new_struct_name=first_dummy_name)
-            if param['margin_end_mm'] == 'inf':
-                param['margin_end_mm'] = 500
-            self.expand(param['ref_structure'], margin_mm=param['margin_end_mm'],
-                                           new_struct_name=second_dummy_name)
-            self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
-            self.delete_structure(first_dummy_name)
-            self.delete_structure(second_dummy_name)
-            self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
+        for ind, opt_param in enumerate(opt_params):
+            if opt_param['type'] == 'rind':
+                param = opt_param['parameters']
+                rind_name = param['name']
+                first_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_start_mm'])
+                second_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_end_mm'])
+                self.expand(param['ref_structure'], margin_mm=param['margin_start_mm'],
+                            new_struct_name=first_dummy_name)
+                if param['margin_end_mm'] == 'inf':
+                    param['margin_end_mm'] = 500
+                self.expand(param['ref_structure'], margin_mm=param['margin_end_mm'],
+                            new_struct_name=second_dummy_name)
+                self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
+                self.delete_structure(first_dummy_name)
+                self.delete_structure(second_dummy_name)
+                self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
         self.delete_structure('dose_mask')
 
         print('rinds created!!')
@@ -311,7 +314,7 @@ class Structures:
         # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
         vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
         self.opt_voxels_dict['voxel_idx'].append(vox)
-        # self.opt_voxels_dict['voxel_size'].append(counts / np.max(counts))  # calculate weight for each voxel
-        self.opt_voxels_dict['voxel_size'].append(
+        # self.opt_voxels_dict['voxel_volume_cc'].append(counts / np.max(counts))  # calculate weight for each voxel
+        self.opt_voxels_dict['voxel_volume_cc'].append(
             counts * np.prod(self._ct_voxel_resolution_xyz_mm))  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(struct_name)

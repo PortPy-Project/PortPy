@@ -20,7 +20,7 @@ class InfluenceMatrix:
 
         :param beamlet_width_mm: The width of each beamlet in millimeters. Default is 2.5. Must be a multiple of 2.5.
         :param beamlet_height_mm: The height of each beamlet in millimeters. Default is 2.5. Must be a multiple of 2.5.
-        :param down_sample_xyz: A list of integers representing the downsampling factors for the x, y, and z axes. When set to None, the original optimization voxel resolution will be used.
+        :param _down_sample_xyz: A list of integers representing the downsampling factors for the x, y, and z axes. When set to None, the original optimization voxel resolution will be used.
         :param structure: The target struct_name for creating the beamlets in the influence matrix. Default is 'PTV'.
         :param opt_voxels_dict: A dictionary containing the voxels that were used in the optimization process.
         :param beamlets_dict: A dictionary containing the information about beamlets used in the plan.
@@ -42,7 +42,7 @@ class InfluenceMatrix:
     """
 
     def __init__(self, ct: CT, structs: Structures, beams: Beams,
-                 beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5, opt_vox_xyz_res_mm: List[float] = None,
+                 beamlet_width_mm: float = None, beamlet_height_mm: float = None, opt_vox_xyz_res_mm: List[float] = None,
                  is_full: bool = False, target_structure: str = 'PTV', opt_beamlets_PTV_margin_mm: float = 3) -> None:
         """
         Create a influence matrix object for Influence Matrix class based upon beamlet resolution and down-sampling_xyz ratio
@@ -57,12 +57,18 @@ class InfluenceMatrix:
         :param is_full: Load full or sparse matrix. defaults to False. If True, will load full matrix
 
         """
-
-        if beamlet_width_mm % 2.5 == 0 and beamlet_height_mm % 2.5 == 0:
-            self.beamlet_width_mm = beamlet_width_mm
-            self.beamlet_height_mm = beamlet_height_mm
+        if beamlet_width_mm is None and beamlet_height_mm is None:
+            self.beamlet_width_mm = beams.get_beamlet_width()
+            self.beamlet_height_mm = beams.get_beamlet_height()
         else:
-            raise ValueError('beamlet_width_mm and beamlet_height_mm should be multiple of 2.5')
+            if beamlet_width_mm % 2.5 == 0 and beamlet_height_mm % 2.5 == 0:
+                self.beamlet_width_mm = beamlet_width_mm
+                self.beamlet_height_mm = beamlet_height_mm
+            else:
+                raise ValueError('beamlet_width_mm and beamlet_height_mm should be multiple of 2.5')
+        self._beams = beams
+        self._structs = structs
+        self._ct = ct
 
         down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
         if opt_vox_xyz_res_mm is not None:
@@ -70,15 +76,17 @@ class InfluenceMatrix:
             if np.all(np.array(down_sample_xyz) == 1):  # if all are 1 then no down sample
                 down_sample_xyz = None
 
-        self.down_sample_xyz = down_sample_xyz
+        self._down_sample_xyz = down_sample_xyz
         self.is_full = is_full
+
         # create deepcopy of the object or else it will modify the my_plan object
         if hasattr(structs, 'opt_voxels_dict'):
             self.opt_voxels_dict = deepcopy(structs.opt_voxels_dict)
-            del structs.opt_voxels_dict  # remove opt_voxels_dict from structures
+            # del structs.opt_voxels_dict  # remove opt_voxels_dict from structures
         else:
             self.opt_voxels_dict = deepcopy(self.opt_voxels_dict)
 
+        # creating deepcopy so that it doesnt modify beams object
         if 'beamlets' in beams.beams_dict:
             self.beamlets_dict = deepcopy(beams.beams_dict['beamlets'])
         else:
@@ -90,18 +98,17 @@ class InfluenceMatrix:
         self.opt_beamlets_PTV_margin_mm = opt_beamlets_PTV_margin_mm
         self.opt_voxels_dict['ct_origin_xyz_mm'] = ct.ct_dict['origin_xyz_mm']  # store ct origin from plan
         print('Creating BEV..')
-        self.preprocess_beams(beams, structure=target_structure)
-        if self.down_sample_xyz is not None:
-            self.pre_process_voxels(ct=ct, structs=structs)  # create new optimization voxel indices based on down-sample resolution
+        self.preprocess_beams(structure=target_structure)
+        if self._down_sample_xyz is not None:
+            self.pre_process_voxels()  # create new optimization voxel indices based on down-sample resolution
 
         if not self.is_full:
             print('Loading sparse influence matrix...')
-            self.A = self.get_influence_matrix(beams=beams)  # create sparse influence matrix
+            self.A = self.get_influence_matrix()  # create sparse influence matrix
             self.sparse_tol = float(beams.beams_dict['influenceMatrixSparse_tol'][0])
         else:
             print('Loading full influence matrix..')
-            self.A = self.get_influence_matrix(beams, self.is_full)  # create full matrix
-        self.dose_3d = None
+            self.A = self.get_influence_matrix(self.is_full)  # create full matrix
         self._vox_map = None
         self._vox_weights = None
         print('Done')
@@ -136,10 +143,10 @@ class InfluenceMatrix:
         """
         col_dict = {}
         for ind in range(len(self.beamlets_dict)):
-            if col_number in range(self.beamlets_dict[ind]['start_beamlet'],
-                                   self.beamlets_dict[ind]['end_beamlet'] + 1):
+            if col_number in range(self.beamlets_dict[ind]['start_beamlet_idx'],
+                                   self.beamlets_dict[ind]['end_beamlet_idx'] + 1):
                 if ind > 0:
-                    prev_beam_beamlet = self.beamlets_dict[ind - 1]['end_beamlet'] + 1
+                    prev_beam_beamlet = self.beamlets_dict[ind - 1]['end_beamlet_idx'] + 1
                 else:
                     prev_beam_beamlet = 0
                 col_dict['beam_id'] = self.beamlets_dict[ind]['beam_id']
@@ -170,7 +177,6 @@ class InfluenceMatrix:
         inds = np.unique(dose_vox_map[dose_vox_map >= 0])
         a = np.where(np.isin(dose_vox_map, inds))
         dose_3d[a] = dose_1d[dose_vox_map[a]]
-        self.dose_3d = dose_3d
         return dose_3d
 
     def dose_3d_to_1d(self, dose_3d: np.ndarray) -> np.array:
@@ -181,8 +187,6 @@ class InfluenceMatrix:
         :return: dose_1d in 1d voxel indices
         """
         dose_vox_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-        if dose_3d is None:
-            dose_3d = self.dose_3d
         inds = np.unique(dose_vox_map[dose_vox_map >= 0])
         dose_1d = np.zeros_like(inds, dtype=float)
         a = np.where(np.isin(dose_vox_map, inds))
@@ -198,7 +202,7 @@ class InfluenceMatrix:
         """
         fluence_1d = np.zeros((self.A.shape[1]))
         for ind in range(len(self.beamlets_dict)):
-            maps = self.beamlets_dict[ind]['beamlet_idx_2dgrid']
+            maps = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid']
             numRows = np.size(maps, 0)
             numCols = np.size(maps, 1)
             # wMaps = np.zeros((numRows, numCols))
@@ -223,7 +227,7 @@ class InfluenceMatrix:
 
         wMaps = []
         for ind in range(len(self.beamlets_dict)):
-            maps = self.beamlets_dict[ind]['beamlet_idx_2dgrid']
+            maps = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid']
             numRows = np.size(maps, 0)
             numCols = np.size(maps, 1)
             wMaps.append(np.zeros((numRows, numCols)))
@@ -265,30 +269,34 @@ class InfluenceMatrix:
         new_sol['inf_matrix'] = inf_matrix
         return new_sol
 
-    def down_sample(self, ct: CT, structs: Structures, beams: Beams, beamlet_width_mm: float = 2.5, beamlet_height_mm: float = 2.5, opt_vox_xyz_res_mm: List[float] = None,
-                    overwrite: bool = False):
+    def create_down_sample(self, beamlet_width_mm: float = None, beamlet_height_mm: float = None,
+                           opt_vox_xyz_res_mm: List[float] = None,
+                           overwrite: bool = False):
         if overwrite:
             new_inf_matrix = self
         else:
             new_inf_matrix = deepcopy(self)
+        if beamlet_width_mm is None:
+            beamlet_width_mm = self.beamlet_width_mm
+            beamlet_height_mm = self.beamlet_height_mm
         new_inf_matrix.beamlet_width_mm = beamlet_width_mm
         new_inf_matrix.beamlet_height_mm = beamlet_height_mm
-        new_inf_matrix.beamlets_dict = deepcopy(beams.beams_dict['beamlets'])
+        new_inf_matrix.beamlets_dict = deepcopy(self._beams.beams_dict['beamlets'])
         for i in range(len(new_inf_matrix.beamlets_dict)):
-            new_inf_matrix.beamlets_dict[i]['beamlet_idx_2dgrid'] = deepcopy(self.beamlets_dict[i]['beamlet_idx_2dgrid'])
+            new_inf_matrix.beamlets_dict[i]['beamlet_idx_2d_finest_grid'] = deepcopy(self.beamlets_dict[i]['beamlet_idx_2d_finest_grid'])
         down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
         if opt_vox_xyz_res_mm is not None:
             down_sample_xyz = [round(i / j) for i, j in zip(opt_vox_xyz_res_mm, self.opt_voxels_dict['ct_voxel_resolution_xyz_mm'])]
             if np.all(np.array(down_sample_xyz) == 1):  # if all are 1 then no down sample
                 down_sample_xyz = None
-        new_inf_matrix.down_sample_xyz = down_sample_xyz
-        new_inf_matrix.preprocess_beams(beams=beams)
-        new_inf_matrix.pre_process_voxels(ct=ct, structs=structs)
+        new_inf_matrix._down_sample_xyz = down_sample_xyz
+        new_inf_matrix.preprocess_beams()
+        new_inf_matrix.pre_process_voxels()
         A = new_inf_matrix.get_influence_matrix(is_full=new_inf_matrix.is_full)
         new_inf_matrix.A = A
         return new_inf_matrix
 
-    def get_influence_matrix(self, beams: Beams = None, is_full=False):
+    def get_influence_matrix(self, is_full=False):
         """
 
         Load influence matrix based on the beamlets and voxels.
@@ -297,34 +305,33 @@ class InfluenceMatrix:
         :param is_full: get full or sparse matrix. Default to True.
         :return: full or sparse matrix
         """
+        data_beamlet_width = self._beams.get_beamlet_width()
+        data_beamlet_height = self._beams.get_beamlet_height()
+
         if not is_full:
-            if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5 or self.down_sample_xyz is not None:
+            if self.beamlet_width_mm > data_beamlet_width or \
+                    self.beamlet_height_mm > data_beamlet_height or self._down_sample_xyz is not None:
                 inf_matrix_sparse = self.A
             else:
-                inf_matrix_sparse = beams.beams_dict['influenceMatrixSparse']
+                # deepcopy so that it doesnt modify
+                inf_matrix_sparse = deepcopy(self._beams.beams_dict['influenceMatrixSparse'])
+                # if 'influenceMatrixSparse' in self._beams.beams_dict:
+                del self._beams.beams_dict['influenceMatrixSparse']
 
             for ind in range(len(self.beamlets_dict)):
-                # ind = my_plan.beamlets_dict['ID'].index(beam_id)
-                # beamlet_idx_2dgrid = my_plan.get_beamlet_idx_2dgrid(beam_id=beam_id)
-                # opt_beamlets = beamlet_idx_2dgrid[beamlet_idx_2dgrid >= 0]
                 opt_beamlets = self.beamlets_dict[ind]['opt_beamlets_ids']
 
                 if ind == 0:
-                    if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+                    if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing influence matrix for beam {}'.format(ind))
-                        # inf_matrix = lil_matrix((influenceMatrixSparse[ind].shape[0], len(opt_beamlets)))
-                        # inf_matrix = sparse.hstack([csr_matrix(influenceMatrixSparse[ind][:, np.unique(opt_beamlets[i])].sum(axis=1)) for i in range(len(opt_beamlets))], format='csr')
                         inf_matrix = sparse.hstack(
                             [csr_matrix(inf_matrix_sparse[:, np.unique(opt_beamlets[i])].sum(axis=1)) for i in
                              range(len(opt_beamlets))], format='csr')
-                        # for i in range(len(opt_beamlets)):
-                        #     inf_matrix[:, i] = influenceMatrixSparse[ind][:, np.unique(opt_beamlets[i])].sum(axis=1)
-                        # inf_matrix = np.vstack([np.sum(influenceMatrixSparse[ind][:, opt_beamlets[n]], 1) for n in range(len(opt_beamlets))]).T
                     else:
-                        if self.down_sample_xyz is None:
+                        if self._down_sample_xyz is None:
                             inf_matrix = inf_matrix_sparse[ind][:, opt_beamlets]
                 else:
-                    if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+                    if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing influence matrix for beam {}'.format(ind))
                         inf_matrix_2 = sparse.hstack(
                             [csr_matrix(inf_matrix_sparse[:, np.unique(opt_beamlets[i])].sum(axis=1)) for i in
@@ -332,15 +339,12 @@ class InfluenceMatrix:
                         inf_matrix = sparse.hstack(
                             [inf_matrix, inf_matrix_2], format='csr')
                     else:
-                        if self.down_sample_xyz is None:
+                        if self._down_sample_xyz is None:
                             inf_matrix = sparse.hstack(
                                 [inf_matrix, inf_matrix_sparse[ind][:, opt_beamlets]], format='csr')
             # if del_org_matrix:
-            if beams is not None:
-                if 'influenceMatrixSparse' in beams.beams_dict:
-                    del beams.beams_dict['influenceMatrixSparse']
-            if self.down_sample_xyz is not None:
-                if self.beamlet_width_mm <= 2.5 or self.beamlet_height_mm <= 2.5:
+            if self._down_sample_xyz is not None:
+                if self.beamlet_width_mm <= data_beamlet_width or self.beamlet_height_mm <= data_beamlet_height:
                     inf_matrix = inf_matrix_sparse
                 print('creating influence matrix for down sample voxels..')
                 inf_matrix = sparse.vstack(
@@ -349,40 +353,38 @@ class InfluenceMatrix:
                      in
                      range(len(self._vox_map))], format='csr')
         else:
-            if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5 or self.down_sample_xyz is not None:
+            if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height or self._down_sample_xyz is not None:
                 inf_matrix_full = self.A
             else:
-                inf_matrix_full = beams.beams_dict['influenceMatrixFull']
+                inf_matrix_full = self._beams.beams_dict['influenceMatrixFull']
+                del self._beams.beams_dict['influenceMatrixFull']
 
             for ind in range(len(self.beamlets_dict)):
                 opt_beamlets = self.beamlets_dict[ind]['opt_beamlets_ids']
 
                 if ind == 0:
-                    if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+                    if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing full influence matrix for beam {}'.format(ind))
                         inf_matrix = np.hstack(
                             [inf_matrix_full[:, np.unique(opt_beamlets[i])].sum(axis=1) for i in
                              range(len(opt_beamlets))])
                     else:
-                        if self.down_sample_xyz is None:
+                        if self._down_sample_xyz is None:
                             inf_matrix = inf_matrix_full[ind][:, opt_beamlets]
                 else:
-                    if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+                    if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing full influence matrix for beam {}'.format(ind))
                         inf_matrix_2 = np.hstack(
                             [inf_matrix_full[:, np.unique(opt_beamlets[i])].sum(axis=1) for i in
                              range(len(opt_beamlets))])
                         inf_matrix = np.hstack([inf_matrix, inf_matrix_2])
                     else:
-                        if self.down_sample_xyz is None:
+                        if self._down_sample_xyz is None:
                             inf_matrix = np.hstack([inf_matrix, inf_matrix_full[ind][:, opt_beamlets]])
 
                 # down sampling voxels
-            if beams is not None:
-                if 'influenceMatrixFull' in beams.beams_dict:
-                    del beams.beams_dict['influenceMatrixFull']
-            if self.down_sample_xyz is not None:
-                if self.beamlet_width_mm <= 2.5 or self.beamlet_height_mm <= 2.5:
+            if self._down_sample_xyz is not None:
+                if self.beamlet_width_mm <= data_beamlet_width or self.beamlet_height_mm <= data_beamlet_height:
                     inf_matrix = inf_matrix_full
                 print('creating influence matrix for down sample voxels..')
                 inf_matrix = np.vstack(
@@ -391,7 +393,7 @@ class InfluenceMatrix:
 
         return inf_matrix
 
-    def create_BEV_mask_from_contours(self, beams: Beams, ind: int, structure: str = 'PTV',
+    def create_BEV_mask_from_contours(self, ind: int, structure: str = 'PTV',
                                       margin_mm: float = None) -> np.ndarray:
         """
 
@@ -409,7 +411,7 @@ class InfluenceMatrix:
             margin_mm = 0
 
         # get PTV contour from data
-        contours = beams.beams_dict['BEV_structure_contour_points'][ind][structure]
+        contours = self._beams.beams_dict['BEV_structure_contour_points'][ind][structure]
         # ind = my_plan.beamlets_dict['ID'].index(beam_id)
         # contours = my_plan._beams_contours[ind][struct_name]
 
@@ -455,7 +457,7 @@ class InfluenceMatrix:
                         mask[row, col] = True
         return mask
 
-    def preprocess_beams(self, beams: Beams, structure='PTV', remove_corner_beamlets=False):
+    def preprocess_beams(self, structure='PTV', remove_corner_beamlets=False):
         """
         Preprocess beams to create beamlets dictionary based on beamlet resolution.
 
@@ -467,9 +469,9 @@ class InfluenceMatrix:
 
         for ind in range(len(self.beamlets_dict)):
             # ind = my_plan.beamlets_dict['ID'].index(beam_id)
-            mask = self.create_BEV_mask_from_contours(beams, ind=ind, structure=structure,
+            mask = self.create_BEV_mask_from_contours(ind=ind, structure=structure,
                                                       margin_mm=self.opt_beamlets_PTV_margin_mm)
-            beam_2d_grid = self.create_beamlet_idx_2d_grid(ind=ind)
+            beam_2d_grid = self.create_beamlet_idx_2d_finest_grid(ind=ind)
             beamlets = self.beamlets_dict[ind]
 
             # creating beam_map of original resolution so that mask can be multiplied with it
@@ -488,7 +490,8 @@ class InfluenceMatrix:
             beam_map = beam_2d_grid
 
             # get opt beamlets for down_sample grid as list of original inf_matrix beamlet
-            if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+            if self.beamlet_width_mm > self._beams.get_beamlet_width() or \
+                    self.beamlet_height_mm > self._beams.get_beamlet_height():
                 down_sample_2d_grid = self.down_sample_2d_grid(ind=ind, beamlet_width_mm=self.beamlet_width_mm,
                                                                beamlet_height_mm=self.beamlet_height_mm)
                 down_sample_2d_grid = (down_sample_2d_grid + int(1)) * mask_2d_grid  # add and subtract 1 to retain ids
@@ -508,7 +511,7 @@ class InfluenceMatrix:
                 mask_2d_grid = np.zeros_like(beam_2d_grid, dtype=bool)
                 mask_2d_grid[a] = True
                 # actual_beamlets = beam_2d_grid[a]
-                actual_beamlets = self.beamlets_dict[ind]['beamlet_idx_2dgrid'][a]
+                actual_beamlets = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'][a]
                 sampled_beamlets = down_sample_2d_grid[a]
                 b = [np.where(sampled_beamlets == down_sample_beamlets[i]) for i in range(len(down_sample_beamlets))]
                 opt_beamlets = [actual_beamlets[i] for i in b]
@@ -523,16 +526,17 @@ class InfluenceMatrix:
                 beam_map = std_map
             else:
                 beam_map = std_map + int(
-                    np.amax(self.beamlets_dict[ind - 1]['beamlet_idx_2dgrid']) + 1) * mask_2d_grid
+                    np.amax(self.beamlets_dict[ind - 1]['beamlet_idx_2d_finest_grid']) + 1) * mask_2d_grid
             standInd = np.unique(np.sort(beam_map.flatten()))
-            self.beamlets_dict[ind]['beamlet_idx_2dgrid'] = beam_map
+            self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'] = beam_map
             # my_plan.beamlets_dict.setdefault('structure_mask_2dgrid', []).append(mask_2d_grid)
-            self.beamlets_dict[ind]['start_beamlet'] = standInd[1]
-            self.beamlets_dict[ind]['end_beamlet'] = np.amax(self.beamlets_dict[ind]['beamlet_idx_2dgrid'])
+            self.beamlets_dict[ind]['start_beamlet_idx'] = standInd[1]
+            self.beamlets_dict[ind]['end_beamlet_idx'] = np.amax(self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'])
             self.beamlets_dict[ind]['opt_beamlets_ids'] = opt_beamlets
 
             # update beamlet dict
-            if self.beamlet_width_mm > 2.5 or self.beamlet_height_mm > 2.5:
+            if self.beamlet_width_mm > self._beams.get_beamlet_width() or \
+                    self.beamlet_height_mm > self._beams.get_beamlet_height():
                 pass
             else:
                 self.beamlets_dict[ind]['position_x_mm'][0] = beamlets['position_x_mm'][0][opt_beamlets]
@@ -543,7 +547,7 @@ class InfluenceMatrix:
             del self.beamlets_dict[ind]['id']
             # my_plan.beams_dict.setdefault('opt_beamlets_ids', []).append(standInd[1:])
 
-    def create_beamlet_idx_2d_grid(self, ind: int) -> np.ndarray:
+    def create_beamlet_idx_2d_finest_grid(self, ind: int) -> np.ndarray:
         """
         Create beamlet idx in 2d grid of 2.5mm resolution. i.e. each element in matrix is 2.5mm*2.5mm
 
@@ -673,7 +677,7 @@ class InfluenceMatrix:
             ind = [ind]
         beam_orig = []
         for b in ind:
-            beam_map = self.beamlets_dict[b]['beamlet_idx_2dgrid']
+            beam_map = self.beamlets_dict[b]['beamlet_idx_2d_finest_grid']
             if not finest_grid:
                 rowsNoRepeat = [0]
                 for i in range(1, np.size(beam_map, 0)):
@@ -695,7 +699,7 @@ class InfluenceMatrix:
         This method creates new ct to dose_1d voxel map array based on down sampled voxels.
         It also outputs map between down sampled voxel indices to original voxel indices for down sampling influence matrix
         :param down_sample_xyz: It down-samples optimization voxels as factor of ct resolution
-                e.g. down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
+                e.g. _down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
                 defaults to None. When None it will use the original optimization voxel resolution.
         :return: voxel map(list containing map between down-sampled indices to original indices), voxel weight (weighted average of voxels in down sample
          and ct to dose_1d voxel map
@@ -780,7 +784,7 @@ class InfluenceMatrix:
 
         return vox_map, vox_weights, down_sample_3d
 
-    def pre_process_voxels(self, ct: CT, structs: Structures):
+    def pre_process_voxels(self):
         """
         Updates opt_voxels_dict based upon ct to dose_1d voxel map
 
@@ -788,20 +792,21 @@ class InfluenceMatrix:
         :param structs: object of class CT
         :return:
         """
-        if self.down_sample_xyz is not None:
-            vox_map, vox_weights, down_sample_3d = self.down_sample_voxels(down_sample_xyz=self.down_sample_xyz)
+        if self._down_sample_xyz is not None:
+            vox_map, vox_weights, down_sample_3d = self.down_sample_voxels(down_sample_xyz=self._down_sample_xyz)
             self.opt_voxels_dict['ct_to_dose_voxel_map'][0] = down_sample_3d
             self._vox_map = vox_map
             self._vox_weights = vox_weights
-            for structure_name in structs.structures_dict['name']:
-                ind = structs.structures_dict['name'].index(structure_name)
-                vox_3d = structs.structures_dict['structure_mask_3d'][ind] * self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+            for structure_name in self._structs.structures_dict['name']:
+                ind = self._structs.structures_dict['name'].index(structure_name)
+                # deep copying mask so that it doesnt modify in structures
+                vox_3d = deepcopy(self._structs.structures_dict['structure_mask_3d'][ind]) * self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
                 # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
                 vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
                 self.opt_voxels_dict['voxel_idx'][ind] = vox
-                self.opt_voxels_dict['voxel_size'][ind] = counts * np.prod(
-                    ct.get_ct_res_xyz_mm())  # calculate weight for each voxel
-                # self.opt_voxels_dict['voxel_size'][ind] = counts / np.max(counts)  # calculate weight for each voxel
+                self.opt_voxels_dict['voxel_volume_cc'][ind] = counts * np.prod(
+                    self._ct.get_ct_res_xyz_mm())/1000  # calculate weight for each voxel
+                # self.opt_voxels_dict['voxel_volume_cc'][ind] = counts / np.max(counts)  # calculate weight for each voxel
 
     @staticmethod
     def sort_beamlets(b_map):
@@ -830,9 +835,9 @@ class InfluenceMatrix:
         # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
         vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
         self.opt_voxels_dict['voxel_idx'].append(vox)
-        # self.opt_voxels_dict['voxel_size'].append(counts / np.max(counts))  # calculate weight for each voxel
-        self.opt_voxels_dict['voxel_size'].append(
-            counts * np.prod(plan_obj.get_ct_res_xyz_mm()))  # calculate weight for each voxel
+        # self.opt_voxels_dict['voxel_volume_cc'].append(counts / np.max(counts))  # calculate weight for each voxel
+        self.opt_voxels_dict['voxel_volume_cc'].append(
+            counts * np.prod(plan_obj.get_ct_res_xyz_mm())/1000)  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(structure_name)
 
     def get_opt_voxels_idx(self, structure_name: str) -> np.ndarray:
@@ -846,13 +851,13 @@ class InfluenceMatrix:
         # vox_ind = np.where(my_plan.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
         return vox_ind
 
-    def get_opt_voxels_size(self, structure_name: str):
+    def get_opt_voxels_volume_cc(self, structure_name: str):
         """
          :param structure_name: name of the struct_name in plan
          :return: voxel size for the struct_name
          """
         ind = self.opt_voxels_dict['name'].index(structure_name)
-        vox_weights = self.opt_voxels_dict['voxel_size'][ind]
+        vox_weights = self.opt_voxels_dict['voxel_volume_cc'][ind]
         # vox_ind = np.where(my_plan.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
         return vox_weights
 

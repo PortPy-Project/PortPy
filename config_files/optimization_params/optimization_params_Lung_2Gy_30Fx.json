@@ -1,12 +1,22 @@
 {
   "prescription_gy": 60,
-  "rind_structures": [
-	{"name": "RIND_0", "ref_structure": "PTV", "margin_start_mm": 0, "margin_end_mm":5},
-	{"name": "RIND_1", "ref_structure": "PTV", "margin_start_mm": 5, "margin_end_mm":10},
-	{"name": "RIND_2", "ref_structure": "PTV", "margin_start_mm": 10, "margin_end_mm":30},
-	{"name": "RIND_3", "ref_structure": "PTV", "margin_start_mm": 30, "margin_end_mm":50},
-	{"name": "RIND_4", "ref_structure": "PTV", "margin_start_mm": 50, "margin_end_mm":"inf"}
-	],
+  "opt_structures": [
+  {"type":"rind",
+  "parameters": {"name": "RIND_0", "ref_structure": "PTV", "margin_start_mm": 0, "margin_end_mm":5}
+  },
+  {"type":"rind",
+  "parameters": {"name": "RIND_1", "ref_structure": "PTV", "margin_start_mm": 5, "margin_end_mm":10}
+  },
+  {"type":"rind",
+  "parameters": {"name": "RIND_2", "ref_structure": "PTV", "margin_start_mm": 10, "margin_end_mm":30}
+  },
+  {"type":"rind",
+  "parameters": {"name": "RIND_3", "ref_structure": "PTV", "margin_start_mm": 30, "margin_end_mm":50}
+  },
+  {"type":"rind",
+  "parameters": {"name": "RIND_4", "ref_structure": "PTV", "margin_start_mm": 50, "margin_end_mm":"inf"}
+  }
+],
 
   "objective_functions": [	
 	{
@@ -30,6 +40,21 @@
 		"type": "quadratic",
 		"structure_name": "ESOPHAGUS",
         "weight": 20
+    },
+	{
+		"type": "quadratic",     
+		"structure_name": "HEART",
+        "weight": 20
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "LUNG_L",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "LUNG_R",
+        "weight": 10
     },
     {
 		"type": "quadratic",
@@ -55,11 +80,6 @@
 		"type": "quadratic",
 		"structure_name": "RIND_4",
         "weight": 3
-    },
-    {
-		"type": "quadratic",     
-		"structure_name": "HEART",
-        "weight": 20
     },
 	{
 		"type": "smoothness-quadratic",    
