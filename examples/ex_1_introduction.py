@@ -93,6 +93,7 @@ def ex_1_introduction():
 
     """ 
     3) visualizing the plan (Visualization class)
+    
     """
     # plot fluence 3d and 2d for the 1st beam
     pp.Visualization.plot_fluence_3d(sol=sol, beam_id=my_plan.beams.get_all_beam_ids()[0])
