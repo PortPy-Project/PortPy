@@ -78,11 +78,11 @@ def ex_2_down_sampling():
     """
 
     # To know the cost of down sampling beamlets, lets compare the dvh of down sampled beamlets with original
-    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_db, structs=structs, style='dotted', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_orig, struct_names=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_db, struct_names=struct_names, style='dotted', ax=ax)
     ax.set_title('Cost of Down-Sampling Beamlets  - Original .. Down-Sampled beamlets')
     plt.show()
 
@@ -94,7 +94,6 @@ def ex_2_down_sampling():
     # PortPy can down-sample optimization voxels as factor of ct voxels.
     # Down sample voxels by a factor of 7 in x, y and 2 in z direction
     voxel_down_sample_factors = [7, 7, 2]
-
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
     inf_matrix_dv = inf_matrix.create_down_sample(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
@@ -108,18 +107,18 @@ def ex_2_down_sampling():
 
     """
     # Similarly to analyze the cost of down sampling voxels, lets compare the dvh of down sampled voxels with original
-    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     sol_dv_new = inf_matrix_dv.sol_change_inf_matrix(sol_dv, inf_matrix=sol_orig['inf_matrix'])
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_orig, structs=structs, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv_new, structs=structs, style='dotted', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_orig, struct_names=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv_new, struct_names=struct_names, style='dotted', ax=ax)
     ax.set_title('Cost of Down-Sampling Voxels  - Original .. Down-Sampled Voxels')
     plt.show()
 
     # To get the discrepancy due to down sampling voxels
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv_new, structs=structs, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv, structs=structs, style='dotted', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv_new, struct_names=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv, struct_names=struct_names, style='dotted', ax=ax)
     ax.set_title(
         'Discrepancy due to Down-Sampling Voxels  \n - Down sampled with original influence matrix \n .. Down sampled without original influence matrix')
     plt.show()

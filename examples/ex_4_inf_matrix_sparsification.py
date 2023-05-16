@@ -75,8 +75,8 @@ def ex_4_inf_matrix_sparsification():
     # Visualize the DVH discrepancy
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax = pp.Visualization.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, structs=struct_names, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(plan_full, dose_1d=dose_full_1d, structs=struct_names, style='dotted', ax=ax)
+    ax = pp.Visualization.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, struct_names=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(plan_full, dose_1d=dose_full_1d, struct_names=struct_names, style='dotted', ax=ax)
     ax.set_title('- Sparse .. Full')
     plt.show()
     print('Done')

@@ -1,51 +1,68 @@
 """
     This example demonstrates the use of portpy_photon to create down sampled influence matrix and
     optimize it with exact dvh constraints for benchmarking
+    1- Down sample influence matrix and create a plan without dvh constraint
+    2- Add exact DVH constraint and create a plan
+    3- Evaluate and compare the plans
 """
 import portpy.photon as pp
+import matplotlib.pyplot as plt
 
 
 def ex_5_dvh_benchmark():
-    # Enter patient name
+    """
+    1) Create down sampled influence matrix and generate a plan without DVH constraint
+
+    """
+    # Create plan object
+    data_dir = r'../data'
+    data = pp.DataExplorer(data_dir=data_dir)
     patient_id = 'Lung_Phantom_Patient_1'
+    data.patient_id = patient_id
 
-    # visualize patient metadata for beams_dict and structures
-    pp.Visualize.display_patient_metadata(patient_id)
+    # Load ct, structure and beams as an object
+    ct = pp.CT(data)
+    structs = pp.Structures(data)
+    beams = pp.Beams(data)
 
-    # display patients
-    pp.Visualize.display_patients()
+    # create rinds based upon rind definition in optimization params
+    opt_params = data.load_config_opt_params(protocol_name='Lung_2Gy_30Fx')
+    structs.create_opt_structures(opt_params)
 
-    # create my_plan object for the planner beams_dict
-    # for the customized beams_dict, you can pass the argument beam_ids
-    # e.g. my_plan = Plan(patient_name, beam_ids=[0,1,2,3,4,5,6], options=options)
-    my_plan = pp.Plan(patient_id)
+    # load influence matrix based upon beams and structure set
+    inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
     # create a influence matrix down sampled beamlets of width and height 5mm
-    opt_vox_down_sample_factor = [7, 7, 2]
-    opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(my_plan.get_ct_res_xyz_mm(), opt_vox_down_sample_factor)]
-    beamlet_down_sample_factor = 2
-    beamlet_width_mm = my_plan.inf_matrix.beamlet_width_mm * beamlet_down_sample_factor
-    beamlet_height_mm = my_plan.inf_matrix.beamlet_height_mm * beamlet_down_sample_factor
-    inf_matrix_dbv = my_plan.create_inf_matrix(beamlet_width_mm=beamlet_width_mm, beamlet_height_mm=beamlet_height_mm,
-                                               opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
+    voxel_down_sample_factors = [7, 7, 2]
+    opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
+    beamlet_down_sample_factor = 4
+    new_beamlet_width_mm = beams.get_finest_beamlet_width() * beamlet_down_sample_factor
+    new_beamlet_height_mm = beams.get_finest_beamlet_height() * beamlet_down_sample_factor
 
-    # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
-    # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
-    # For optimization problems with non-linear objective and/or constraints, MOSEK often performs well
-    # For mixed integer programs, GUROBI/CPLEX are good choices
-    # If you have .edu email address, you can get free academic license for commercial solvers
-    # we recommend the commercial solver MOSEK as your solver for the problems in this example,
-    # however, if you don't have a license, you can try opensource/free solver SCS or ECOS
-    # see https://www.cvxpy.org/tutorial/advanced/index.html for more info about CVXPy solvers
-    # To set up mosek solver, you can get mosek license file using edu account and place the license file in directory C:\Users\username\mosek
-    sol_no_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy(my_plan, inf_matrix=inf_matrix_dbv)
+    inf_matrix_dbv = inf_matrix.create_down_sample(beamlet_width_mm=new_beamlet_width_mm,
+                                                   beamlet_height_mm=new_beamlet_height_mm,
+                                                   opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
+    # load clinical criteria from the config files for which plan to be optimized
+    protocol_name = 'Lung_2Gy_30Fx'
+    clinical_criteria = pp.ClinicalCriteria(data, protocol_name)
+
+    my_plan = pp.Plan(ct, structs, beams, inf_matrix_dbv, clinical_criteria)
+
+    opt = pp.Optimization(my_plan, opt_params=opt_params)
+    opt.create_cvxpy_problem()
+    sol_no_dvh = opt.solve(solver='MOSEK', verbose='True')
+
+    """
+    2) Add exact DVH constraint and generate a plan with DVH constraint
+
+    """
     # optimize with downscaled influence matrix and the dvh constraints created below
-    eso_dvh = my_plan.clinical_criteria.create_criterion(criterion='dose_volume_V',
-                                                         parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
-                                                         constraints={'limit_volume_perc': 17})
-    sol_dvh = pp.Optimize.run_IMRT_fluence_map_CVXPy_dvh_benchmark(my_plan, inf_matrix=sol_no_dvh['inf_matrix'],
-                                                                   dvh_criteria=eso_dvh)
+    eso_dvh = clinical_criteria.create_criterion(criterion='dose_volume_V',
+                                                 parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
+                                                 constraints={'limit_volume_perc': 17})
+    opt.add_dvh(dvh_constraint=eso_dvh)
+    sol_dvh = opt.solve(solver='MOSEK', verbose='True')
 
     # Comment/Uncomment these lines to save & load plan and optimal solutions
     # my_plan.save_plan(path=r'C:\temp')
@@ -56,14 +73,21 @@ def ex_5_dvh_benchmark():
     # sol_dvh = Plan.load_optimal_sol('sol_dvh', path=r'C:\temp')
 
     # plot dvh dvh for both the cases
-    structs = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-
-    pp.Visualize.plot_dvh(my_plan, sol=sol_no_dvh, structs=structs, style='solid', show=False)
-    pp.Visualize.plot_dvh(my_plan, sol=sol_dvh, structs=structs, style='dotted', show_criteria=eso_dvh, create_fig=False)
+    """
+    3) Evaluate the plans with and without DVH constraint
+    
+    """
+    fig, ax = plt.subplots(figsize=(12, 8))
+    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_no_dvh, struct_names=struct_names, style='solid', ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dvh, struct_names=struct_names, style='dotted',
+                                   show_criteria=eso_dvh, ax=ax)
+    ax.set_title('- Without DVH  .. With DVH')
+    plt.show()
 
     # visualize 2d dose_1d for both the cases
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_no_dvh)
-    pp.Visualize.plot_2d_dose(my_plan, sol=sol_dvh)
+    pp.Visualization.plot_2d_slice(my_plan, sol=sol_no_dvh, struct_names=struct_names)
+    pp.Visualization.plot_2d_slice(my_plan, sol=sol_dvh, struct_names=struct_names)
 
     print('Done!')
 
