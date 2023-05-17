@@ -42,7 +42,9 @@ def ex_1_introduction():
     data.patient_id = 'Lung_Phantom_Patient_1'
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
+    # display in browser rather than console. Set in_broswer to True
     data.display_patient_metadata(in_browser=True)
+
     # Load ct and structure set for the above patient using CT and Structures class
     ct = pp.CT(data)
     structs = pp.Structures(data)

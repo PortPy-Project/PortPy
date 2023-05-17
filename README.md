@@ -3,7 +3,7 @@
 </p>
 
 # What is PortPy?
-**Note: The package is at its early stages of development (version 0.0.1) and we are now collecting feedback from researchers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around March 2023. We would love to hear your feedback.**
+**Note: The package is at its early stages of development (version 0.0.1) and we are now collecting feedback from researchers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx around July 2023. We would love to hear your feedback.**
 
 PortPy (**P**lanning and **O**ptimization for **R**adiation **T**herapy) is a community effort to develop the **first opensource python library** to facilitate the development and clinical translation of radiotherapy cancer treatment planning algorithms. PortPy includes:
 1. Research-ready data and code for *benchmarking*, *reproducibility*, and *community-driven* development.
@@ -31,7 +31,7 @@ Create a directory named './data' in the current project directory and copy the 
 3. Installing from source
 - Clone this repository:
   ```bash
-  git clone https://github.com/PortPy-Project/PortPy-Photon.git
+  git clone https://github.com/PortPy-Project/PortPy.git
   cd portpy
   ```
 
@@ -44,8 +44,13 @@ Create a directory named './data' in the current project directory and copy the 
   (venv) pip install -r requirements.txt
   ```
 
-To better understand the PortPy functionality, we recommend running an example script eg_1_basics.py for creating and visualizing a sample IMRT plan.
-
+# Quick Start
+Please see below for understanding the basic functionalities of PortPy. For advance usage of PortPy, we recommend navigating through [examples](https://github.com/PortPy-Project/PortPy/tree/master/examples) folder.
+1. To understand the most important features of PortPy, we highly recommend to go through [ex_1_introduction.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_1_introduction.py)
+2. One of the major computational issues while optimizing the plan arise due to large size of influence matrix. We suggest you to follow [ex_2_down_sampling.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_2_downsampling.py) to understand how PortPy can assist in resolving it.
+3. You can check out [ex_3_structure_operations.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_3_structure_operations.py) to know how to perform different structure operations (e.g., boolean, margin).
+4. For algorithm benchmarking, the global optimal solution is provided for non-convex optimization problems resulting from beam angle optimization [ex_6_boo_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_boo_benchmark.py) and incorporating DVH constraints [ex_6_dvh_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_dvh_benchmark.py) using the mixed-integer programming on down-sampled data.
+5. In addition to basic visualization capabilities, PortPy provide advanced visualization by integration with 3D Slicer. Please look out notebook [ex_7_Slicer.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_7_Slicer.ipynb)
 # License
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
 
