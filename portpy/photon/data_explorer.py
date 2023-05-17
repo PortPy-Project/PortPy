@@ -66,39 +66,33 @@ class DataExplorer:
         # read information regarding the structures
         fname = os.path.join(pat_dir, 'StructureSet_MetaData.json')
         # Opening JSON file
-        f = open(fname)
-        jsondata = json.load(f)
-        meta_data['structures'] = DataExplorer.list_to_dict(jsondata)
+        json_data = self.load_json(fname)
+        meta_data['structures'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the voxels
         fname = os.path.join(pat_dir, 'OptimizationVoxels_MetaData.json')
         # Opening JSON file
-        f = open(fname)
-        jsondata = json.load(f)
-        meta_data['opt_voxels'] = DataExplorer.list_to_dict(jsondata)
+        json_data = self.load_json(fname)
+        meta_data['opt_voxels'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the CT voxels
         fname = os.path.join(pat_dir, 'CT_MetaData.json')
         if os.path.isfile(fname):
             # Opening JSON file
-            f = open(fname)
-            jsondata = json.load(f)
-            meta_data['ct'] = DataExplorer.list_to_dict(jsondata)
+            json_data = self.load_json(fname)
+            meta_data['ct'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding beam angles selected by an expert planner
         fname = os.path.join(pat_dir, 'PlannerBeams.json')
         if os.path.isfile(fname):
             # Opening JSON file
-            f = open(fname)
-            jsondata = json.load(f)
-            meta_data['planner_beam_ids'] = DataExplorer.list_to_dict(jsondata)
+            json_data = self.load_json(fname)
+            meta_data['planner_beam_ids'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the clinical evaluation metrics
         fname = os.path.join(pat_dir, 'ClinicalCriteria_MetaData.json')
-        # Opening JSON file
-        f = open(fname)
-        jsondata = json.load(f)
-        meta_data['clinical_criteria'] = DataExplorer.list_to_dict(jsondata)
+        json_data = self.load_json(fname)
+        meta_data['clinical_criteria'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the beams_dict
         beamFolder = os.path.join(pat_dir, 'Beams')
@@ -109,11 +103,9 @@ class DataExplorer:
         # the information for each beam is stored in an individual .json file, so we loop through them
         for i in range(len(beamsJson)):
             fname = os.path.join(beamFolder, beamsJson[i])
-            f = open(fname)
-            jsondata = json.load(f)
-
-            for key in jsondata:
-                meta_data['beams'].setdefault(key, []).append(jsondata[key])
+            json_data = self.load_json(fname)
+            for key in json_data:
+                meta_data['beams'].setdefault(key, []).append(json_data[key])
                 # dataMeta['beamsMetaData'][key].append(json_data[key])
 
         meta_data['patient_folder_path'] = pat_dir
@@ -142,9 +134,8 @@ class DataExplorer:
                              protocol_type, protocol_name + '.json')
         # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
         # Opening JSON file
-        f = open(fname)
-        metadata = json.load(f)
-        return metadata
+        json_data = DataExplorer.load_json(fname)
+        return json_data
 
     @staticmethod
     def load_config_opt_params(protocol_name: str) -> dict:
@@ -160,9 +151,15 @@ class DataExplorer:
                              'optimization_params_' + protocol_name + '.json')
         # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
         # Opening JSON file
-        f = open(fname)
-        metadata = json.load(f)
-        return metadata
+        json_data = DataExplorer.load_json(fname)
+        return json_data
+
+    @staticmethod
+    def load_json(file_name):
+        f = open(file_name)
+        json_data = json.load(f)
+        f.close()
+        return json_data
 
     def load_data(self, meta_data: dict, load_inf_matrix_full: bool = False) -> dict:
         """

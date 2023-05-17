@@ -33,15 +33,16 @@ def ex_1_introduction():
 
     # specify the patient data location.
     data_dir = r'../data'
-    # display the existing patients in console or browser.
+    # Use PortPy DataExplorer class to explore PortPy data
     data = pp.DataExplorer(data_dir=data_dir)
+    # display the existing patients in console or browser.
     data.display_list_of_patients()
 
     # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
     data.patient_id = 'Lung_Phantom_Patient_1'
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
-
+    data.display_patient_metadata(in_browser=True)
     # Load ct and structure set for the above patient using CT and Structures class
     ct = pp.CT(data)
     structs = pp.Structures(data)
@@ -74,6 +75,7 @@ def ex_1_introduction():
       (e.g., influence matrix, structures and their voxels, beams and their beamlets).
     
     """
+    # create a plan using ct, structures, beams and influence matrix. Clinical criteria is optional
     my_plan = pp.Plan(ct, structs, beams, inf_matrix, clinical_criteria)
 
     # create cvxpy problem using the clinical criteria and optimization parameters
@@ -122,8 +124,8 @@ def ex_1_introduction():
     
     """
     # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    # pp.save_plan(my_plan, plan_name='my_plan_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-    # pp.save_optimal_sol(sol, sol_name='sol_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+    pp.save_plan(my_plan, plan_name='my_plan_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+    pp.save_optimal_sol(sol, sol_name='sol_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
     # my_plan = pp.load_plan(plan_name='my_plan_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
     # sol = pp.load_optimal_sol(sol_name='sol_phantom.pkl', path=os.path.join(r'C:\temp', data.patient_id))
 
@@ -135,7 +137,7 @@ def ex_1_introduction():
     #   3D slicer integration is seamless with Jupiter Notebook (see ex_7_Slicer).
     # Without Jupiter Notebook, we first need to save our data (ct, 3D dose, structures)
     #   as images in nrrd format on disk and then lunch Slicer by providing data as input argument
-    # pp.save_nrrd(my_plan, sol=sol, data_dir=os.path.join(r'C:\temp', data.patient_id))
+    pp.save_nrrd(my_plan, sol=sol, data_dir=os.path.join(r'C:\temp', data.patient_id))
     pp.Visualization.view_in_slicer(my_plan, slicer_path=r'C:\ProgramData\NA-MIC\Slicer 5.2.1\Slicer.exe',
                                     data_dir=os.path.join(r'C:\temp', data.patient_id))
     print('Done!')

@@ -1,7 +1,6 @@
 from __future__ import annotations
 import numpy as np
 import cvxpy as cp
-import time
 from typing import List, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -56,12 +55,10 @@ class Optimization(object):
         # get opt params for optimization
         obj_funcs = opt_params['objective_functions'] if 'objective_functions' in opt_params else []
         opt_params_constraints = opt_params['constraints'] if 'constraints' in opt_params else []
-        # rind_params = opt_params['rind_structures'] if 'objective_functions' in opt_params else []
 
         # Creating rinds (aka rings, shells)
         # Rinds are doughnut-shaped structures often created to control the radiation dose to non-specified structures
         #   They can also control the dose fall-off after PTV.
-        # self.create_rinds(rind_params)
 
         A = inf_matrix.A
         num_fractions = clinical_criteria.get_num_of_fractions()
@@ -388,12 +385,12 @@ class Optimization(object):
         import pandas as pd
         df_dvh_criteria = pd.DataFrame()
         count = 0
-        criteria = self.my_plan.clinical_criteria.clinical_criteria_dict['criteria']
+        criteria = self.clinical_criteria.clinical_criteria_dict['criteria']
         for i in range(len(dvh_constraint)):
             if 'dose_volume' in dvh_constraint[i]['name']:
                 limit_key = self.matching_keys(dvh_constraint[i]['constraints'], 'limit')
                 if limit_key in dvh_constraint[i]['constraints']:
-                    df_dvh_criteria.at[count, 'struct_name'] = dvh_constraint[i]['parameters']['structure_name']
+                    df_dvh_criteria.at[count, 'structure_name'] = dvh_constraint[i]['parameters']['structure_name']
                     df_dvh_criteria.at[count, 'dose_gy'] = dvh_constraint[i]['parameters']['dose_gy']
 
                     # getting max dose_1d for the same struct_name
@@ -411,13 +408,13 @@ class Optimization(object):
 
         # binary variable for dvh constraints
         b_dvh = cp.Variable(
-            len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure.to_list()])),
+            len(np.concatenate([st.get_opt_voxels_idx(org) for org in df_dvh_criteria.structure_name.to_list()])),
             boolean=True)
 
         start = 0
         constraints = []
         for i in range(len(df_dvh_criteria)):
-            struct, limit, v, M = df_dvh_criteria.loc[i, 'struct_name'], df_dvh_criteria.loc[i, 'dose_gy'], \
+            struct, limit, v, M = df_dvh_criteria.loc[i, 'structure_name'], df_dvh_criteria.loc[i, 'dose_gy'], \
                                   df_dvh_criteria.loc[i, 'vol_perc'], df_dvh_criteria.loc[i, 'M']
             end = start + len(st.get_opt_voxels_idx(struct))
             frac = self.my_plan.structures.get_fraction_of_vol_in_calc_box(struct)

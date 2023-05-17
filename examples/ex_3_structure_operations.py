@@ -35,7 +35,7 @@ def ex_3_structure_operations():
     # boolean or create margin_mm around structures
     # create a structure PTV-GTV using boolean operation and save it as a new structure called 'PTV_GTV'
     structs.subtract(struct_1_name='PTV', struct_2_name='GTV', new_struct_name='PTV_GTV')
-    pp.Visualization.plot_2d_slice(ct=ct, structs=structs, slice_num=60, struct_names=['PTV', 'PTV_GTV'])
+    pp.Visualization.plot_2d_slice(ct=ct, structs=structs, slice_num=60, struct_names=['PTV_GTV'])
 
     """
     3- Create margin around structure and visualize it

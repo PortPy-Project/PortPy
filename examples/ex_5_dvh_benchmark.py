@@ -32,7 +32,7 @@ def ex_5_dvh_benchmark():
     # load influence matrix based upon beams and structure set
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
-    # create a influence matrix down sampled beamlets of width and height 5mm
+    # create a influence matrix down sampled beamlets of width and height 10mm and down sampled voxels
     voxel_down_sample_factors = [7, 7, 2]
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
     beamlet_down_sample_factor = 4
@@ -58,19 +58,11 @@ def ex_5_dvh_benchmark():
 
     """
     # optimize with downscaled influence matrix and the dvh constraints created below
-    eso_dvh = clinical_criteria.create_criterion(criterion='dose_volume_V',
-                                                 parameters={'structure_name': 'ESOPHAGUS', 'dose_gy': 60},
-                                                 constraints={'limit_volume_perc': 17})
-    opt.add_dvh(dvh_constraint=eso_dvh)
+    org_dvh = clinical_criteria.create_criterion(criterion='dose_volume_V',
+                                                 parameters={'structure_name': 'CORD', 'dose_gy': 10},
+                                                 constraints={'limit_volume_perc': 15})
+    opt.add_dvh(dvh_constraint=org_dvh)
     sol_dvh = opt.solve(solver='MOSEK', verbose='True')
-
-    # Comment/Uncomment these lines to save & load plan and optimal solutions
-    # my_plan.save_plan(path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_no_dvh, sol_name='sol_no_dvh', path=r'C:\temp')
-    # my_plan.save_optimal_sol(sol_dvh, sol_name='sol_dvh', path=r'C:\temp')
-    # my_plan = Plan.load_plan(path=r'C:\temp')
-    # sol_no_dvh = Plan.load_optimal_sol('sol_no_dvh', path=r'C:\temp')
-    # sol_dvh = Plan.load_optimal_sol('sol_dvh', path=r'C:\temp')
 
     # plot dvh dvh for both the cases
     """
@@ -81,7 +73,7 @@ def ex_5_dvh_benchmark():
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_no_dvh, struct_names=struct_names, style='solid', ax=ax)
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dvh, struct_names=struct_names, style='dotted',
-                                   show_criteria=eso_dvh, ax=ax)
+                                   show_criteria=org_dvh, ax=ax)
     ax.set_title('- Without DVH  .. With DVH')
     plt.show()
 

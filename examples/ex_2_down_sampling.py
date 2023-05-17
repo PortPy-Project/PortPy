@@ -94,10 +94,14 @@ def ex_2_down_sampling():
     # PortPy can down-sample optimization voxels as factor of ct voxels.
     # Down sample voxels by a factor of 7 in x, y and 2 in z direction
     voxel_down_sample_factors = [7, 7, 2]
+
+    # Calculate the new voxel resolution
+    print('CT voxel resolution in xyz is {} mm'.format(ct.get_ct_res_xyz_mm()))
+    print('Data optimization voxel resolution in xyz is {} mm'.format(structs.opt_voxels_dict['dose_voxel_resolution_xyz_mm']))
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
     inf_matrix_dv = inf_matrix.create_down_sample(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
-    # running optimization using downsampled voxels
+    # running optimization using down sampled voxels
     # create cvxpy problem with max and mean dose clinical criteria and the above objective functions
     opt = pp.Optimization(my_plan, opt_params=opt_params, inf_matrix=inf_matrix_dv)
     sol_dv = opt.solve(solver='MOSEK', verbose=False)

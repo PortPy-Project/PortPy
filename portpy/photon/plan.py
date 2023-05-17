@@ -48,7 +48,7 @@ class Plan:
     """
 
     def __init__(self, ct: CT, structs: Structures, beams: Beams, inf_matrix: InfluenceMatrix,
-                 clinical_criteria: ClinicalCriteria) -> None:
+                 clinical_criteria: ClinicalCriteria = None) -> None:
         """
         Creates an object of Plan class for the specified patient
 
@@ -66,7 +66,8 @@ class Plan:
         self.structures = structs  # create structures attribute
         self.ct = ct  # create ct attribute containing ct information as dictionary
         self.inf_matrix = inf_matrix
-        self.clinical_criteria = clinical_criteria
+        if clinical_criteria is not None:
+            self.clinical_criteria = clinical_criteria
         self.patient_id = ct.patient_id
 
     def save_plan(self, plan_name: str = None, path: str = None) -> None:
