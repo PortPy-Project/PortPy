@@ -51,7 +51,7 @@ def ex_1_introduction():
 
     # If the list of beams are not provided, it uses the beams selected manually
     # by a human expert planner for the patient (manually selected beams are stored in portpy data).
-    # create beams for the planner beams by default
+    # Create beams for the planner beams by default
     # for the customized beams, you can pass the argument beam_ids
     # e.g. beams = pp.Beams(data, beam_ids=[0,10,20,30,40,50,60])
     beams = pp.Beams(data)

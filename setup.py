@@ -25,7 +25,7 @@ STATUSES = [
 setup(
     name='portpy',
     version=_VERSION,
-    url='https://github.com/PortPy-Project/PortPy-Photon',
+    url='https://github.com/PortPy-Project/PortPy',
     license='Apache License, Version 2.0',
     packages=find_packages(exclude=["examples*"]),
     author='Gourav Jhanwar, Mojtaba Tefagh, Vicki Taasti, Seppo Tuomaala, Saad Nadeem, Masoud Zarepisheh',
