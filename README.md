@@ -17,6 +17,13 @@ You can download the sample patient data [here](https://drive.google.com/drive/f
 
 Create a directory named './data' in the current project directory and copy the downloaded file to it, e.g ./data/Lung_Phantom_Patient_1
 
+# Quick Start
+Please see below for understanding the basic functionalities of PortPy. For advance usage of PortPy, we recommend navigating through [examples](https://github.com/PortPy-Project/PortPy/tree/master/examples) folder.
+1. To understand the most important features of PortPy, we highly recommend to go through notebook [ex_1_introduction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_1_introduction.ipynb)
+2. One of the major computational issues while optimizing the plan arise due to large size of influence matrix. We suggest you to follow [ex_2_down_sampling.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_2_downsampling.py) to understand how PortPy can assist in resolving it.
+3. You can check out [ex_3_structure_operations.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_3_structure_operations.py) to know how to perform different structure operations (e.g., boolean, margin).
+4. For algorithm benchmarking, the global optimal solution is provided for non-convex optimization problems resulting from beam angle optimization [ex_6_boo_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_boo_benchmark.py) and incorporating DVH constraints [ex_6_dvh_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_dvh_benchmark.py) using the mixed-integer programming on down-sampled data.
+5. In addition to basic visualization capabilities, PortPy provide advanced visualization by integration with 3D Slicer. Please look out notebook [ex_7_Slicer.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_7_Slicer.ipynb)
 
 # Installing PortPy
 
@@ -44,16 +51,6 @@ Create a directory named './data' in the current project directory and copy the 
   (venv) pip install -r requirements.txt
   ```
 
-# Quick Start
-Please see below for understanding the basic functionalities of PortPy. For advance usage of PortPy, we recommend navigating through [examples](https://github.com/PortPy-Project/PortPy/tree/master/examples) folder.
-1. To understand the most important features of PortPy, we highly recommend to go through [ex_1_introduction.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_1_introduction.py)
-2. One of the major computational issues while optimizing the plan arise due to large size of influence matrix. We suggest you to follow [ex_2_down_sampling.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_2_downsampling.py) to understand how PortPy can assist in resolving it.
-3. You can check out [ex_3_structure_operations.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_3_structure_operations.py) to know how to perform different structure operations (e.g., boolean, margin).
-4. For algorithm benchmarking, the global optimal solution is provided for non-convex optimization problems resulting from beam angle optimization [ex_6_boo_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_boo_benchmark.py) and incorporating DVH constraints [ex_6_dvh_benchmark.py](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_6_dvh_benchmark.py) using the mixed-integer programming on down-sampled data.
-5. In addition to basic visualization capabilities, PortPy provide advanced visualization by integration with 3D Slicer. Please look out notebook [ex_7_Slicer.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/ex_7_Slicer.ipynb)
-# License
-PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
-
 # Team
 PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
 
@@ -66,3 +63,6 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 | [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) | Physics and Planning of Proton Therapy           | MAASTRO     |
 | [Sadegh Alam](https://scholar.google.com/citations?user=iy7TlU0AAAAJ&hl=en)  | Adaptive Treatment Planning and Imaging          | Cornell     |
 | [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/)        | Eclispe API Scripting                            | VARIAN      |
+
+# License
+PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.

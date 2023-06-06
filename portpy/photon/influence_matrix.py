@@ -271,7 +271,7 @@ class InfluenceMatrix:
 
     def create_down_sample(self, beamlet_width_mm: float = None, beamlet_height_mm: float = None,
                            opt_vox_xyz_res_mm: List[float] = None,
-                           overwrite: bool = False):
+                           overwrite: bool = False, remove_corner_beamlets: bool = False):
         if overwrite:
             new_inf_matrix = self
         else:
@@ -282,6 +282,9 @@ class InfluenceMatrix:
         new_inf_matrix.beamlet_width_mm = beamlet_width_mm
         new_inf_matrix.beamlet_height_mm = beamlet_height_mm
         new_inf_matrix.beamlets_dict = deepcopy(self._beams.beams_dict['beamlets'])
+        for i in range(len(self._beams.beams_dict['ID'])):
+            new_inf_matrix.beamlets_dict[i]['beam_id'] = deepcopy(self._beams.beams_dict['ID'][i])  # save beam_id in beamlet_dict
+
         for i in range(len(new_inf_matrix.beamlets_dict)):
             new_inf_matrix.beamlets_dict[i]['beamlet_idx_2d_finest_grid'] = deepcopy(self.beamlets_dict[i]['beamlet_idx_2d_finest_grid'])
         down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
@@ -290,7 +293,7 @@ class InfluenceMatrix:
             if np.all(np.array(down_sample_xyz) == 1):  # if all are 1 then no down sample
                 down_sample_xyz = None
         new_inf_matrix._down_sample_xyz = down_sample_xyz
-        new_inf_matrix.preprocess_beams()
+        new_inf_matrix.preprocess_beams(remove_corner_beamlets=remove_corner_beamlets)
         new_inf_matrix.pre_process_voxels()
         A = new_inf_matrix.get_influence_matrix(is_full=new_inf_matrix.is_full)
         new_inf_matrix.A = A
