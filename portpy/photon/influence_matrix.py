@@ -691,6 +691,38 @@ class InfluenceMatrix:
                     if (beam_map[:, j] != beam_map[:, colsNoRepeat[-1]]).any():
                         colsNoRepeat.append(j)
                 beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
+
+                # add this part in case remove corner beamlets create issue for getting original resolution
+                remove_row = []
+                remove_col = []
+                for row in range(beam_map.shape[0]):
+                    if row < beam_map.shape[0] - 1:
+                        prev_elem = beam_map[row, :][beam_map[row, :] > -1]
+                        next_elem = beam_map[row + 1, :][beam_map[row + 1, :] > -1]
+                        matching_elements = np.intersect1d(prev_elem, next_elem)
+                        if len(matching_elements) > 1:
+                            if len(prev_elem) <= len(next_elem):
+                                remove_row.append(row)
+                            else:
+                                remove_row.append(row + 1)
+                for col in range(beam_map.shape[1]):
+                    if col < beam_map.shape[1] - 1:
+                        prev_elem = beam_map[:, col][beam_map[:, col] > -1]
+                        next_elem = beam_map[:, col + 1][beam_map[:, col + 1] > -1]
+                        matching_elements = np.intersect1d(prev_elem, next_elem)
+                        if len(matching_elements) > 1:
+                            if len(prev_elem) <= len(next_elem):
+                                remove_col.append(col)
+                            else:
+                                remove_col.append(col + 1)
+                mask_rows = np.ones(beam_map.shape[0], dtype=bool)
+                mask_columns = np.ones(beam_map.shape[1], dtype=bool)
+                if len(remove_row) > 0:
+                    mask_rows[remove_row] = False
+                if len(remove_col) > 0:
+                    mask_columns[remove_col] = False
+                beam_map = beam_map[mask_rows][:, mask_columns]
+
             beam_orig.append(beam_map)
         if len(beam_orig) == 1:
             beam_orig = beam_orig[0]  # return ndarray in case if it is not list

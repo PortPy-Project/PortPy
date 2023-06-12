@@ -42,7 +42,7 @@ def ex_1_introduction():
     data.patient_id = 'Lung_Phantom_Patient_1'
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
-    # display in browser rather than console. Set in_broswer to True
+    # display in browser rather than console. Set in_browser to True
     data.display_patient_metadata(in_browser=True)
 
     # Load ct and structure set for the above patient using CT and Structures class
@@ -59,7 +59,7 @@ def ex_1_introduction():
     # create rinds based upon rind definition in optimization params
     protocol_name = 'Lung_2Gy_30Fx'
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
-    structs.create_opt_structures(opt_params)
+    # structs.create_opt_structures(opt_params)
 
     # load influence matrix based upon beams and structure set
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
