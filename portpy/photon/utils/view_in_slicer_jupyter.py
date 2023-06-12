@@ -30,11 +30,11 @@ def view_in_slicer_jupyter(my_plan, dose_1d: np.ndarray = None, sol: dict = None
         slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", ct_name)
         ct_node = slicer.util.getNode(ct_name)
 
-        ct_node.SetOrigin(list(np.array(my_plan.ct['origin_xyz_mm']) * np.array(
+        ct_node.SetOrigin(list(np.array(my_plan.ct.ct_dict['origin_xyz_mm']) * np.array(
             [-1, -1, 1])))  # convert to RAS origin. -ve in x and y direction
-        ct_node.SetSpacing(my_plan.ct['resolution_xyz_mm'])
+        ct_node.SetSpacing(my_plan.ct.ct_dict['resolution_xyz_mm'])
         ct_node.SetIJKToRASDirections(np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]))  # set itk to RAS direction
-        slicer.util.updateVolumeFromArray(ct_node, my_plan.ct['ct_hu_3d'][0])
+        slicer.util.updateVolumeFromArray(ct_node, my_plan.ct.ct_dict['ct_hu_3d'][0])
         slicer.util.setSliceViewerLayers(background=ct_node)
 
     # Another way to push simple itk image
@@ -53,8 +53,8 @@ def view_in_slicer_jupyter(my_plan, dose_1d: np.ndarray = None, sol: dict = None
             dose_arr = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
         slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", dose_name)
         dose_node = slicer.util.getNode(dose_name)
-        dose_node.SetOrigin(list(np.array(my_plan.ct['origin_xyz_mm']) * np.array([-1, -1, 1])))
-        dose_node.SetSpacing(my_plan.ct['resolution_xyz_mm'])
+        dose_node.SetOrigin(list(np.array(my_plan.ct.ct_dict['origin_xyz_mm']) * np.array([-1, -1, 1])))
+        dose_node.SetSpacing(my_plan.ct.ct_dict['resolution_xyz_mm'])
         dose_node.SetIJKToRASDirections(np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]))
         slicer.util.updateVolumeFromArray(dose_node, dose_arr)
         slicer.util.setSliceViewerLayers(foreground=dose_node)
@@ -69,8 +69,8 @@ def view_in_slicer_jupyter(my_plan, dose_1d: np.ndarray = None, sol: dict = None
             slicer.util.addVolumeFromArray(my_plan.structures.structures_dict['structure_mask_3d'][i] * (i + 1),
                                            name=struct_name, nodeClassName="vtkMRMLLabelMapVolumeNode")
             lmap = slicer.util.getNode(struct_name)
-            lmap.SetOrigin(list(np.array(my_plan.ct['origin_xyz_mm']) * np.array([-1, -1, 1])))
-            lmap.SetSpacing(my_plan.ct['resolution_xyz_mm'])
+            lmap.SetOrigin(list(np.array(my_plan.ct.ct_dict['origin_xyz_mm']) * np.array([-1, -1, 1])))
+            lmap.SetSpacing(my_plan.ct.ct_dict['resolution_xyz_mm'])
             lmap.SetIJKToRASDirections(np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]))
             slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(lmap, structure_node)
             slicer.mrmlScene.RemoveNode(lmap)
