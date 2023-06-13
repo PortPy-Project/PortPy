@@ -1,6 +1,7 @@
 from typing import List
 from .data_explorer import DataExplorer
 
+
 class ClinicalCriteria:
     """
     A class representing clinical criteria.

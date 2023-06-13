@@ -11,33 +11,28 @@ import webbrowser
 
 
 class DataExplorer:
+    """
+    A class for exploring the benchmark data available in PortPy
+
+    - **Attributes** ::
+
+        :param data_dir: local directory containing data
+        :param patient_id: patient id of the patient
+
+    - **Methods** ::
+        :display_patient_metadata()
+            display metadata for the patient
+        :display_list_of_patients()
+            display the patient list in portpy database
+
+
+    """
     def __init__(self, data_dir: str = None, patient_id: str = None):
         if data_dir is None:
             data_dir = os.path.join('..', 'data')
         self.data_dir = data_dir
         if patient_id is not None:
             self.patient_id = patient_id
-
-    @staticmethod
-    def list_to_dict(json_data):
-        """
-        A recursive function which constructs dictionary from list
-        :param json_data: data in json or list format
-        :return: data in dictionary format
-        """
-
-        json_dict = {}
-        if type(json_data) is list:
-            for i in range(len(json_data)):
-                elem = json_data[i]
-                if type(elem) is list:
-                    json_dict[i] = DataExplorer.list_to_dict(elem)
-                else:
-                    for key in elem:
-                        json_dict.setdefault(key, []).append(elem[key])
-        else:
-            json_dict = json_data.copy()
-        return json_dict
 
     def load_metadata(self, pat_dir: str = None) -> dict:
         """Loads metadata of a patient located in path and returns the metadata as a dictionary
@@ -110,16 +105,6 @@ class DataExplorer:
 
         meta_data['patient_folder_path'] = pat_dir
         return meta_data
-
-    @staticmethod
-    def load_config_planner_metadata(patient_id):
-        # load planner_plan config metadata
-        fname = os.path.join(Path(__file__).parents[2], 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
-        # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
-        # Opening JSON file
-        f = open(fname)
-        planner_metadata = json.load(f)
-        return planner_metadata
 
     @staticmethod
     def load_config_clinical_criteria(protocol_name: str, protocol_type: str = 'Default') -> dict:
@@ -440,3 +425,24 @@ class DataExplorer:
             return False  # Probably standard Python interpreter
         except:
             return False  # Probably standard Python interpreter
+
+    @staticmethod
+    def list_to_dict(json_data):
+        """
+        A recursive function which constructs dictionary from list
+        :param json_data: data in json or list format
+        :return: data in dictionary format
+        """
+
+        json_dict = {}
+        if type(json_data) is list:
+            for i in range(len(json_data)):
+                elem = json_data[i]
+                if type(elem) is list:
+                    json_dict[i] = DataExplorer.list_to_dict(elem)
+                else:
+                    for key in elem:
+                        json_dict.setdefault(key, []).append(elem[key])
+        else:
+            json_dict = json_data.copy()
+        return json_dict

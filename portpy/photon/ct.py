@@ -5,6 +5,13 @@ from typing import List
 class CT:
     """
     Class representing CT for the patient
+
+    - **Attributes** ::
+
+        :param ct_dict: dictionary containing ct metadata and data
+        :type patient_id: patient id of the patient
+
+
     """
 
     def __init__(self, data: DataExplorer):

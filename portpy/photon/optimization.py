@@ -18,6 +18,18 @@ class Optimization(object):
     :param clinical_criteria: clinical criteria for which plan to be optimized
     :param opt_params: optimization parameters for modifying parameters of problem statement
 
+    - **Attributes** ::
+
+        :param obj: List containing individual objective function
+        :param constraints: List containing individual constraints
+        :param vars: Dictionary containing variable
+        :Example
+                dict = {"x": [...]}
+
+    - **Methods** ::
+        :create_cvxpy_problem(my_plan)
+            Create cvxpy objective function and constraints and save them as a list
+
     """
 
     def __init__(self, my_plan: Plan, inf_matrix: InfluenceMatrix = None,
@@ -158,34 +170,6 @@ class Optimization(object):
         self.constraints = constraints
 
         print('Constraints done')
-
-    def create_rinds(self, rind_params):
-        # create rinds for optimization
-        ct_to_dose_map = self.inf_matrix.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-        dose_mask = ct_to_dose_map >= 0
-        dose_mask = dose_mask.astype(int)
-        self.my_plan.structures.create_structure('dose_mask', dose_mask)
-
-        print('creating rinds.. This step may take some time due to dilation')
-        for ind, param in enumerate(rind_params):
-            rind_name = param['name']
-            first_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_start_mm'])
-            second_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_end_mm'])
-            self.my_plan.structures.expand(param['ref_structure'], margin_mm=param['margin_start_mm'],
-                                           new_struct_name=first_dummy_name)
-            if param['margin_end_mm'] == 'inf':
-                param['margin_end_mm'] = 500
-            self.my_plan.structures.expand(param['ref_structure'], margin_mm=param['margin_end_mm'],
-                                           new_struct_name=second_dummy_name)
-            self.my_plan.structures.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
-            self.my_plan.structures.delete_structure(first_dummy_name)
-            self.my_plan.structures.delete_structure(second_dummy_name)
-            self.my_plan.structures.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
-        self.my_plan.structures.delete_structure('dose_mask')
-
-        print('rinds created!!')
-        for param in rind_params:
-            self.inf_matrix.set_opt_voxel_idx(self.my_plan, structure_name=param['name'])
 
     def add_max(self, struct: str, dose_gy: float):
         """

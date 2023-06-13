@@ -14,6 +14,7 @@ from .structures import Structures
 
 if TYPE_CHECKING:
     from portpy.photon.plan import Plan
+    from portpy.photon.influence_matrix import InfluenceMatrix
 try:
     from typing import Literal
 except ImportError:
@@ -200,33 +201,95 @@ class Visualization:
         return ax, surf
 
     @staticmethod
-    def plot_fluence_2d(beam_id: int, sol: dict, **options):
+    def plot_fluence_2d(beam_id: int, sol: dict = None, optimal_fluence_2d: List[np.ndarray] = None,
+                        inf_matrix: InfluenceMatrix = None, **options):
         """
 
         Displays fluence in 2d for the given beam_id
 
         :param beam_id: beam_id of the beam
         :param sol: solution dictionary after optimization
+        :param optimal_fluence_2d: List of optimal fluence for all the beams
+        :param inf_matrix: Optional. Object of class influence matrix
         :return: 2d optimal fluence plot
 
         :Example:
         >>> Visualization.plot_fluence_2d(beam_id=0, sol=sol, **options)
         """
-        return sol['inf_matrix'].plot_fluence_2d(beam_id=beam_id, sol=sol, **options)
+
+        if inf_matrix is None:
+            inf_matrix = sol['inf_matrix']
+
+        # getting options_fig:
+        figsize = options['figsize'] if 'figsize' in options else (8, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        show = options['show'] if 'show' in options else False
+        ax = options['ax'] if 'ax' in options else None
+
+        ind = [i for i in range(len(inf_matrix.beamlets_dict)) if inf_matrix.beamlets_dict[i]['beam_id'] == beam_id]
+        if len(ind) == 0:
+            raise IndexError('invalid beam id {}'.format(beam_id))
+        if sol is not None:
+            optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+
+        mat = ax.matshow(optimal_fluence_2d[ind[0]])
+        ax.set_xlabel('x-axis (beamlets column)')
+        ax.set_ylabel('y-axis (beamlets row)')
+        plt.colorbar(mat, ax=ax)
+        if title is not None:
+            ax.set_title('{}'.format(title))
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
+        if show:
+            plt.show()
+        return ax
 
     @staticmethod
-    def plot_fluence_3d(beam_id: int, sol: dict, **options):
+    def plot_fluence_3d(beam_id: int, sol: dict = None, optimal_fluence_2d: List[np.ndarray] = None,
+                        inf_matrix: InfluenceMatrix = None, **options):
         """
         Displays fluence in 3d for the given beam_id
 
         :param sol: solution after optimization
         :param beam_id: beam_id of the beam
+        :param optimal_fluence_2d: List of optimal fluence for all the beams
+        :param inf_matrix: Optional. Object of class influence matrix
         :return: 3d optimal fluence plot
 
         :Example:
         >>> Visualization.plot_fluence_3d(beam_id=0, sol=sol, **options)
         """
-        return sol['inf_matrix'].plot_fluence_3d(beam_id=beam_id, sol=sol, **options)
+        if inf_matrix is None:
+            inf_matrix = sol['inf_matrix']
+        # getting options_fig:
+        figsize = options['figsize'] if 'figsize' in options else (8, 8)
+        title = options['title'] if 'title' in options else None
+        filename = options['filename'] if 'filename' in options else None
+        show = options['show'] if 'show' in options else False
+        ax = options['ax'] if 'ax' in options else None
+
+        ind = [i for i in range(len(inf_matrix.beamlets_dict)) if inf_matrix.beamlets_dict[i]['beam_id'] == beam_id]
+        if len(ind) == 0:
+            raise IndexError('invalid beam id {}'.format(beam_id))
+        if sol is not None:
+            optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)
+        (ax, surf) = Visualization.surface_plot(optimal_fluence_2d[ind[0]], ax=ax, figsize=figsize,
+                                                  cmap='viridis', edgecolor='black')
+        plt.colorbar(surf, ax=ax, pad=0.2)
+        ax.set_zlabel('Fluence Intensity')
+        ax.set_xlabel('x-axis (beamlets column)')
+        ax.set_ylabel('y-axis (beamlets row)')
+
+        if title is not None:
+            ax.set_title('{}'.format(title))
+        if filename is not None:
+            plt.savefig(filename, bbox_inches="tight", dpi=300)
+        if show:
+            plt.show()
+        return ax
 
     @staticmethod
     def plot_2d_slice(my_plan: Plan = None, sol: dict = None, ct: CT = None, structs: Structures = None,
@@ -429,3 +492,14 @@ class Visualization:
             return False  # Probably standard Python interpreter
         except:
             return False  # Probably standard Python interpreter
+
+    @staticmethod
+    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
+        # acquire the cartesian coordinate matrices from the matrix
+        # x is cols, y is rows
+        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
+        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
+        return ax, surf

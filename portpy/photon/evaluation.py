@@ -16,6 +16,19 @@ from tabulate import tabulate
 
 
 class Evaluation:
+    """
+    Class for evaluating different metrics for the plan
+
+    - **Methods** ::
+        :display_clinical_criteria(my_plan, sol)
+            display plan values corresponding to given clinical criteria
+        :get_dose(sol, struct, volume_per)
+            get dose at the given volume in percentage
+        :get_volume(sol: struct dose_value_gy)
+            Get volume at dose_1d value in Gy
+
+
+    """
 
     @staticmethod
     def get_dose(sol: dict, struct: str, volume_per: float, dose_1d: np.ndarray = None,

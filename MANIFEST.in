@@ -1,3 +1,3 @@
 include images/*.jpg
-recursive-include config_files/clinical_criteria *
-recursive-include config_files/optimization_params *
+recursive-include portpy/config_files/clinical_criteria *
+recursive-include portpy/config_files/optimization_params *

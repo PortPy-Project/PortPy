@@ -9,4 +9,3 @@ from .visualization import Visualization
 from .evaluation import Evaluation
 from .clinical_criteria import ClinicalCriteria
 from portpy.photon.utils import *
-from .cvxpy_prob import CvxPyProb
