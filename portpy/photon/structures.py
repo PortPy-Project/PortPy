@@ -72,63 +72,6 @@ class Structures:
         ind = self.structures_dict['name'].index(structure_name)
         return self.structures_dict['fraction_of_vol_in_calc_box'][ind]
 
-    def preprocess_structures(self):
-        """
-        preprocess structures to create optimization voxel indices for the struct_name
-        :return:
-        """
-        self.opt_voxels_dict['voxel_idx'] = [None] * len(self.structures_dict['name'])
-        self.opt_voxels_dict['voxel_volume_cc'] = [None] * len(self.structures_dict['name'])
-        for i in range(len(self.structures_dict['name'])):
-            vox_3d = self.structures_dict['structure_mask_3d'][i] * self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-            # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
-            vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
-            self.opt_voxels_dict['voxel_idx'][i] = vox
-            self.opt_voxels_dict['voxel_volume_cc'][i] = counts * np.prod(
-                self._ct_voxel_resolution_xyz_mm)/1000  # calculate weight for each voxel
-            # dividing by 1000 due to conversion from mm3 to cm3
-            # self.opt_voxels_dict['voxel_volume_cc'][i] = counts / np.max(counts)  # calculate weight for each voxel
-
-    def create_structure(self, new_struct_name: str, mask_3d: np.ndarray) -> None:
-        """
-        Create a new struct_name and append its mask to the structures_dict
-
-        :param new_struct_name: name of the new struct_name
-        :param mask_3d: 3d mask for the struct_name
-        :return: create new_struct_name
-        """
-        for key in self.structures_dict.keys():
-            if key == 'name':
-                self.structures_dict['name'].append(new_struct_name)
-            elif key == 'structure_mask_3d':
-                self.structures_dict['structure_mask_3d'].append(mask_3d)
-            else:
-                self.structures_dict[key].append(None)
-
-    def modify_structure(self, struct_name: str, mask_3d: np.ndarray) -> None:
-        """
-        :param struct_name: name of the struct_name to be modified
-        :param mask_3d: 3d mask for the struct_name
-        :return: modify struct_name
-        """
-        ind = self.structures_dict['name'].index(struct_name)
-        for key in self.structures_dict.keys():
-            if key == 'name':
-                self.structures_dict['name'][ind] = struct_name
-            elif key == 'structure_mask_3d':
-                self.structures_dict['structure_mask_3d'][ind] = mask_3d
-            else:
-                self.structures_dict[key][ind] = None
-
-    def delete_structure(self, structure: str):
-        """
-        :param structure: struct_name to be removed
-        :return:
-        """
-        ind = self.structures_dict['name'].index(structure)
-        for key in self.structures_dict.keys():
-            del self.structures_dict[key][ind]
-
     def union(self, struct_1_name: str, struct_2_name: str, new_struct_name: str) -> None:
         """
         Create union of two structures struct_1_name and struct_2_name. If str1_or_str2 is not in structures dict,
@@ -306,6 +249,63 @@ class Structures:
         # for param in rind_params:
         #     self.set_opt_voxel_idx(struct_name=param['name'])
         self.preprocess_structures()
+
+    def preprocess_structures(self):
+        """
+        preprocess structures to create optimization voxel indices for the struct_name
+        :return:
+        """
+        self.opt_voxels_dict['voxel_idx'] = [None] * len(self.structures_dict['name'])
+        self.opt_voxels_dict['voxel_volume_cc'] = [None] * len(self.structures_dict['name'])
+        for i in range(len(self.structures_dict['name'])):
+            vox_3d = self.structures_dict['structure_mask_3d'][i] * self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+            # my_plan.structures_dict['voxel_idx'][i] = np.unique(vox_3d[vox_3d > 0])
+            vox, counts = np.unique(vox_3d[vox_3d > 0], return_counts=True)
+            self.opt_voxels_dict['voxel_idx'][i] = vox
+            self.opt_voxels_dict['voxel_volume_cc'][i] = counts * np.prod(
+                self._ct_voxel_resolution_xyz_mm)/1000  # calculate weight for each voxel
+            # dividing by 1000 due to conversion from mm3 to cm3
+            # self.opt_voxels_dict['voxel_volume_cc'][i] = counts / np.max(counts)  # calculate weight for each voxel
+
+    def create_structure(self, new_struct_name: str, mask_3d: np.ndarray) -> None:
+        """
+        Create a new struct_name and append its mask to the structures_dict
+
+        :param new_struct_name: name of the new struct_name
+        :param mask_3d: 3d mask for the struct_name
+        :return: create new_struct_name
+        """
+        for key in self.structures_dict.keys():
+            if key == 'name':
+                self.structures_dict['name'].append(new_struct_name)
+            elif key == 'structure_mask_3d':
+                self.structures_dict['structure_mask_3d'].append(mask_3d)
+            else:
+                self.structures_dict[key].append(None)
+
+    def modify_structure(self, struct_name: str, mask_3d: np.ndarray) -> None:
+        """
+        :param struct_name: name of the struct_name to be modified
+        :param mask_3d: 3d mask for the struct_name
+        :return: modify struct_name
+        """
+        ind = self.structures_dict['name'].index(struct_name)
+        for key in self.structures_dict.keys():
+            if key == 'name':
+                self.structures_dict['name'][ind] = struct_name
+            elif key == 'structure_mask_3d':
+                self.structures_dict['structure_mask_3d'][ind] = mask_3d
+            else:
+                self.structures_dict[key][ind] = None
+
+    def delete_structure(self, structure: str):
+        """
+        :param structure: struct_name to be removed
+        :return:
+        """
+        ind = self.structures_dict['name'].index(structure)
+        for key in self.structures_dict.keys():
+            del self.structures_dict[key][ind]
 
     def set_opt_voxel_idx(self, struct_name):
         ind = self.structures_dict['name'].index(struct_name)

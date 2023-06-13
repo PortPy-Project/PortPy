@@ -166,41 +166,6 @@ class Visualization:
         return ax
 
     @staticmethod
-    def plot_binary_mask_points(my_plan, structure: str, show: bool = True, color: List[str] = None):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ind = my_plan.structures.structures_dict['name'].index(structure)
-        mask_3d = my_plan.structures.structures_dict['structure_mask_3d'][ind]
-        pos = np.where(mask_3d == 1)
-        if color is None:
-            color = Visualization.get_colors()
-        ax.scatter(pos[0], pos[1], pos[2], c=color)
-        if show:
-            plt.show()
-
-    @staticmethod
-    def get_colors():
-        """
-
-        :return: return list of 20 colors
-        """
-        colors = ['#ffe119', '#4363d8', '#f58231', '#911eb4',
-                  '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
-                  '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
-                  '#000075', '#808080', '#ffffff', '#000000', '#e6194b', '#3cb44b']
-        return colors
-
-    @staticmethod
-    def surface_plot(matrix: np.ndarray, **kwargs):
-        # acquire the cartesian coordinate matrices from the matrix
-        # x is cols, y is rows
-        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
-        return ax, surf
-
-    @staticmethod
     def plot_fluence_2d(beam_id: int, sol: dict = None, optimal_fluence_2d: List[np.ndarray] = None,
                         inf_matrix: InfluenceMatrix = None, **options):
         """
@@ -277,7 +242,7 @@ class Visualization:
         if sol is not None:
             optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)
         (ax, surf) = Visualization.surface_plot(optimal_fluence_2d[ind[0]], ax=ax, figsize=figsize,
-                                                  cmap='viridis', edgecolor='black')
+                                                cmap='viridis', edgecolor='black')
         plt.colorbar(surf, ax=ax, pad=0.2)
         ax.set_zlabel('Fluence Intensity')
         ax.set_xlabel('x-axis (beamlets column)')
@@ -395,29 +360,6 @@ class Visualization:
         return ax
 
     @staticmethod
-    def get_cmap_colors(n, name='hsv'):
-        """Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
-        RGB color; the keyword argument name must be a standard mpl colormap name."""
-        return plt.cm.get_cmap(name, n)
-
-    @staticmethod
-    def legend_dose_storage(my_plan: Plan) -> dict:
-        # dose_color = [[0.55, 0, 1], [0, 0, 1], [0, 0.5, 1], [0, 1, 0],
-        #               [1, 1, 0], [1, 0.65, 0], [1, 0, 0], [0.55, 0, 0]]
-        dose_color = [[0.55, 0, 0], [0, 0, 1], [0.55, 0, 1], [0, 0.5, 1], [0, 1, 0], [1, 0, 0]]
-        dose_level = [0.3, 0.5, 0.7, 0.9, 1.0, 1.1]
-        dose_prescription = my_plan.clinical_criteria.clinical_criteria_dict['pres_per_fraction_gy'] * \
-                            my_plan.clinical_criteria.clinical_criteria_dict['num_of_fractions']
-        dose_value = [item * dose_prescription for item in dose_level]
-        dose_name = []
-        for item in range(0, len(dose_level)):
-            dose_name.append(str(round(dose_level[item] * 100, 2)) + ' % / ' +
-                             str(round(dose_value[item], 3)) + ' ' + 'Gy')
-        dose_storage_legend = {'dose_1d color': dose_color, 'dose_1d level': dose_level, 'dose_1d value': dose_value,
-                               'dose_1d name': dose_name}
-        return dose_storage_legend
-
-    @staticmethod
     def view_in_slicer(my_plan: Plan, slicer_path: str = None, data_dir: str = None) -> None:
         """
 
@@ -468,11 +410,69 @@ class Visualization:
         :param show_ct:default to True. If false, will not create ct node
         :return: visualize in slicer jupyter
         """
-        view_in_slicer_jupyter.view_in_slicer_jupyter(my_plan, dose_1d=dose_1d, sol=sol, ct_name=ct_name,
-                                                      dose_name=dose_name,
-                                                      struct_set_name=struct_set_name, show_ct=show_ct,
-                                                      show_dose=show_dose,
-                                                      show_structs=show_structs)
+        view_in_slicer_jupyter(my_plan, dose_1d=dose_1d, sol=sol, ct_name=ct_name,
+                               dose_name=dose_name,
+                               struct_set_name=struct_set_name, show_ct=show_ct,
+                               show_dose=show_dose,
+                               show_structs=show_structs)
+
+    @staticmethod
+    def plot_binary_mask_points(my_plan, structure: str, show: bool = True, color: List[str] = None):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ind = my_plan.structures.structures_dict['name'].index(structure)
+        mask_3d = my_plan.structures.structures_dict['structure_mask_3d'][ind]
+        pos = np.where(mask_3d == 1)
+        if color is None:
+            color = Visualization.get_colors()
+        ax.scatter(pos[0], pos[1], pos[2], c=color)
+        if show:
+            plt.show()
+
+    @staticmethod
+    def get_colors():
+        """
+
+        :return: return list of 20 colors
+        """
+        colors = ['#ffe119', '#4363d8', '#f58231', '#911eb4',
+                  '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
+                  '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
+                  '#000075', '#808080', '#ffffff', '#000000', '#e6194b', '#3cb44b']
+        return colors
+
+    @staticmethod
+    def surface_plot(matrix: np.ndarray, **kwargs):
+        # acquire the cartesian coordinate matrices from the matrix
+        # x is cols, y is rows
+        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
+        return ax, surf
+
+    @staticmethod
+    def get_cmap_colors(n, name='hsv'):
+        """Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+        RGB color; the keyword argument name must be a standard mpl colormap name."""
+        return plt.cm.get_cmap(name, n)
+
+    @staticmethod
+    def legend_dose_storage(my_plan: Plan) -> dict:
+        # dose_color = [[0.55, 0, 1], [0, 0, 1], [0, 0.5, 1], [0, 1, 0],
+        #               [1, 1, 0], [1, 0.65, 0], [1, 0, 0], [0.55, 0, 0]]
+        dose_color = [[0.55, 0, 0], [0, 0, 1], [0.55, 0, 1], [0, 0.5, 1], [0, 1, 0], [1, 0, 0]]
+        dose_level = [0.3, 0.5, 0.7, 0.9, 1.0, 1.1]
+        dose_prescription = my_plan.clinical_criteria.clinical_criteria_dict['pres_per_fraction_gy'] * \
+                            my_plan.clinical_criteria.clinical_criteria_dict['num_of_fractions']
+        dose_value = [item * dose_prescription for item in dose_level]
+        dose_name = []
+        for item in range(0, len(dose_level)):
+            dose_name.append(str(round(dose_level[item] * 100, 2)) + ' % / ' +
+                             str(round(dose_value[item], 3)) + ' ' + 'Gy')
+        dose_storage_legend = {'dose_1d color': dose_color, 'dose_1d level': dose_level, 'dose_1d value': dose_value,
+                               'dose_1d name': dose_name}
+        return dose_storage_legend
 
     @staticmethod
     def is_notebook() -> bool:

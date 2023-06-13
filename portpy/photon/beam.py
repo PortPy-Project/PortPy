@@ -92,7 +92,7 @@ class Beams:
             self.beams_dict.setdefault('beamlet_idx_2d_finest_grid', []).append(beam_2d_grid)
 
     @staticmethod
-    def get_original_map(beam_map):
+    def get_beamlet_idx_2d_grid(beam_map):
         rowsNoRepeat = [0]
         for i in range(1, np.size(beam_map, 0)):
             if (beam_map[i, :] != beam_map[rowsNoRepeat[-1], :]).any():
