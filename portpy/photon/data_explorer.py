@@ -115,7 +115,7 @@ class DataExplorer:
         :return: dictionary containing clinical criteria
         """
         # load clinical criteria config metadata
-        fname = os.path.join(Path(__file__).parents[2], 'config_files', 'clinical_criteria',
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'clinical_criteria',
                              protocol_type, protocol_name + '.json')
         # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
         # Opening JSON file
@@ -132,7 +132,7 @@ class DataExplorer:
 
         """
         # load opt params config metadata
-        fname = os.path.join(Path(__file__).parents[2], 'config_files', 'optimization_params',
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'optimization_params',
                              'optimization_params_' + protocol_name + '.json')
         # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
         # Opening JSON file
