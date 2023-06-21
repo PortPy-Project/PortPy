@@ -21,7 +21,7 @@ def ex_4_inf_matrix_sparsification():
     # By default, load_inf_matrix_full=False, and it only loads the sparse matrix
     data_dir = r'../data'
     data = pp.DataExplorer(data_dir=data_dir)
-    patient_id = 'Lung_Patient_2'
+    patient_id = 'Lung_Phantom_Patient_1'
     data.patient_id = patient_id
 
     # Load ct, structure and beams as an object
