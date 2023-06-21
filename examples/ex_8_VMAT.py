@@ -12,7 +12,6 @@ from portpy import photon as pp
 import numpy as np
 import cvxpy as cp
 import os
-from copt_cvxpy import *
 
 
 def ex_8_VMAT():

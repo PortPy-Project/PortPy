@@ -21,7 +21,7 @@ def ex_4_inf_matrix_sparsification():
     # By default, load_inf_matrix_full=False, and it only loads the sparse matrix
     data_dir = r'../data'
     data = pp.DataExplorer(data_dir=data_dir)
-    patient_id = 'Lung_Phantom_Patient_1'
+    patient_id = 'Lung_Patient_2'
     data.patient_id = patient_id
 
     # Load ct, structure and beams as an object
@@ -67,7 +67,7 @@ def ex_4_inf_matrix_sparsification():
     # create plan_full object by specifying load_inf_matrix_full=True
     beams_full = pp.Beams(data, load_inf_matrix_full=True)
     # load influence matrix based upon beams and structure set
-    inf_matrix_full = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams_full)
+    inf_matrix_full = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams_full, is_full=True)
     plan_full = pp.Plan(ct, structs, beams, inf_matrix_full, clinical_criteria)
     # use the full influence matrix to calculate the dose for the plan obtained by sparse matrix
     dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())
@@ -96,6 +96,8 @@ def ex_4_inf_matrix_sparsification():
     # Get the threshold value used by PortPy to truncate the matrix
     # sparse tol is 1% of the maximum of influence matrix of planner beams
     sparse_tol = plan_sparse.inf_matrix.sparse_tol
+    # sparse_tol = 0.01*np.amax(A_full)
+
     # Truncate the full matrix
     A_full[A_full <= sparse_tol] = 0
     test = np.abs(A_full - A_sparse.todense()) <= 1e-3

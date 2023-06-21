@@ -59,7 +59,7 @@ def ex_1_introduction():
     # create rinds based upon rind definition in optimization params
     protocol_name = 'Lung_2Gy_30Fx'
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
-    # structs.create_opt_structures(opt_params)
+    structs.create_opt_structures(opt_params)
 
     # load influence matrix based upon beams and structure set
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
