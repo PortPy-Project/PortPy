@@ -163,7 +163,7 @@ class DataExplorer:
                 display_dict.setdefault('patient_id', []).append(pat_id)
                 meta_data = self.load_metadata(os.path.join(data_dir, pat_id))  # load metadata for the patients
                 # set the keys and append to display dict
-                display_dict.setdefault('disease_site', []).append(meta_data['clinical_criteria']['disease_site'])
+                display_dict.setdefault('disease_site', []).append(pat_id.split('_')[0])
                 ind = meta_data['structures']['name'].index('PTV')
                 display_dict.setdefault('ptv_vol_cc', []).append(meta_data['structures']['volume_cc'][ind])
                 display_dict.setdefault('num_beams', []).append(len(meta_data['beams']['ID']))
@@ -257,9 +257,9 @@ class DataExplorer:
             meta_data['planner_beam_ids'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the clinical evaluation metrics
-        fname = os.path.join(pat_dir, 'ClinicalCriteria_MetaData.json')
-        json_data = self.load_json(fname)
-        meta_data['clinical_criteria'] = DataExplorer.list_to_dict(json_data)
+        # fname = os.path.join(pat_dir, 'ClinicalCriteria_MetaData.json')
+        # json_data = self.load_json(fname)
+        # meta_data['clinical_criteria'] = DataExplorer.list_to_dict(json_data)
 
         # read information regarding the beams_dict
         beamFolder = os.path.join(pat_dir, 'Beams')

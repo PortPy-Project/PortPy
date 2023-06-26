@@ -107,7 +107,7 @@ class Optimization(object):
                     struct = obj_funcs[i]['structure_name']
                     obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (
                             obj_funcs[i]['weight'] * cp.sum_squares(A[st.get_opt_voxels_idx(struct), :] @ x))]
-            elif obj_funcs[i]['type'] == 'quadratic-smoothness':
+            elif obj_funcs[i]['type'] == 'smoothness-quadratic':
                 [Qx, Qy, num_rows, num_cols] = self.get_smoothness_matrix(inf_matrix.beamlets_dict)
                 smoothness_X_weight = 0.6
                 smoothness_Y_weight = 0.4

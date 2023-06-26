@@ -305,6 +305,25 @@ class Evaluation:
         return np.mean(dose_1d[vox])
 
     @staticmethod
+    def get_BED(my_plan: Plan, sol: dict = None, dose_per_fraction_1d: np.ndarray = None, alpha=1, beta=1) -> np.ndarray:
+        """
+        Get Biologically equivalent dose (BED) for the struct_name
+
+        :param my_plan: Object of class Plan
+        :param sol: optimal solution dictionary
+        :param dose_per_fraction_1d: dose_1d which is not in solution dictionary
+
+        :return: BED
+        """
+
+        if dose_per_fraction_1d is None:
+            dose_per_fraction_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'])
+        bed_d = np.zeros_like(dose_per_fraction_1d)
+        for i in range(int(my_plan.get_num_of_fractions())):
+            bed_d = bed_d + (dose_per_fraction_1d + (dose_per_fraction_1d**2/(alpha/beta)))
+        return bed_d
+
+    @staticmethod
     def is_notebook() -> bool:
         try:
             from IPython import get_ipython

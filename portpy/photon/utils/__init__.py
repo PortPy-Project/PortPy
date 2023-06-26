@@ -4,3 +4,4 @@ from .save_nrrd import save_nrrd
 from .save_or_load_pickle import *
 from .get_eclipse_fluence import get_eclipse_fluence
 from .view_in_slicer_jupyter import view_in_slicer_jupyter
+from .convert_dose_rt_dicom_to_portpy import convert_dose_rt_dicom_to_portpy
