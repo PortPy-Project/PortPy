@@ -1,14 +1,14 @@
 """
 
-This example demonstrates the use of portpy_photon to create down sampled influence matrix and
-    optimize the plan by selecting optimal beams using beam angle optimization
+This example demonstrates the use of portpy.photon to create down sampled influence matrix and
+    create a benchmark VMAT plan
     1- Down sample influence matrix and create a benchmark VMAT plan using few beams since it computationally expensive
     2- Visualize benchmark VMAT plan
     3- Evaluate the respective plan
 
 
 """
-from portpy import photon as pp
+from portpy.photon as pp
 import numpy as np
 import cvxpy as cp
 import os

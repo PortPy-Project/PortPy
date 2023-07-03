@@ -3,7 +3,6 @@ from shapely.geometry import LinearRing, Polygon, Point
 from scipy import sparse
 from copy import deepcopy
 from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
 import itertools
 from patchify import patchify
 from typing import List, Union
@@ -43,12 +42,14 @@ class InfluenceMatrix:
                  beamlet_width_mm: float = None, beamlet_height_mm: float = None, opt_vox_xyz_res_mm: List[float] = None,
                  is_full: bool = False, target_structure: str = 'PTV', opt_beamlets_PTV_margin_mm: float = 3) -> None:
         """
-        Create a influence matrix object for Influence Matrix class based upon beamlet resolution and down-sampling_xyz ratio
+        Create a influence matrix object for Influence Matrix class based upon beamlet resolution and opt_vox_xyz_res_mm
 
-        :param plan_obj: object of class Plan
+        :param ct: object of class CT
+        :param structs: object of class Structures
+        :param beams: Object of class Beams
         :param beamlet_width_mm: beamlet width in mm. It should be multiple of 2.5, defaults to 2.5
         :param beamlet_height_mm: beamlet height in mm. It should be multiple of 2.5, defaults to 2.5
-        :param structure: target struct_name for creating BEV beamlets, defaults to 'PTV'
+        :param target_structure: target struct_name for creating BEV beamlets, defaults to 'PTV'
         :param opt_vox_xyz_res_mm: It down-samples optimization voxels as factor of ct resolution
                 e.g. opt_vox_xyz_res = [5*ct.res.x,5*ct.res.y,1*ct.res.z]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
                 defaults to None. When None it will use the original optimization voxel resolution.
@@ -77,7 +78,7 @@ class InfluenceMatrix:
         self._down_sample_xyz = down_sample_xyz
         self.is_full = is_full
 
-        # create deepcopy of the object or else it will modify the my_plan object
+        # create deepcopy of the object or else it will modify the structs object
         if hasattr(structs, 'opt_voxels_dict'):
             self.opt_voxels_dict = deepcopy(structs.opt_voxels_dict)
             # del structs.opt_voxels_dict  # remove opt_voxels_dict from structures

@@ -43,7 +43,7 @@ def ex_1_introduction():
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
     # display in browser rather than console. Set in_browser to True
-    data.display_patient_metadata(in_browser=True)
+    # data.display_patient_metadata(in_browser=True)
 
     # Load ct and structure set for the above patient using CT and Structures class
     ct = pp.CT(data)

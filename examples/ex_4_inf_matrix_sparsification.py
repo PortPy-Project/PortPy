@@ -21,7 +21,7 @@ def ex_4_inf_matrix_sparsification():
     # By default, load_inf_matrix_full=False, and it only loads the sparse matrix
     data_dir = r'../data'
     data = pp.DataExplorer(data_dir=data_dir)
-    patient_id = 'Lung_Phantom_Patient_1'
+    patient_id = 'Lung_Patient_7'
     data.patient_id = patient_id
 
     # Load ct, structure and beams as an object
@@ -39,11 +39,6 @@ def ex_4_inf_matrix_sparsification():
     # load clinical criteria from the config files for which plan to be optimized
     protocol_name = 'Lung_2Gy_30Fx'
     clinical_criteria = pp.ClinicalCriteria(data, protocol_name)
-
-    """
-    2) creating a simple IMRT plan using CVXPy (Plan class, Optimization class)
-    
-    """
 
     # Create my_plan object which would load and store all the data needed for optimization
     plan_sparse = pp.Plan(ct, structs, beams, inf_matrix_sparse, clinical_criteria)
@@ -75,8 +70,8 @@ def ex_4_inf_matrix_sparsification():
     # Visualize the DVH discrepancy
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax = pp.Visualization.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, struct_names=struct_names, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(plan_full, dose_1d=dose_full_1d, struct_names=struct_names, style='dotted', ax=ax)
+    ax = pp.Visualization.plot_dvh(plan_sparse, dose_1d=dose_sparse_1d, struct_names=struct_names, style='solid', ax=ax, norm_flag=True)
+    ax = pp.Visualization.plot_dvh(plan_full, dose_1d=dose_full_1d, struct_names=struct_names, style='dotted', ax=ax, norm_flag=True)
     ax.set_title('- Sparse .. Full')
     plt.show()
     print('Done')

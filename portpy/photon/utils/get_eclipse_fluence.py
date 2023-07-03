@@ -1,11 +1,21 @@
+from __future__ import annotations
 import os
 import numpy as np
 from typing import List
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from portpy.photon.plan import Plan
 
 
-def get_eclipse_fluence(sol: dict, path: str = None, beam_ids: List[str] = None) -> None:
+def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: List[str] = None) -> None:
     """
     save eclipse fluence in the path directory
+
+    :param my_plan: object of class Plan
+    :param sol: dictionary containing optimal intensity
+    :param path: directory for saving the optimal fluence
+    :param beam_ids: list of string containing beam ids
+
     """
     if path is None:
         path = os.getcwd()
@@ -20,7 +30,7 @@ def get_eclipse_fluence(sol: dict, path: str = None, beam_ids: List[str] = None)
         file_name = 'ID' + beam_id + '.optimal_fluence'
         filepath = os.path.join(path, file_name)
         f = open(filepath, 'w')
-        fluence_2d = optimal_fluence_2d[i]
+        fluence_2d = optimal_fluence_2d[i]/(my_plan.get_prescription()/my_plan.get_num_of_fractions())
         f.write('optimalfluence\n')
         f.write('SizeX      {}\n'.format(fluence_2d.shape[1]))
         f.write('SizeY      {}\n'.format(fluence_2d.shape[0]))

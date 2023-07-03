@@ -104,6 +104,7 @@ def ex_2_down_sampling():
     # running optimization using down sampled voxels
     # create cvxpy problem with max and mean dose clinical criteria and the above objective functions
     opt = pp.Optimization(my_plan, opt_params=opt_params, inf_matrix=inf_matrix_dv)
+    opt.create_cvxpy_problem()
     sol_dv = opt.solve(solver='MOSEK', verbose=False)
 
     """

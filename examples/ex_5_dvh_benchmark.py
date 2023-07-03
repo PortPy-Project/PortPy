@@ -7,6 +7,7 @@
 """
 import portpy.photon as pp
 import matplotlib.pyplot as plt
+import cvxpy as cp
 
 
 def ex_5_dvh_benchmark():
@@ -57,23 +58,41 @@ def ex_5_dvh_benchmark():
     2) Add exact DVH constraint and generate a plan with DVH constraint
 
     """
-    # optimize with downscaled influence matrix and the dvh constraints created below
-    org_dvh = clinical_criteria.create_criterion(criterion='dose_volume_V',
-                                                 parameters={'structure_name': 'CORD', 'dose_gy': 10},
-                                                 constraints={'limit_volume_perc': 15})
-    opt.add_dvh(dvh_constraint=org_dvh)
+    # Add a dvh constraint V(10Gy) <= 15% for CORD as shown below
+    dvh_org = 'CORD'
+    dose_gy =  10
+    limit_volume_perc = 15
+
+    # extract data for dvh constraint
+    A = inf_matrix_dbv.A # down sample influence matrix
+    x = opt.vars['x'] # optimization variable
+    M = 50 # set Big M for dvh constraint
+    frac = my_plan.structures.get_fraction_of_vol_in_calc_box(dvh_org) # get fraction of dvh organ volume inside dose calculation box
+
+
+    # Create binary variable for dvh constraint
+    b_dvh = cp.Variable(
+        len(inf_matrix_dbv.get_opt_voxels_idx('CORD')),
+        boolean=True)
+
+    # Add dvh constraint
+    opt.constraints += [
+        A[inf_matrix_dbv.get_opt_voxels_idx(dvh_org), :] @ x <= dose_gy / my_plan.get_num_of_fractions()
+        + b_dvh * M]
+    opt.constraints += [b_dvh @ inf_matrix_dbv.get_opt_voxels_volume_cc(dvh_org) <= (limit_volume_perc / frac) / 100 * sum(
+        inf_matrix_dbv.get_opt_voxels_volume_cc(dvh_org))]
     sol_dvh = opt.solve(solver='MOSEK', verbose='True')
 
     # plot dvh dvh for both the cases
     """
-    3) Evaluate the plans with and without DVH constraint
+    3) Visualize the plans with and without DVH constraint
     
     """
     fig, ax = plt.subplots(figsize=(12, 8))
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_no_dvh, struct_names=struct_names, style='solid', ax=ax)
-    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dvh, struct_names=struct_names, style='dotted',
-                                   show_criteria=org_dvh, ax=ax)
+    ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dvh, struct_names=struct_names, style='dotted', ax=ax)
+    ax.plot(dose_gy, limit_volume_perc, marker='x', color='red', markersize=20)
     ax.set_title('- Without DVH  .. With DVH')
     plt.show()
 

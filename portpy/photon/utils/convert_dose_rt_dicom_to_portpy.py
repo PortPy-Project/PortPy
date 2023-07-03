@@ -27,7 +27,7 @@ def read_dicom_dose(dir_name: str = None, dose_file_name: str = None):
         # Eclipse have different origin
         dose_img.ImagePositionPatient[0] = dose_img.ImagePositionPatient[0] - 65.63
     rt_dose_itk.SetOrigin(dose_img.ImagePositionPatient)
-    rt_dose_itk.SetSpacing([np.float(dose_img.PixelSpacing[0]), np.float(dose_img.PixelSpacing[1]),
+    rt_dose_itk.SetSpacing([float(dose_img.PixelSpacing[0]), float(dose_img.PixelSpacing[1]),
                             dose_img.GridFrameOffsetVector[1] - dose_img.GridFrameOffsetVector[0]])
     # return dose_img
     return rt_dose_itk

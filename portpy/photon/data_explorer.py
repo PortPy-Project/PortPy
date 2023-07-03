@@ -335,6 +335,10 @@ class DataExplorer:
             if 'influenceMatrixFull_File' in meta_data:
                 meta_data['influenceMatrixFull_File'] = [None] * len(
                     meta_data['influenceMatrixFull_File'])
+        elif load_inf_matrix_full:
+            if 'influenceMatrixSparse_File' in meta_data:
+                meta_data['influenceMatrixSparse_File'] = [None] * len(
+                    meta_data['influenceMatrixSparse_File'])
         meta_data = self.load_file(meta_data=meta_data)  # recursive function to load data from .h5 files
         return meta_data
 

@@ -70,6 +70,7 @@ setup(
         "typing-extensions>=3.10.0.0",
         "scikit-image>=0.17.2",
         "patchify>=0.2.3",
+        "pydicom>=2.2.0",
     ],
 
 )
