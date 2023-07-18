@@ -49,6 +49,8 @@ class Evaluation:
 
         """
         x, y = Evaluation.get_dvh(sol, dose_1d=dose_1d, struct=struct, weight_flag=weight_flag)
+        if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
+            return 0
         f = interpolate.interp1d(100 * y, x)
 
         return f(volume_per)
@@ -220,6 +222,8 @@ class Evaluation:
 
         """
         x, y = Evaluation.get_dvh(sol, dose_1d=dose_1d, struct=struct, weight_flag=weight_flag)
+        if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
+            return 0
         x1, indices = np.unique(x, return_index=True)
         y1 = y[indices]
         f = interpolate.interp1d(x1, 100 * y1)
@@ -247,6 +251,8 @@ class Evaluation:
         """
         inf_matrix = sol['inf_matrix']
         vox = inf_matrix.get_opt_voxels_idx(struct)
+        if len(vox) == 0:
+            return np.array([0]), np.array([0])  # bug fix. if single 0 it can throw error while doing interpolation
         if dose_1d is None:
             dose_1d = sol['dose_1d']
         org_sort_dose = np.sort(dose_1d[vox])
@@ -283,6 +289,8 @@ class Evaluation:
         """
         inf_matrix = sol['inf_matrix']
         vox = inf_matrix.get_opt_voxels_idx(struct)
+        if len(vox) == 0:
+            return 0
         if dose_1d is None:
             dose_1d = sol['dose_1d']
         return np.max(dose_1d[vox])
@@ -300,6 +308,8 @@ class Evaluation:
                 """
         inf_matrix = sol['inf_matrix']
         vox = inf_matrix.get_opt_voxels_idx(struct)
+        if len(vox) == 0:
+            return np.array(0)
         if dose_1d is None:
             dose_1d = sol['dose_1d']
         return np.mean(dose_1d[vox])

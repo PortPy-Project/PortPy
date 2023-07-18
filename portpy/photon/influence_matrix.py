@@ -699,7 +699,7 @@ class InfluenceMatrix:
                         prev_elem = beam_map[row, :][beam_map[row, :] > -1]
                         next_elem = beam_map[row + 1, :][beam_map[row + 1, :] > -1]
                         matching_elements = np.intersect1d(prev_elem, next_elem)
-                        if len(matching_elements) > 1:
+                        if len(matching_elements) >= 1:
                             if len(prev_elem) <= len(next_elem):
                                 remove_row.append(row)
                             else:
@@ -709,7 +709,7 @@ class InfluenceMatrix:
                         prev_elem = beam_map[:, col][beam_map[:, col] > -1]
                         next_elem = beam_map[:, col + 1][beam_map[:, col + 1] > -1]
                         matching_elements = np.intersect1d(prev_elem, next_elem)
-                        if len(matching_elements) > 1:
+                        if len(matching_elements) >= 1:
                             if len(prev_elem) <= len(next_elem):
                                 remove_col.append(col)
                             else:

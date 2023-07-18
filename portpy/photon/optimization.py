@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import cvxpy as cp
 from typing import List, TYPE_CHECKING, Union
-
+import time
 if TYPE_CHECKING:
     from portpy.photon.plan import Plan
     from portpy.photon.influence_matrix import InfluenceMatrix
@@ -34,7 +34,7 @@ class Optimization(object):
 
     def __init__(self, my_plan: Plan, inf_matrix: InfluenceMatrix = None,
                  clinical_criteria: ClinicalCriteria = None,
-                 opt_params: dict = None):
+                 opt_params: dict = None, vars: dict = None):
         # self.x = None
         self.my_plan = my_plan
         if inf_matrix is None:
@@ -47,11 +47,16 @@ class Optimization(object):
         self.prescription_gy = opt_params['prescription_gy']
         self.obj = []
         self.constraints = []
-        self.vars = {}
+        if vars is None:
+            x = cp.Variable(inf_matrix.A.shape[1], pos=True, name='x')  # creating variable for beamlet intensity
+            self.vars = {'x': x}
+        else:
+            self.vars = vars
 
     def create_cvxpy_problem(self):
         """
         It runs optimization to create optimal plan based upon clinical criteria
+        :param d: cvxpy variable or expression containing the definition of dose. If not provided, it will use d = Ax by default
 
         :return: cvxpy problem object
 
@@ -62,26 +67,26 @@ class Optimization(object):
         inf_matrix = self.inf_matrix
         opt_params = self.opt_params
         clinical_criteria = self.clinical_criteria
+        x = self.vars['x']
+        obj = self.obj
+        constraints = self.constraints
+
         # self.prescription_gy = opt_params['prescription_gy']
 
         # get opt params for optimization
         obj_funcs = opt_params['objective_functions'] if 'objective_functions' in opt_params else []
         opt_params_constraints = opt_params['constraints'] if 'constraints' in opt_params else []
 
-        # Creating rinds (aka rings, shells)
-        # Rinds are doughnut-shaped structures often created to control the radiation dose to non-specified structures
-        #   They can also control the dose fall-off after PTV.
-
         A = inf_matrix.A
         num_fractions = clinical_criteria.get_num_of_fractions()
         st = inf_matrix
 
-        # Construct optimization problem
-        obj = []
-        constraints = []
-        x = cp.Variable(A.shape[1], pos=True, name='x')
+        # if d is None:
+        #     d = cp.Variable(A.shape[0], pos=True, name='d')  # creating dummy variable for dose
+        #     constraints += [d == A @ x]
+        #     self.vars['d'] = d  # save variable
 
-        self.vars = {'x': x}
+        # Construct optimization problem
 
         # Generating objective functions
         print('Objective Start')
@@ -89,24 +94,27 @@ class Optimization(object):
             if obj_funcs[i]['type'] == 'quadratic-overdose':
                 if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
                     struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
                     dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
                     dO = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
-                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) *
-                            (obj_funcs[i]['weight'] * cp.sum_squares(dO))]
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dO))]
                     constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= dose_gy + dO]
             elif obj_funcs[i]['type'] == 'quadratic-underdose':
                 if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
                     struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
                     dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
                     dU = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
-                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) *
-                            (obj_funcs[i]['weight'] * cp.sum_squares(dU))]
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dU))]
                     constraints += [A[st.get_opt_voxels_idx(struct), :] @ x >= dose_gy - dU]
             elif obj_funcs[i]['type'] == 'quadratic':
                 if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
                     struct = obj_funcs[i]['structure_name']
-                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (
-                            obj_funcs[i]['weight'] * cp.sum_squares(A[st.get_opt_voxels_idx(struct), :] @ x))]
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(A[st.get_opt_voxels_idx(struct), :] @ x))]
             elif obj_funcs[i]['type'] == 'smoothness-quadratic':
                 [Qx, Qy, num_rows, num_cols] = self.get_smoothness_matrix(inf_matrix.beamlets_dict)
                 smoothness_X_weight = 0.6
@@ -123,7 +131,6 @@ class Optimization(object):
             # add constraint
             if param['structure_name'] in my_plan.structures.get_structures():
                 parameters = {'structure_name': param['structure_name']}
-                # total_pres = self.get_prescription()
                 if 'max' in param['type']:
                     opt_constraints = {'limit_dose_gy': self.get_num(param['upper_limit'])}
                     clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
@@ -133,7 +140,7 @@ class Optimization(object):
                     clinical_criteria.add_criterion(criterion='mean_dose', parameters=parameters,
                                                     constraints=opt_constraints)
 
-        # get max and mean constraints
+        # get max and mean constraints based upon clinical criteria
         max_constraints = clinical_criteria.get_criteria(
             name='max_dose')  # returns all the max dose criteria as a list
         mean_constraints = clinical_criteria.get_criteria(
@@ -146,7 +153,12 @@ class Optimization(object):
                     limit = max_constraints[i]['constraints']['limit_dose_gy']
                     org = max_constraints[i]['parameters']['structure_name']
                     if org != 'GTV' and org != 'CTV':
-                        if org in my_plan.structures.structures_dict['name']:
+                        if org in my_plan.structures.get_structures():
+                            if len(st.get_opt_voxels_idx(org)) == 0:
+                                continue
+                            # if d is None:
+                            #     constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
+                            # else:
                             constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
                         else:
                             print('Structure {} not available!'.format(org))
@@ -158,16 +170,16 @@ class Optimization(object):
                     limit = mean_constraints[i]['constraints']['limit_dose_gy']
                     org = mean_constraints[i]['parameters']['structure_name']
                     # mean constraints using voxel weights
-                    if org in my_plan.structures.structures_dict['name']:
+                    if org in my_plan.structures.get_structures():
+                        if len(st.get_opt_voxels_idx(org)) == 0:
+                            continue
                         constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
-                                        (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org), A[st.get_opt_voxels_idx(org),
-                                                                                          :] @ x)))) <= limit / num_fractions]
+                                        (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
+                                                             A[st.get_opt_voxels_idx(org), :] @ x))))
+                                        <= limit / num_fractions]
 
                     else:
                         print('Structure {} not available!'.format(org))
-
-        self.obj = obj
-        self.constraints = constraints
 
         print('Constraints done')
 
@@ -344,7 +356,12 @@ class Optimization(object):
                 """
 
         problem = cp.Problem(cp.Minimize(sum(self.obj)), constraints=self.constraints)
+        print('Running Optimization..')
+        t = time.time()
         problem.solve(*args, **kwargs)
+        elapsed = time.time() - t
+        print("Optimal value: %s" % problem.value)
+        print("Elapsed time: {} seconds".format(elapsed))
         return {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix}
 
     def get_sol(self) -> dict:
@@ -473,6 +490,134 @@ class Optimization(object):
                         sCol[ind, ind] = int(1)
                         sCol[ind, DN] = int(-1)
         return sRow, sCol, num_rows, num_cols
+
+    def create_cvxpy_problem_correction(self, d=None, delta=None):
+        """
+        It runs optimization to create optimal plan based upon clinical criteria
+        :param d: cvxpy variable or expression containing the definition of dose. If not provided, it will use d = Ax by default
+        :param delta: constant dose correction term to be used in optimization
+        :return: cvxpy problem object
+
+        """
+        if delta is None:
+            delta = np.zeros(self.inf_matrix.A.shape[0])
+        # unpack data
+        my_plan = self.my_plan
+        inf_matrix = self.inf_matrix
+        opt_params = self.opt_params
+        clinical_criteria = self.clinical_criteria
+        x = self.vars['x']
+        obj = self.obj
+        constraints = self.constraints
+
+        # self.prescription_gy = opt_params['prescription_gy']
+
+        # get opt params for optimization
+        obj_funcs = opt_params['objective_functions'] if 'objective_functions' in opt_params else []
+        opt_params_constraints = opt_params['constraints'] if 'constraints' in opt_params else []
+
+        A = inf_matrix.A
+        num_fractions = clinical_criteria.get_num_of_fractions()
+        st = inf_matrix
+
+        if d is None:
+            d = cp.Variable(A.shape[0], pos=True, name='d')  # creating dummy variable for dose
+            constraints += [d == A @ x]
+        #     self.vars['d'] = d  # save variable
+
+        # Construct optimization problem
+
+        # Generating objective functions
+        print('Objective Start')
+        for i in range(len(obj_funcs)):
+            if obj_funcs[i]['type'] == 'quadratic-overdose':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
+                    dO = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dO))]
+                    constraints += [d[st.get_opt_voxels_idx(struct)] + delta[st.get_opt_voxels_idx(struct)] <= dose_gy + dO]
+            elif obj_funcs[i]['type'] == 'quadratic-underdose':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
+                    dU = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dU))]
+                    constraints += [d[st.get_opt_voxels_idx(struct)] + delta[st.get_opt_voxels_idx(struct)] >= dose_gy - dU]
+            elif obj_funcs[i]['type'] == 'quadratic':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(d[st.get_opt_voxels_idx(struct)] + delta[st.get_opt_voxels_idx(struct)]))]
+            elif obj_funcs[i]['type'] == 'smoothness-quadratic':
+                [Qx, Qy, num_rows, num_cols] = self.get_smoothness_matrix(inf_matrix.beamlets_dict)
+                smoothness_X_weight = 0.6
+                smoothness_Y_weight = 0.4
+                obj += [obj_funcs[i]['weight'] * (smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) +
+                                                  smoothness_Y_weight * (1 / num_rows) * cp.sum_squares(Qy @ x))]
+
+        print('Objective done')
+
+        print('Constraints Start')
+
+        # add optimization constraints if present in opt params
+        for param in opt_params_constraints:
+            # add constraint
+            if param['structure_name'] in my_plan.structures.get_structures():
+                parameters = {'structure_name': param['structure_name']}
+                if 'max' in param['type']:
+                    opt_constraints = {'limit_dose_gy': self.get_num(param['upper_limit'])}
+                    clinical_criteria.add_criterion(criterion='max_dose', parameters=parameters,
+                                                    constraints=opt_constraints)
+                if 'mean' in param['type']:
+                    opt_constraints = {'limit_dose_gy': self.get_num(param['upper_limit'])}
+                    clinical_criteria.add_criterion(criterion='mean_dose', parameters=parameters,
+                                                    constraints=opt_constraints)
+
+        # get max and mean constraints based upon clinical criteria
+        max_constraints = clinical_criteria.get_criteria(
+            name='max_dose')  # returns all the max dose criteria as a list
+        mean_constraints = clinical_criteria.get_criteria(
+            name='mean_dose')  # returns all the mean dose criteria as a list
+
+        # Adding max constraints
+        for i in range(len(max_constraints)):
+            if 'max_dose' in max_constraints[i]['name']:
+                if 'limit_dose_gy' in max_constraints[i]['constraints']:
+                    limit = max_constraints[i]['constraints']['limit_dose_gy']
+                    org = max_constraints[i]['parameters']['structure_name']
+                    if org != 'GTV' and org != 'CTV':
+                        if org in my_plan.structures.get_structures():
+                            if len(st.get_opt_voxels_idx(org)) == 0:
+                                continue
+                            constraints += [d[st.get_opt_voxels_idx(org)] + delta[st.get_opt_voxels_idx(org)] <= limit / num_fractions]
+                        else:
+                            print('Structure {} not available!'.format(org))
+
+        # Adding mean constraints
+        for i in range(len(mean_constraints)):
+            if 'mean_dose' in mean_constraints[i]['name']:
+                if 'limit_dose_gy' in mean_constraints[i]['constraints']:
+                    limit = mean_constraints[i]['constraints']['limit_dose_gy']
+                    org = mean_constraints[i]['parameters']['structure_name']
+                    # mean constraints using voxel weights
+                    if org in my_plan.structures.get_structures():
+                        if len(st.get_opt_voxels_idx(org)) == 0:
+                            continue
+                        constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
+                                        (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
+                                                             d[st.get_opt_voxels_idx(org)] + delta[st.get_opt_voxels_idx(org)]))))
+                                        <= limit / num_fractions]
+
+                    else:
+                        print('Structure {} not available!'.format(org))
+
+        print('Constraints done')
 
     @staticmethod
     def matching_keys(dictionary, search_string):

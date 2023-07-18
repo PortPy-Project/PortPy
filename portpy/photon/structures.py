@@ -72,6 +72,16 @@ class Structures:
         ind = self.structures_dict['name'].index(structure_name)
         return self.structures_dict['fraction_of_vol_in_calc_box'][ind]
 
+    def get_structure_mask_3d(self, structure_name: str):
+        """
+        Get fraction of volume in calc box for the struct_name
+
+         :param structure_name: name of the struct_name in plan
+         :return: volume of the struct_name
+         """
+        ind = self.structures_dict['name'].index(structure_name)
+        return self.structures_dict['structure_mask_3d'][ind]
+
     def union(self, struct_1_name: str, struct_2_name: str, new_struct_name: str) -> None:
         """
         Create union of two structures struct_1_name and struct_2_name. If str1_or_str2 is not in structures dict,

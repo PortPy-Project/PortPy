@@ -109,6 +109,9 @@ class Visualization:
         for i in range(np.size(all_orgs)):
             if all_orgs[i] not in struct_names:
                 continue
+            if my_plan.structures.get_fraction_of_vol_in_calc_box(all_orgs[i]) == 0:  # check if the structure is within calc box
+                print('Skipping Structure {} as it is not within calculation box.'.format(all_orgs[i]))
+                continue
             # for dose_1d in dose_list:
             #
             x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
