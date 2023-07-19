@@ -22,7 +22,6 @@ PortPy.photon provides functionalities for importing  the fluence to Eclipse and
 import portpy.photon as pp
 import os
 import matplotlib.pyplot as plt
-import cvxpy as cp
 
 
 ''' 1) Creating a simple IMRT plan (Plan class, Optimization class)
@@ -149,9 +148,7 @@ for i in range(num_corr):
     A = inf_matrix.A
     opt = pp.Optimization(my_plan, opt_params=opt_params)
     x = opt.vars['x']
-    d = cp.Variable(A.shape[0], pos=True, name='d') # create dummy variable for dose
-    opt.create_cvxpy_problem(d=d)
-    opt.constraints += [d == A @ x + delta] # define new dose
+    opt.create_cvxpy_problem_correction(delta=delta)
     sol_corr = opt.solve(solver='MOSEK', verbose=False)
     
     dose_sparse_corr_1d = (inf_matrix.A @ sol_corr['optimal_intensity'] + delta) * my_plan.get_num_of_fractions()
@@ -184,10 +181,44 @@ for i in range(num_corr):
 
 
 # It can ben seen using above dvh plot that the discrepancy between sparse and full dose calculation has been reduced after 2 correction optimization loop. Users can modify 'num_corr' to modify the number of correction loop to get optimized dose similar to eclipse dose
+# Repeat above steps of importing fluence to eclipse, perform final dose calculation import the dose back to portpy
+# save fluence using correction optimization
+pp.get_eclipse_fluence(my_plan=my_plan, sol=sol_corr, path=os.path.join(r'C:\temp', data.patient_id))
+# Export corrected dose in dicom format from eclipse and specify it below
+dose_file_name = os.path.join(r'C:\temp', data.patient_id, 'rt_dose_corr.dcm')  # Use need to modify the file name accordingly
+ecl_dose_3d_corr = pp.convert_dose_rt_dicom_to_portpy(my_plan=my_plan, dose_file_name=dose_file_name)
+ecl_dose_1d_corr = inf_matrix.dose_3d_to_1d(dose_3d=ecl_dose_3d_corr)
 
-# plot 2d axial slice for the given solution and display the structures contours on the slice
-pp.Visualization.plot_2d_slice(my_plan=my_plan, sol=sol_corr, slice_num=40, struct_names=['PTV'])
+'''
+7) Comparing DVH of PortPy plan with Eclipse plan
+'''
+# compare dvh of our optimized porptpy plan with final plan in eclipse we got above)
+struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'LUNG_L','LUNG_R']
+fig, ax = plt.subplots(figsize=(12, 8))
+ax = pp.Visualization.plot_dvh(my_plan, dose_1d=ecl_dose_1d_corr, struct_names=struct_names, style='solid', ax=ax, norm_flag=True)
+ax = pp.Visualization.plot_dvh(my_plan, dose_1d=dose_sparse_corr_1d, struct_names=struct_names, style='dotted', ax=ax, norm_flag=True)
+ax.set_title('- Eclipse .. PortPy')
+plt.show()
+print('Done!')
 
+'''
+8) Visualize the DVH of PortPy plan with respect to Benchmark plan (Planner's plan)
+
+'''
+# import benchmark plan from the patient directory (planner's plan)
+# import planner's dose into portpy
+planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
+                                                     dose_file_name=os.path.join(data_dir, data.patient_id, 'rt_dose.dcm'))
+planner_dose_1d = inf_matrix.dose_3d_to_1d(dose_3d=planner_dose_3d)
+# compare dvh of our optimized plan with final dose calculation with benchmark plan (planner's plan)
+# Visualize the DVH discrepancy between eclipse dose and dose using full matrix in portpy
+struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'LUNG_L','LUNG_R']
+fig, ax = plt.subplots(figsize=(12, 8))
+ax = pp.Visualization.plot_dvh(my_plan, dose_1d=ecl_dose_1d_corr, struct_names=struct_names, style='solid', ax=ax, norm_flag=True)
+ax = pp.Visualization.plot_dvh(my_plan, dose_1d=planner_dose_1d, struct_names=struct_names, style='dotted', ax=ax, norm_flag=True)
+ax.set_title('- Optimized .. Benchmark')
+plt.show()
+print('Done!')
 
 
 

@@ -25,7 +25,7 @@ import os
 import portpy.photon as pp
 
 
-def ex_1_introduction():
+def basic_tutorial():
     """
      1) accessing the portpy data (DataExplorer class)
      Note: you first need to download the patient database from the link provided in the GitHub page.
@@ -57,16 +57,23 @@ def ex_1_introduction():
     # e.g. beams = pp.Beams(data, beam_ids=[0,10,20,30,40,50,60])
     beams = pp.Beams(data)
 
-    # create rinds based upon rind definition in optimization params
+    # In order to create an IMRT plan, we first need to specify a protocol which includes the disease site,
+    # the prescribed dose for the PTV, the number of fractions, and the radiation dose thresholds for OARs.
+    # These information are stored in .json files which can be found in a directory named "config_files".
+    # An example of such a file is 'Lung_2Gy_30Fx.json'. Here's how you can load these files:
     protocol_name = 'Lung_2Gy_30Fx'
-    opt_params = data.load_config_opt_params(protocol_name=protocol_name)
-    structs.create_opt_structures(opt_params)
-
-    # load influence matrix based upon beams and structure set
-    inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
-
     # load clinical criteria from the config files for which plan to be optimized
     clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
+
+    # Optimization problem formulation
+    protocol_name = 'Lung_2Gy_30Fx'
+    # Loading hyper-parameter values for optimization problem
+    opt_params = data.load_config_opt_params(protocol_name=protocol_name)
+    # Creating optimization structures (i.e., Rinds)
+    structs.create_opt_structures(opt_params=opt_params)
+    # Loading influence matrix
+    inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+
 
     """
     2) creating a simple IMRT plan using CVXPy (Plan class, Optimization class)
@@ -116,7 +123,10 @@ def ex_1_introduction():
 
     """ 
     4) evaluating the plan (Evaluation class) 
-    
+    The Evaluation class offers a set of methods for quantifying the optimized plan. 
+    If you need to compute individual dose volume metrics, you can use methods such as *get_dose* or *get_volume*. 
+    Furthermore, the class also facilitates the assessment of the plan based on a collection of metrics, 
+    such as mean, max, and dose-volume histogram (DVH), as specified in the clinical protocol. This capability is demonstrated below
     """
 
     # visualize plan metrics based upon clinical criteria
@@ -147,4 +157,4 @@ def ex_1_introduction():
 
 
 if __name__ == "__main__":
-    ex_1_introduction()
+    basic_tutorial()
