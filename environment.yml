@@ -49,4 +49,8 @@ dependencies:
     - tifffile==2021.11.2
     - typing==3.7.4.3
     - typing-extensions==4.4.0
+    - scikit-image>=0.17.2
+    - patchify>=0.2.3
+    - setuptools~=40.8.0
+    - pydicom>=2.2.0
 
