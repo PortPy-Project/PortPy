@@ -19,6 +19,8 @@ def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: Li
     """
     if path is None:
         path = os.getcwd()
+    if not os.path.exists(path):
+        os.makedirs(path)
     tol = 1e-06
     inf_matrix = sol['inf_matrix']
     optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)

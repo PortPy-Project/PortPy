@@ -1,0 +1,49 @@
+{
+  "tcia_patients": [	
+	{
+		"portpy_patient_id": "Lung_Patient_2",     
+		"subject_id": "LUNG1-002",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_3",     
+		"subject_id": "LUNG1-003",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_4",     
+		"subject_id": "LUNG1-005",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_5",     
+		"subject_id": "LUNG1-006",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_6",     
+		"subject_id": "LUNG1-007",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_7",     
+		"subject_id": "LUNG1-008",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_8",     
+		"subject_id": "LUNG1-009",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_9",     
+		"subject_id": "LUNG1-010",
+		"collection_id": "NSCLC-Radiomics"
+    },
+	{
+		"portpy_patient_id": "Lung_Patient_10",     
+		"subject_id": "LUNG1-011",
+		"collection_id": "NSCLC-Radiomics"
+    }
+    ]
+}

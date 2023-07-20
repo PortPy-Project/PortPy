@@ -83,7 +83,7 @@
     },
 	{
 		"type": "smoothness-quadratic",    
-        "weight": 10
+        "weight": 100
     }
 	],
 	"constraints":[

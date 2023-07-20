@@ -312,6 +312,40 @@ class DataExplorer:
         return json_data
 
     @staticmethod
+    def load_config_tcia_patients() -> dict:
+        """
+        Returns TCIA patients metadata
+
+        """
+        # load clinical criteria config metadata
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'tcia_patients', 'tcia_patients_metadata.json')
+        # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
+        # Opening JSON file
+        json_data = DataExplorer.load_json(fname)
+        return json_data
+
+    def get_tcia_metadata(self, patient_id: str = None):
+        """
+        Returns tcia patient metadata for the given PortPy patient id
+
+        """
+        if patient_id is None:
+            patient_id = self.patient_id
+        # load clinical criteria config metadata
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'tcia_patients', 'tcia_patients_metadata.json')
+        # fname = os.path.join('..', 'config_files', 'planner_plan', patient_id, 'planner_plan.json')
+        # Opening JSON file
+        json_data = DataExplorer.load_json(fname)
+        # Adjust smoothness weight in the objective function to have appropriate MU
+        patient_found = False
+        for i in range(len(json_data['tcia_patients'])):
+            if json_data['tcia_patients'][i]['portpy_patient_id'] == patient_id:
+                print(json_data['tcia_patients'][i])
+                patient_found = True
+        if not patient_found:
+            print('Invalid patient id')
+
+    @staticmethod
     def load_json(file_name):
         f = open(file_name)
         json_data = json.load(f)
