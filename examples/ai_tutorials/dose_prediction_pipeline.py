@@ -26,32 +26,6 @@ os.system('python test.py --dataroot ../../ai_data --netG unet_128 --name portpy
 patient_id = 'Lung_Patient_4'
 model_name = 'portpy_test_2'
 pred_dose = predict_using_model(patient_id=patient_id, in_dir=in_dir, model_name=model_name)
-# # # train the data
-# os.system(
-#     'python3 train.py --dataroot ./dataset --netG unet_128 --name {} --model doseprediction3d --direction AtoB --lambda_L1 1 --dataset_mode dosepred3d --norm batch --batch_size 1 --pool_size 0 --display_port 8097 --lr 0.0002 --input_nc 8 --output_nc 1 --display_freq 10 --print_freq 1 --gpu_ids 0'.format(
-#         model_name))
-# #
-# # # create prediction for the test data
-# os.system(
-#     'python3 test.py --dataroot ./dataset --netG unet_128 --name {} --phase test --mode eval --model doseprediction3d --input_nc 8 --output_nc 1 --direction AtoB --dataset_mode dosepred3d --norm batch'.format(
-#         model_name))
-# #
-# # # os.system('python3 ./openkbp-stats/dvh-stats-open-kbp.py --planName {}'.format(planName))
-# os.system('python3 ./statistics/compute_dvh_stats.py --planName {}'.format(model_name))
-# #
-# #
-# # # convert predicted dose to portpy resolution
-# os.system('python3 ./preprocess/pred_dose_to_original_portpy.py --planName {} --in_dir {}'.format(model_name, in_dir))
-
-# # evaluation
-# pred_dir = r'./results/{}/test_latest/npz_images'.format(model_name)
-# out_dir = r'./results/{}/test_latest/pred_dose'.format(model_name)
-
-# import the predicted dose back to portpy
-patient_id = 'Lung_Patient_4'
-# pred_dose_img = sitk.ReadImage(os.path.join(out_dir, case + '_pred_dose_original_resolution.nrrd'))
-# pred_dose = sitk.GetArrayFromImage(pred_dose_img)
-pred_dose = predict_using_model(patient_id=patient_id, in_dir=in_dir, model_name=model_name)
 
 # load portpy data
 data = pp.DataExplorer(data_dir=in_dir)

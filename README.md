@@ -31,7 +31,7 @@ PortPy facilitates the **design**, **testing**, and **clinical validation** of y
      * Dose Volume Histogram (DVH) constraints (see [dvh_constraint_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmarks/dvh_constraint_optimization.ipynb))
      * IMRT Beam Orientation Optimization (BOO) (see [beam_orientation_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmarks/beam_orientation_optimization.ipynb))
      * Volumetric Modulated Arc Therapy (VMAT) (see [vmat_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmarks/vmat_optimization.ipynb))
-4. **Visulaization**
+4. **Visualization**
      * Basic built-in visualization tools (e.g., DVH, dose distribution) are integrated into PortPy (see (see [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb)))
      * Enhanced visualizations are available through the integration with the popular open-source [3DSlicer](https://www.slicer.org/) package (see [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb))
 5. **Evaluation**  
@@ -42,7 +42,7 @@ PortPy facilitates the **design**, **testing**, and **clinical validation** of y
      * PortPy provides high-level optimization problem formulation and access to both free and commercial optimization engines through the integration with a popular open-source [CVXPy](https://www.cvxpy.org/) package (see [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb))
      * Commercial engines (e.g., [MOSEK](https://www.mosek.com/), [CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio/cplex-optimizer), [GUROBI](https://www.gurobi.com/)) are also free for academic and research use
 7. **AI-Based Planning** 
-     * The PortPy.AI module provides a framework for exploring AI-driven treatment planning
+     * The PortPy.AI module provides a framework for exploring AI-driven treatment planning  (see [dose_prediction_pipeline.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/ai_tutorials/dose_prediction_pipeline.ipynb))
      * The newly added PortPy.AI module includes a tutorial on predicting a 3D-dose distribution and converting the prediction into a deliverable plan
 
 # Quick Start <a name="QuickStart"></a>
