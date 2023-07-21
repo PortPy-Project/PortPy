@@ -21,14 +21,24 @@ This example demonstrates the following main functionalities of portpy_photon:
 
 """
 import os
-
 import portpy.photon as pp
 
 
 def basic_tutorial():
     """
-     1) accessing the portpy data (DataExplorer class)
-     Note: you first need to download the patient database from the link provided in the GitHub page.
+     1) Accessing the portpy data (DataExplorer class)
+
+     PortPy provides researchers with a comprehensive benchmark patient dataset derived from an FDA-approved Eclipse commercial treatment planning system via its API.
+     This dataset includes all the necessary components for optimizing various machine settings such as beam angles, aperture shapes, and leaf movements.
+     In addition to the CT images and delineated contours, the dataset includes:
+     1. **Dose Influence Matrix:** The dose contribution of each beamlet to each voxel,
+     2. **Beamlets/Voxels Details:** Detailed information about the position and size of beamlets/voxels,
+     3. **Expert-Selected Benchmark Beams:** An expert clinical physicist has carefully selected benchmark beams,
+     providing reference beams for comparison and benchmarking,
+     4. **Benchmark IMRT Plan:** A benchmark IMRT plan generated using MSK in-house automated treatment planning
+     system called [ECHO](https://youtu.be/895M6j5KjPs). This plan serves as a benchmark for evaluating new treatment planning algorithms.
+
+     To start using this resource, users are required to download the latest version of the dataset, which can be found at (https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit). Then, the dataset can be accessed as demonstrated below.
 
     """
 
@@ -74,8 +84,8 @@ def basic_tutorial():
     # Loading influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
-
     """
+    
     2) creating a simple IMRT plan using CVXPy (Plan class, Optimization class)
     Note: you can call different opensource / commercial optimization engines from CVXPy.
       For commercial engines (e.g., Mosek, Gorubi, CPLEX), you first need to obtain an appropriate license.
@@ -86,7 +96,7 @@ def basic_tutorial():
     
     """
     # create a plan using ct, structures, beams and influence matrix. Clinical criteria is optional
-    my_plan = pp.Plan(ct, structs, beams, inf_matrix, clinical_criteria)
+    my_plan = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix, clinical_criteria=clinical_criteria)
 
     # create cvxpy problem using the clinical criteria and optimization parameters
     opt = pp.Optimization(my_plan, opt_params=opt_params)

@@ -14,39 +14,41 @@ import matplotlib.pyplot as plt
 def down_sampling():
     """
 
-    0) Creating a plan using the original data resolution
+    1) Creating a plan using the original data resolution
     """
-    # Create my_plan object for the planner beams.
-    data_dir = r'../../data'
-    # display the existing patients in console or browser.
+    # specify the patient data location.
+    data_dir = r'../data'
+    # Use PortPy DataExplorer class to explore PortPy data
     data = pp.DataExplorer(data_dir=data_dir)
-    data.patient_id = 'Lung_Phantom_Patient_1'
-
-    # Load ct, structure and beams as an object
+    # Pick a patient
+    data.patient_id = 'Lung_Patient_2'
+    # Load ct, structure set, beams for the above patient using CT, Structures, and Beams classes
     ct = pp.CT(data)
     structs = pp.Structures(data)
     beams = pp.Beams(data)
-
-    # create extra optimization structures based upon structure definition in optimization params
+    # Pick a protocol
     protocol_name = 'Lung_2Gy_30Fx'
-    opt_params = data.load_config_opt_params(protocol_name=protocol_name)
-    structs.create_opt_structures(opt_params)
-
-    # load influence matrix based upon beams and structure set
-    inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
-
-    # load clinical criteria from the config files for which plan to be optimized
+    # Load clinical criteria for a specified protocol
     clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
 
-    my_plan = pp.Plan(ct, structs, beams, inf_matrix, clinical_criteria)
+    # Load hyper-parameter values for optimization problem for a specified protocol
+    opt_params = data.load_config_opt_params(protocol_name=protocol_name)
+    # Create optimization structures (i.e., Rinds)
+    structs.create_opt_structures(opt_params=opt_params)
+    # Load influence matrix
+    inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
-    # ### Run Optimization
-    opt = pp.Optimization(my_plan, opt_params=opt_params)
+    # Create a plan using ct, structures, beams and influence matrix, and clinical criteria
+    my_plan = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix, clinical_criteria=clinical_criteria)
+
+    # Create cvxpy problem using the clinical criteria and optimization parameters
+    opt = pp.Optimization(my_plan, opt_params=opt_params, clinical_criteria=clinical_criteria)
     opt.create_cvxpy_problem()
-    sol_orig = opt.solve(solver='MOSEK', verbose=True)
+    # Solve the cvxpy problem using Mosek
+    sol_orig = opt.solve(solver='MOSEK', verbose=False)
 
     """
-     1) Creating a plan using down-sampled beamlets 
+     2) Creating a plan using down-sampled beamlets 
      
     """
     # Note: PortPy only allows down-sampling beamlets as a factor of original finest beamlet resolution
@@ -73,7 +75,7 @@ def down_sampling():
     sol_db = opt.solve(solver='MOSEK', verbose=False)
 
     """
-    2) Cost of Down-sampling beamlets
+    3) Cost of Down-sampling beamlets
     
     """
 
@@ -87,32 +89,42 @@ def down_sampling():
     plt.show()
 
     """
-     3) Creating plan using down-sampled voxels 
+     4) Creating plan using down-sampled voxels 
 
     """
-    # Note: PortPy only allows down-sampling voxels as a factor of ct voxel resolutions resolution
+    # Note: PortPy only allows down-sampling voxels as a factor of ct voxel resolutions
     # PortPy can down-sample optimization voxels as factor of ct voxels.
-    # Down sample voxels by a factor of 7 in x, y and 2 in z direction
-    voxel_down_sample_factors = [7, 7, 2]
+    # Down sample voxels by a factor of 5 in x, y and 1 in z direction
+    voxel_down_sample_factors = [5, 5, 1]
 
     # Calculate the new voxel resolution
     print('CT voxel resolution in xyz is {} mm'.format(ct.get_ct_res_xyz_mm()))
-    print('Data optimization voxel resolution in xyz is {} mm'.format(structs.opt_voxels_dict['dose_voxel_resolution_xyz_mm']))
+    print('Data optimization voxel resolution in xyz is {} mm'.format(
+        structs.opt_voxels_dict['dose_voxel_resolution_xyz_mm']))
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
+    print('Down Sampled optimization voxel resolution in xyz is {} mm'.format(opt_vox_xyz_res_mm))
     inf_matrix_dv = inf_matrix.create_down_sample(opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
     # running optimization using down sampled voxels
-    # create cvxpy problem with max and mean dose clinical criteria and the above objective functions
     opt = pp.Optimization(my_plan, opt_params=opt_params, inf_matrix=inf_matrix_dv)
     opt.create_cvxpy_problem()
     sol_dv = opt.solve(solver='MOSEK', verbose=False)
 
     """
-    4) Cost and discrepancy of Down-sampling voxels 
+    5) Cost of voxels down-sampling
+    
+    Down-sampling beamlets and voxels impacts plan quality in different ways. Down-sampling beamlets can be equated to 
+    merging some neighboring beamlets, effectively requiring some adjacent beamlets to share the same intensity. 
+    This can lead to a compromise in plan quality.
+
+    On the other hand, down-sampling voxels is analogous to merging some neighboring voxels. 
+    This leads to less accurate dose calculations during optimization and consequently results in a discrepancy 
+    between the optimized dose calculated using the original matrix and the down-sampled matrix. 
 
     """
-    # Similarly to analyze the cost of down sampling voxels, lets compare the dvh of down sampled voxels with original
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
+    # To calculate the accurate dose for the down-sampled solution, we first replace the down-sampled influence matrix
+    # with the original influence matrix
     sol_dv_new = inf_matrix_dv.sol_change_inf_matrix(sol_dv, inf_matrix=sol_orig['inf_matrix'])
     fig, ax = plt.subplots(figsize=(12, 8))
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_orig, struct_names=struct_names, style='solid', ax=ax)
@@ -120,7 +132,7 @@ def down_sampling():
     ax.set_title('Cost of Down-Sampling Voxels  - Original .. Down-Sampled Voxels')
     plt.show()
 
-    # To get the discrepancy due to down sampling voxels
+    # Calculate the discrepancy
     fig, ax = plt.subplots(figsize=(12, 8))
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv_new, struct_names=struct_names, style='solid', ax=ax)
     ax = pp.Visualization.plot_dvh(my_plan, sol=sol_dv, struct_names=struct_names, style='dotted', ax=ax)

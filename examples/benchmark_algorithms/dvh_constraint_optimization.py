@@ -1,9 +1,9 @@
 """
     This example demonstrates the use of portpy_photon to create down sampled influence matrix and
     optimize it with exact dvh constraints for benchmarking
-    1- Down sample influence matrix and create a plan without dvh constraint
-    2- Add exact DVH constraint and create a plan
-    3- Evaluate and compare the plans
+    1- Creating an IMRT plan without DVH constraints on down-sampled data
+    2- Obtaining the benchmark global optimal solution
+    3- Comparing the plans with/without DVH constraints
 """
 import portpy.photon as pp
 import matplotlib.pyplot as plt
@@ -12,28 +12,36 @@ import cvxpy as cp
 
 def dvh_constraint_optimization():
     """
-    1) Create down sampled influence matrix and generate a plan without DVH constraint
+    1) Creating an IMRT plan without DVH constraints on down-sampled data
+
+    **Note:** When benchmarking your DVH constraint algorithm against the globally optimal solution derived from MIP,
+    it's crucial to use downsampled data in both the MIP and your algorithm. This ensures a fair comparison.
+    In this example, we are only comparing the plan without DVH constraints against the benchmark MIP plan.
 
     """
-    # Create plan object
+    # Pick a patient
     data_dir = r'../../data'
     data = pp.DataExplorer(data_dir=data_dir)
     patient_id = 'Lung_Phantom_Patient_1'
     data.patient_id = patient_id
 
-    # Load ct, structure and beams as an object
+    # Load ct, structure and beams objects
     ct = pp.CT(data)
     structs = pp.Structures(data)
     beams = pp.Beams(data)
 
-    # create rinds based upon rind definition in optimization params
-    opt_params = data.load_config_opt_params(protocol_name='Lung_2Gy_30Fx')
-    structs.create_opt_structures(opt_params)
-
-    # load influence matrix based upon beams and structure set
+    # Pick a protocol
+    protocol_name = 'Lung_2Gy_30Fx'
+    # Load clinical criteria for a specified protocol
+    clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
+    # Load hyper-parameter values for optimization problem for a specified protocol
+    opt_params = data.load_config_opt_params(protocol_name=protocol_name)
+    # Create optimization structures (i.e., Rinds)
+    structs.create_opt_structures(opt_params=opt_params)
+    # Load influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
-    # create a influence matrix down sampled beamlets of width and height 10mm and down sampled voxels
+    # create down-sampled influence matrix
     voxel_down_sample_factors = [7, 7, 2]
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
     beamlet_down_sample_factor = 4
@@ -44,48 +52,44 @@ def dvh_constraint_optimization():
                                                    beamlet_height_mm=new_beamlet_height_mm,
                                                    opt_vox_xyz_res_mm=opt_vox_xyz_res_mm)
 
-    # load clinical criteria from the config files for which plan to be optimized
-    protocol_name = 'Lung_2Gy_30Fx'
-    clinical_criteria = pp.ClinicalCriteria(data, protocol_name)
+    # create a plan
 
     my_plan = pp.Plan(ct, structs, beams, inf_matrix_dbv, clinical_criteria)
 
+    # create a cvxpy optimization object
     opt = pp.Optimization(my_plan, opt_params=opt_params)
     opt.create_cvxpy_problem()
-    sol_no_dvh = opt.solve(solver='MOSEK', verbose='True')
+    # solve the problem
+    sol_no_dvh = opt.solve(solver='MOSEK', verbose=False)
 
     """
-    2) Add exact DVH constraint and generate a plan with DVH constraint
+    2) Obtaining the benchmark global optimal solution
 
     """
     # Add a dvh constraint V(10Gy) <= 15% for CORD as shown below
     dvh_org = 'CORD'
-    dose_gy =  10
+    dose_gy = 10
     limit_volume_perc = 15
 
     # extract data for dvh constraint
-    A = inf_matrix_dbv.A # down sample influence matrix
-    x = opt.vars['x'] # optimization variable
-    M = 50 # set Big M for dvh constraint
-    frac = my_plan.structures.get_fraction_of_vol_in_calc_box(dvh_org) # get fraction of dvh organ volume inside dose calculation box
+    A = inf_matrix_dbv.A  # down sample influence matrix
+    x = opt.vars['x']  # optimization variable
+    M = 50  # set Big M for dvh constraint
+    # Get fraction of organ volume inside the dose calculation box.
 
-
-    # Create binary variable for dvh constraint
-    b_dvh = cp.Variable(
+    # Add binary variables and constraints for dvh constraint
+    b = cp.Variable(
         len(inf_matrix_dbv.get_opt_voxels_idx('CORD')),
         boolean=True)
-
-    # Add dvh constraint
-    opt.constraints += [
-        A[inf_matrix_dbv.get_opt_voxels_idx(dvh_org), :] @ x <= dose_gy / my_plan.get_num_of_fractions()
-        + b_dvh * M]
-    opt.constraints += [b_dvh @ inf_matrix_dbv.get_opt_voxels_volume_cc(dvh_org) <= (limit_volume_perc / frac) / 100 * sum(
+    opt.constraints += [A[inf_matrix_dbv.get_opt_voxels_idx(dvh_org), :] @ x <= dose_gy / my_plan.get_num_of_fractions() + b * M]
+    opt.constraints += [b @ inf_matrix_dbv.get_opt_voxels_volume_cc(dvh_org) <= limit_volume_perc / 100 * sum(
         inf_matrix_dbv.get_opt_voxels_volume_cc(dvh_org))]
-    sol_dvh = opt.solve(solver='MOSEK', verbose='True')
+
+    sol_dvh = opt.solve(solver='MOSEK', verbose=False)
 
     # plot dvh dvh for both the cases
     """
-    3) Visualize the plans with and without DVH constraint
+    3) Comparing the plans with/without DVH constraints
     
     """
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -95,10 +99,7 @@ def dvh_constraint_optimization():
     ax.plot(dose_gy, limit_volume_perc, marker='x', color='red', markersize=20)
     ax.set_title('- Without DVH  .. With DVH')
     plt.show()
-
-    # visualize 2d dose_1d for both the cases
-    pp.Visualization.plot_2d_slice(my_plan, sol=sol_no_dvh, struct_names=struct_names)
-    pp.Visualization.plot_2d_slice(my_plan, sol=sol_dvh, struct_names=struct_names)
+    print('Done!')
 
     print('Done!')
 
