@@ -14,8 +14,9 @@ PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herap
 - [How to contribute?](#limitations)
 - [The limitations of current version](#limitations)
 - [Data](#Data)
-- [Team](#Team)
 - [Installation](#Installation)
+- [Team](#Team)
+
 
 
 
