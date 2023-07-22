@@ -79,7 +79,6 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 To access these resources, users are advised to download the latest version of the dataset, which can be found [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing). Subsequently, create a directory titled './data' in the current project directory and transfer the downloaded file into it. For example, ./data/Lung_Phantom_Patient_1.
 
 
-To start using this resource, users are required to download the latest version of the dataset, which can be found [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing). Then, create a directory named './data' in the current project directory and copy the downloaded file to it, e.g ./data/Lung_Phantom_Patient_1.
 
 **Note:** Initially, we utilize a lung dataset from [TCIA](https://www.cancerimagingarchive.net/). The original DICOM CT images and structure sets are not included in the PortPy dataset and need to be directly downloaded from TCIA. Users can fetch the **TCIA collection ID** and the **TCIA subject ID** for each PortPy patient using the *get_tcia_metadata()* method in PortPy and subsequently download the data from TCIA (see [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb))
 
