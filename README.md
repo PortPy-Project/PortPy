@@ -25,7 +25,7 @@ PortPy facilitates the **design**, **testing**, and **clinical validation** of y
 1. **Benchmark Dataset**
      * Access to data required for optimization, extracted directly from the FDA-approved Eclipse treatment planning system via its API 
      * A current set of data from 10 lung patients, which will be expanded to 100 lung patients by the end of September 2023
-     * A **benchmark IMRT plan** for each patient, created using our in-house automated planning system ([YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572))
+     * A **benchmark IMRT plan** for each patient, created using our in-house automated planning system ([Edelman Award Finalist YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572))
    
 2. **Benchmark Algorithms:** Offering globally optimal solutions for:
      * Dose Volume Histogram (DVH) constraints (see [dvh_constraint_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmarks/dvh_constraint_optimization.ipynb))
@@ -63,9 +63,9 @@ If you're interested in contributing to existing PortPy modules or wish to creat
 # The limitations of current version of PortPy <a name="limitations"></a>
 Current version of PortPy has the following limitations which would be addressed in the future updates:
 
-1. You can only work with the benchmark dataset provided in PortPy and cannot use your own dataset
-2. PortPy.Photon and PortPy.AI are the only modules avaiable. You cannot do proton research now
-3. You can only import the optimal fluence of PortPy-IMRT plans into Eclipse. Support for importing control points, VMAT plans, and other commercial systems would be added in the future
+1. You can only work with the benchmark dataset provided in this PortPy repo and cannot use your own dataset for now.
+2. PortPy.Photon and PortPy.AI are the only modules available. You cannot do proton research with the current version.
+3. You can only import the optimal fluence of PortPy-IMRT plans into Eclipse. Support for importing control points, VMAT plans, and other commercial systems will be added in the future updates.
 
 # Data <a name="Data"></a>
 
@@ -74,13 +74,13 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 1. **Dose Influence Matrix:** The dose contribution of each beamlet to each voxel,
 2. **Beamlets/Voxels Details:** Detailed information about the position and size of beamlets/voxels,
 3. **Expert-Selected Benchmark Beams:** An expert clinical physicist has carefully selected benchmark beams, providing reference beams for comparison and benchmarking,
-4. **Benchmark IMRT Plan:** A benchmark IMRT plan generated using our in-house automated treatment planning system called ECHO ([YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572)). This plan serves as a benchmark for evaluating new treatment planning algorithms.
+4. **Benchmark IMRT Plan:** A benchmark IMRT plan generated using our in-house automated treatment planning system called ECHO ([Edelman Award Finalist YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572)). This plan serves as a benchmark for evaluating new treatment planning algorithms.
 
 To access these resources, users are advised to download the latest version of the dataset, which can be found [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing). Subsequently, create a directory titled './data' in the current project directory and transfer the downloaded file into it. For example, ./data/Lung_Phantom_Patient_1.
 
 
 
-**Note:** Initially, we utilize a lung dataset from [TCIA](https://www.cancerimagingarchive.net/). The original DICOM CT images and structure sets are not included in the PortPy dataset and need to be directly downloaded from TCIA. Users can fetch the **TCIA collection ID** and the **TCIA subject ID** for each PortPy patient using the *get_tcia_metadata()* method in PortPy and subsequently download the data from TCIA (see [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb))
+**Note:** Initially, we will utilize a lung dataset from [TCIA](https://www.cancerimagingarchive.net/). The original DICOM CT images and structure sets are not included in the PortPy dataset and need to be directly downloaded from the TCIA. Users can fetch the **TCIA collection ID** and the **TCIA subject ID** for each PortPy patient using the *get_tcia_metadata()* method in PortPy and subsequently download the data from TCIA (see [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb))
 
 
 # Installation <a name="Installation"></a>
