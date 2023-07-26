@@ -225,8 +225,7 @@ def process_case(ct_portpy, meta_data, ct, oar, ptv, beamlet, out_dir, case, dos
 
 
 def predict_using_model(patient_id, in_dir, model_name='portpy_test_1', out_dir=r'./dataset/test'):
-    # model_name = 'portpy_test_1'
-    # in_dir = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\PortPy\data'
+
     gt_dir = r'./results/{}/test_latest/npz_images'.format(model_name)  # directory to save predicted results
     # directory to save preprocessed data
 

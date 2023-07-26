@@ -236,8 +236,6 @@ parser.add_argument("--out_dir", required=False, help="Enter out dir having pati
 args, _ = parser.parse_known_args()
 in_dir = args.in_dir
 out_dir = args.out_dir
-# in_dir = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\PortPy\data'
-# out_dir = r'\\pisidsmph\Treatplanapp\ECHO\Research\Data_newformat\PortPy_AI\dataset'
 
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
@@ -258,6 +256,7 @@ for idx, case in enumerate(cases):
     try:
 
         if case == 'Lung_Phantom_Patient_1' or case == 'Lung_Patient_8':
+            # These patient doesnt include some structures. Modify code in future
             continue
         print('Processing case {}: {} of {} ...'.format(case, idx + 1, len(cases)))
         # read dicom CT and write it in out_dir

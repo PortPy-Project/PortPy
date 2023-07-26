@@ -874,6 +874,9 @@ class InfluenceMatrix:
             counts * np.prod(plan_obj.get_ct_res_xyz_mm())/1000)  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(structure_name)
 
+    def get_fraction_of_vol_in_calc_box(self, structure_name: str):
+        return self._structs.get_fraction_of_vol_in_calc_box(structure_name=structure_name)
+
     def get_opt_voxels_idx(self, structure_name: str) -> np.ndarray:
         """
         Get voxel index for struct_name

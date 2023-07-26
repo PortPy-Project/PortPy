@@ -82,7 +82,7 @@ class Structures:
         ind = self.structures_dict['name'].index(structure_name)
         return self.structures_dict['structure_mask_3d'][ind]
 
-    def union(self, struct_1_name: str, struct_2_name: str, new_struct_name: str) -> None:
+    def union(self, struct_1_name: str, struct_2_name: str, new_struct_name: str = None, return_mask=False):
         """
         Create union of two structures struct_1_name and struct_2_name. If str1_or_str2 is not in structures dict,
         it will create new structures. If str1_or_str2 is in structure_dict, it will modify the struct_name
@@ -92,19 +92,22 @@ class Structures:
         :param new_struct_name: struct_name name for the union of  struct_name 1 and 2
         :return: create union of the structures and save it to structures list
         """
-        if new_struct_name is None:
-            raise Exception("new_struct_name need to be provided")
+
         ind1 = self.structures_dict['name'].index(struct_1_name)
         ind2 = self.structures_dict['name'].index(struct_2_name)
         mask_3d_1 = self.structures_dict['structure_mask_3d'][ind1]
         mask_3d_2 = self.structures_dict['structure_mask_3d'][ind2]
         new_mask_3d_1 = mask_3d_1 | mask_3d_2
-        if new_struct_name not in self.structures_dict['name']:
-            self.create_structure(new_struct_name=new_struct_name, mask_3d=new_mask_3d_1)
-        else:
-            self.modify_structure(struct_name=new_struct_name, mask_3d=new_mask_3d_1)
 
-    def intersect(self, struct_1_name: str, struct_2_name: str, new_struct_name: str) -> None:
+        if new_struct_name is not None:
+            if new_struct_name not in self.structures_dict['name']:
+                self.create_structure(new_struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+            else:
+                self.modify_structure(struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+        if return_mask:
+            return new_mask_3d_1
+
+    def intersect(self, struct_1_name: str, struct_2_name: str, new_struct_name: str = None, return_mask=False):
         """
         Create intersection of two structures struct_1_name and struct_2_name. If str1_and_str2 is not in structures dict,
         it will create new structures. If str1_and_str2 is in structure_dict, it will modify the struct_name
@@ -112,41 +115,49 @@ class Structures:
         :param struct_1_name: struct_name name for the 1st struct_name
         :param struct_2_name: struct_name name for the 2nd struct_name
         :param new_struct_name: struct_name name for the intersection of  struct_name 1 and 2
+        :param return_mask: return 3d mask
         :return: create intersection of the structures and save it to structures list
         """
-        if new_struct_name is None:
-            raise Exception("new_struct_name need to be provided")
+
         ind1 = self.structures_dict['name'].index(struct_1_name)
         ind2 = self.structures_dict['name'].index(struct_2_name)
         mask_3d_1 = self.structures_dict['structure_mask_3d'][ind1]
         mask_3d_2 = self.structures_dict['structure_mask_3d'][ind2]
         new_mask_3d_1 = mask_3d_1 & mask_3d_2
+
         if new_struct_name not in self.structures_dict['name']:
             self.create_structure(new_struct_name=new_struct_name, mask_3d=new_mask_3d_1)
         else:
             self.modify_structure(struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+        if return_mask:
+            return new_mask_3d_1
 
-    def subtract(self, struct_1_name: str, struct_2_name: str, new_struct_name: str) -> None:
+    def subtract(self, struct_1_name: str, struct_2_name: str, new_struct_name: str = None, return_mask=False):
         """
         :param struct_1_name: struct_name name for the 1st struct_name
         :param struct_2_name: struct_name name for the 2nd struct_name
         :param new_struct_name: struct_name name for subtracting 2 from 1
+        :param return_mask: return 3d mask of the structure
         :return: create structure1 - structure2 and save it to list
         """
-        if new_struct_name is None:
-            raise Exception("new_struct_name need to be provided")
+
         ind1 = self.structures_dict['name'].index(struct_1_name)
         ind2 = self.structures_dict['name'].index(struct_2_name)
-        mask_3d_1 = self.structures_dict['structure_mask_3d'][ind1]
-        mask_3d_2 = self.structures_dict['structure_mask_3d'][ind2]
-        new_mask_3d_1 = mask_3d_1 - mask_3d_2
-        new_mask_3d_1[new_mask_3d_1 < 0] = np.uint8(0)
-        if new_struct_name not in self.structures_dict['name']:
-            self.create_structure(new_struct_name=new_struct_name, mask_3d=new_mask_3d_1)
-        else:
-            self.modify_structure(struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+        mask_3d_1 = deepcopy(self.structures_dict['structure_mask_3d'][ind1])
+        mask_3d_2 = deepcopy(self.structures_dict['structure_mask_3d'][ind2])
+        new_mask_3d_1 = mask_3d_1.astype(int) - mask_3d_2.astype(int)  # convert to integer before doing the operation
+        new_mask_3d_1[new_mask_3d_1 < 0] = int(0)
+        new_mask_3d_1.astype('uint8')
+        if new_struct_name is not None:
+            if new_struct_name not in self.structures_dict['name']:
+                self.create_structure(new_struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+            else:
+                self.modify_structure(struct_name=new_struct_name, mask_3d=new_mask_3d_1)
+        if return_mask:
+            return new_mask_3d_1
 
-    def expand(self, struct_name: str, margin_mm: float, new_struct_name: str) -> None:
+    def expand(self, struct_name: str = None, margin_mm: float = None, new_struct_name: str = None,
+               return_mask: bool = False, mask_3d: np.ndarray = None):
         """
 
         Expand the struct_name with the given margin_mm.
@@ -159,8 +170,9 @@ class Structures:
         """
         # from skimage import data, morphology, transform
         from scipy import ndimage
-        ind = self.structures_dict['name'].index(struct_name)
-        mask_3d = self.structures_dict['structure_mask_3d'][ind]
+        if mask_3d is None:
+            ind = self.structures_dict['name'].index(struct_name)
+            mask_3d = self.structures_dict['structure_mask_3d'][ind]
 
         # getting kernel size for expansion or shrinking
         if margin_mm > 0:
@@ -185,12 +197,16 @@ class Structures:
             margin_mask_3d = mask_3d
         else:
             raise ValueError('Invalid margin {}'.format(margin_mm))
-        if new_struct_name not in self.structures_dict['name']:
-            self.create_structure(new_struct_name=new_struct_name, mask_3d=margin_mask_3d)
-        else:
-            self.modify_structure(struct_name=struct_name, mask_3d=margin_mask_3d)
+        if new_struct_name is not None:
+            if new_struct_name not in self.structures_dict['name']:
+                self.create_structure(new_struct_name=new_struct_name, mask_3d=margin_mask_3d)
+            else:
+                self.modify_structure(struct_name=struct_name, mask_3d=margin_mask_3d)
+        if return_mask:
+            return margin_mask_3d
 
-    def shrink(self, struct_name: str, margin_mm: float, new_struct_name: str) -> None:
+    def shrink(self, struct_name: str = None, margin_mm: float = None, new_struct_name: str = None,
+               return_mask: bool = False, mask_3d: np.ndarray = None):
         """
         Shrink the struct_name with margin_mm.
 
@@ -202,8 +218,10 @@ class Structures:
         """
 
         from scipy import ndimage
-        ind = self.structures_dict['name'].index(struct_name)
-        mask_3d = self.structures_dict['structure_mask_3d'][ind]
+        if mask_3d is None:
+            ind = self.structures_dict['name'].index(struct_name)
+            mask_3d = self.structures_dict['structure_mask_3d'][ind]
+
 
         # getting kernel size for expansion or shrinking
         num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
@@ -223,39 +241,85 @@ class Structures:
                                                         iterations=iterations_in_one_step).astype(mask_3d.dtype)
 
             # margin_mask_3d = ndimage.binary_dilation(mask_3d, struct_name=struct_name).astype(mask_3d.dtype)
-        if new_struct_name not in self.structures_dict['name']:
-            self.create_structure(new_struct_name=new_struct_name, mask_3d=margin_mask_3d)
-        else:
-            self.modify_structure(struct_name=struct_name, mask_3d=margin_mask_3d)
+        if new_struct_name is not None:
+            if new_struct_name not in self.structures_dict['name']:
+                self.create_structure(new_struct_name=new_struct_name, mask_3d=margin_mask_3d)
+            else:
+                self.modify_structure(struct_name=struct_name, mask_3d=margin_mask_3d)
+        if return_mask:
+            return margin_mask_3d
 
-    def create_opt_structures(self, opt_params):
+    def create_opt_structures(self, opt_params=None, clinical_criteria=None):
         # create rinds for optimization
-        opt_params = opt_params['opt_structures']
         ct_to_dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
         dose_mask = ct_to_dose_map >= 0
         dose_mask = dose_mask.astype(int)
         self.create_structure('dose_mask', dose_mask)
 
-        print('creating rinds.. This step may take some time due to dilation')
-        for ind, opt_param in enumerate(opt_params):
-            if opt_param['type'] == 'rind':
-                param = opt_param['parameters']
-                rind_name = param['name']
-                first_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_start_mm'])
-                second_dummy_name = '{}_{}'.format(param['ref_structure'], param['margin_end_mm'])
-                self.expand(param['ref_structure'], margin_mm=param['margin_start_mm'],
-                            new_struct_name=first_dummy_name)
-                if param['margin_end_mm'] == 'inf':
-                    param['margin_end_mm'] = 500
-                self.expand(param['ref_structure'], margin_mm=param['margin_end_mm'],
-                            new_struct_name=second_dummy_name)
-                self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
-                self.delete_structure(first_dummy_name)
-                self.delete_structure(second_dummy_name)
-                self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
-        self.delete_structure('dose_mask')
+        obj_funcs = []
+        opt_params_constraints = []
+        criteria = []
+        if opt_params is not None:
+            obj_funcs = opt_params['objective_functions'] if 'objective_functions' in opt_params else []
+            opt_params_constraints = opt_params['constraints'] if 'constraints' in opt_params else []
 
-        print('rinds created!!')
+        if clinical_criteria is not None:
+            criteria = clinical_criteria.clinical_criteria_dict['criteria']
+
+        opt_obj_cons = obj_funcs + opt_params_constraints
+        print('creating rinds.. This step may take some time due to dilation')
+        for ind, obj in enumerate(opt_obj_cons):
+            if 'structure_def' in obj:
+                structure_def = obj['structure_def']
+                if obj['structure_name'] not in self.get_structures():
+                    if structure_def['type'] == 'rind':
+                        # param = structure_def['parameters']
+                        rind_name = obj['structure_name']
+                        first_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_start_mm'])
+                        second_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_end_mm'])
+                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_start_mm'],
+                                    new_struct_name=first_dummy_name)
+                        if structure_def['margin_end_mm'] == 'inf':
+                            structure_def['margin_end_mm'] = 500
+                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_end_mm'],
+                                    new_struct_name=second_dummy_name)
+                        self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
+                        self.delete_structure(first_dummy_name)
+                        self.delete_structure(second_dummy_name)
+                        self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
+                    if structure_def['type'] == 'boolean':
+                        expression = structure_def['expression']
+                        mask_3d = self.evaluate_expression(expression)
+                        self.create_structure(new_struct_name=obj['structure_name'], mask_3d=mask_3d)
+
+        for ind, criterion in enumerate(criteria):
+            if 'structure_def' in criterion['parameters']:
+                param = criterion['parameters']
+                structure_def = param['structure_def']
+                if param['structure_name'] not in self.get_structures():
+                    if structure_def['type'] == 'rind':
+                        # param = structure_def['parameters']
+                        rind_name = param['structure_name']
+                        first_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_start_mm'])
+                        second_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_end_mm'])
+                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_start_mm'],
+                                    new_struct_name=first_dummy_name)
+                        if structure_def['margin_end_mm'] == 'inf':
+                            structure_def['margin_end_mm'] = 500
+                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_end_mm'],
+                                    new_struct_name=second_dummy_name)
+                        self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
+                        self.delete_structure(first_dummy_name)
+                        self.delete_structure(second_dummy_name)
+                        self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
+                    if structure_def['type'] == 'boolean':
+                        expression = structure_def['expression']
+                        mask_3d = self.evaluate_expression(expression)
+                        self.create_structure(new_struct_name=param['structure_name'], mask_3d=mask_3d)
+        if 'dose_mask' in self.get_structures():
+            self.delete_structure('dose_mask')
+
+        print('Optimization structures created!!')
         # for param in rind_params:
         #     self.set_opt_voxel_idx(struct_name=param['name'])
         self.preprocess_structures()
@@ -290,6 +354,19 @@ class Structures:
                 self.structures_dict['name'].append(new_struct_name)
             elif key == 'structure_mask_3d':
                 self.structures_dict['structure_mask_3d'].append(mask_3d)
+            elif key == 'volume_cc':
+                counts = np.count_nonzero(mask_3d)
+                self.structures_dict['volume_cc'].append(counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000)
+            elif key == 'fraction_of_vol_in_calc_box':  # implement it..
+                counts = np.count_nonzero(mask_3d)
+                volume_cc = counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000
+                ct_to_dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+                dose_mask = ct_to_dose_map >= 0
+                dose_mask = dose_mask.astype('uint8')
+                frac_of_mask_in_calc_box = mask_3d & dose_mask
+                counts = np.count_nonzero(frac_of_mask_in_calc_box)
+                volume_cc_in_calc_box = counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000
+                self.structures_dict['fraction_of_vol_in_calc_box'].append(volume_cc_in_calc_box/volume_cc)
             else:
                 self.structures_dict[key].append(None)
 
@@ -305,6 +382,19 @@ class Structures:
                 self.structures_dict['name'][ind] = struct_name
             elif key == 'structure_mask_3d':
                 self.structures_dict['structure_mask_3d'][ind] = mask_3d
+            elif key == 'volume_cc':
+                counts = np.count_nonzero(mask_3d)
+                self.structures_dict['volume_cc'][ind] = (counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000)
+            elif key == 'fraction_of_vol_in_calc_box':  # implement it..
+                counts = np.count_nonzero(mask_3d)
+                volume_cc = counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000
+                ct_to_dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+                dose_mask = ct_to_dose_map >= 0
+                dose_mask = dose_mask.astype('uint8')
+                frac_of_mask_in_calc_box = mask_3d & dose_mask
+                counts = np.count_nonzero(frac_of_mask_in_calc_box)
+                volume_cc_in_calc_box = counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000
+                self.structures_dict['fraction_of_vol_in_calc_box'][ind] = volume_cc_in_calc_box/volume_cc
             else:
                 self.structures_dict[key][ind] = None
 
@@ -328,3 +418,70 @@ class Structures:
         self.opt_voxels_dict['voxel_volume_cc'].append(
             counts * np.prod(self._ct_voxel_resolution_xyz_mm))  # calculate weight for each voxel
         self.opt_voxels_dict['name'].append(struct_name)
+
+    def apply_operator(self, operators_stack, values_stack):
+        operator = operators_stack.pop()
+        right_operand = values_stack.pop()
+        left_operand = values_stack.pop()
+
+        if isinstance(left_operand, str):
+            if not left_operand.isnumeric():
+                left_operand = self.get_structure_mask_3d(left_operand)
+        if isinstance(right_operand, str):
+            if not right_operand.isnumeric():
+                right_operand = self.get_structure_mask_3d(right_operand)
+
+        if operator == '+':
+            if isinstance(right_operand, str):
+                result = self.expand(mask_3d=left_operand, margin_mm=float(right_operand), return_mask=True)
+            else:
+                result = left_operand | right_operand
+        elif operator == '-':
+            if isinstance(right_operand, str):
+                result = self.shrink(mask_3d=left_operand, margin_mm=float(right_operand), return_mask=True)
+            else:
+                result = left_operand.astype(int) - right_operand.astype(int)
+                result[result < 0] = int(0)
+                result.astype('uint8')
+
+        elif operator == '|':
+            result = left_operand | right_operand
+        elif operator == '&':
+            result = left_operand & right_operand
+
+        values_stack.append(result)
+
+    def evaluate_expression(self, expression):
+
+        operators_stack = []
+        values_stack = []
+
+        i = 0
+        while i < len(expression):
+            if expression[i] == ' ':
+                i += 1
+                continue
+            elif expression[i].isalpha() or expression[i].isdigit():
+                j = i
+                while j < len(expression) and (expression[j].isalpha() or expression[j] in '_.$^' or expression[j].isdigit()):
+                    j += 1
+                struct = expression[i:j]
+                values_stack.append(struct)
+                i = j - 1
+            elif expression[i] in '+-|&':
+                while operators_stack and operators_stack[-1] in '+-|&':
+                    self.apply_operator(operators_stack, values_stack)
+                operators_stack.append(expression[i])
+            elif expression[i] == '(':
+                operators_stack.append(expression[i])
+            elif expression[i] == ')':
+                while operators_stack[-1] != '(':
+                    self.apply_operator(operators_stack, values_stack)
+                operators_stack.pop()
+
+            i += 1
+
+        while operators_stack:
+            self.apply_operator(operators_stack, values_stack)
+
+        return values_stack[0]

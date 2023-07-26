@@ -128,6 +128,38 @@
       "constraints": {
         "limit_dose_gy": 60
       }
+    },
+	{
+      "name": "max_dose",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV",
+		"structure_def": {"type":"boolean", "expression":"(LUNG_L | LUNG_R) - GTV"}
+      },
+      "constraints": {
+        "limit_dose_gy": 66
+      }
+    },
+	{
+      "name": "mean_dose",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV",
+		"structure_def": {"type":"boolean", "expression":"(LUNG_L | LUNG_R) - GTV"}
+      },
+      "constraints": {
+        "limit_dose_gy": 21,
+		"goal_dose_gy": 20
+      }
+    },
+	{
+      "name": "dose_volume_V",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV",
+		"structure_def": {"type":"boolean", "expression":"(LUNG_L | LUNG_R) - GTV"},
+        "dose_gy": 20
+      },
+      "constraints": {
+        "limit_volume_perc": 37
+      }
     }
   ]
 }

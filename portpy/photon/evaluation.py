@@ -31,31 +31,6 @@ class Evaluation:
     """
 
     @staticmethod
-    def get_dose(sol: dict, struct: str, volume_per: float, dose_1d: np.ndarray = None,
-                 weight_flag: bool = True) -> float:
-        """
-        Get dose_1d at volume percentage
-
-        :param sol: solution dictionary
-        :param dose_1d: dose_1d in 1d
-        :param struct: struct_name name for which to get the dose_1d
-        :param volume_per: query the dose_1d at percentage volume
-        :param weight_flag: for non uniform voxels weight flag always True
-        :return: dose_1d at volume_percentage
-
-        :Example:
-
-        >>> Evaluation.get_dose(sol=sol, struct='PTV', volume_per=90)
-
-        """
-        x, y = Evaluation.get_dvh(sol, dose_1d=dose_1d, struct=struct, weight_flag=weight_flag)
-        if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
-            return 0
-        f = interpolate.interp1d(100 * y, x)
-
-        return f(volume_per)
-
-    @staticmethod
     def display_clinical_criteria(my_plan: Plan, sol: Union[dict, List[dict]], html_file_name='temp.html',
                                   sol_names: List[str] = None, clinical_criteria: ClinicalCriteria = None,
                                   return_df: bool = False, in_browser: bool = False):
@@ -91,6 +66,8 @@ class Evaluation:
         for p, s in enumerate(sol):
             dose_1d = s['inf_matrix'].A @ (s['optimal_intensity'] * my_plan.get_num_of_fractions())
             for ind in range(len(df)):  # Loop through the clinical criteria
+                if 'structure_def' in df.parameters[ind]:
+                    del df.parameters[ind]['structure_def']
                 if df.name[ind] == 'max_dose':
                     struct = df.parameters[ind]['structure_name']
                     if struct in my_plan.structures.get_structures():
@@ -98,8 +75,7 @@ class Evaluation:
                         if 'limit_dose_gy' in df.constraints[ind] or 'goal_dose_gy' in df.constraints[ind]:
                             df.at[ind, sol_names[p]] = max_dose
                         elif 'limit_dose_perc' in df.constraints[ind] or 'goal_dose_perc' in df.constraints[ind]:
-                            df.at[ind, sol_names[p]] = max_dose / (
-                                    my_plan.get_prescription() * my_plan.get_num_of_fractions()) * 100
+                            df.at[ind, sol_names[p]] = max_dose / my_plan.get_prescription() * 100
                 if df.name[ind] == 'mean_dose':
                     struct = df.parameters[ind]['structure_name']
                     if struct in my_plan.structures.get_structures():
@@ -204,6 +180,31 @@ class Evaluation:
                 print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
+    def get_dose(sol: dict, struct: str, volume_per: float, dose_1d: np.ndarray = None,
+                 weight_flag: bool = True) -> float:
+        """
+        Get dose_1d at volume percentage
+
+        :param sol: solution dictionary
+        :param dose_1d: dose_1d in 1d
+        :param struct: struct_name name for which to get the dose_1d
+        :param volume_per: query the dose_1d at percentage volume
+        :param weight_flag: for non uniform voxels weight flag always True
+        :return: dose_1d at volume_percentage
+
+        :Example:
+
+        >>> Evaluation.get_dose(sol=sol, struct='PTV', volume_per=90)
+
+        """
+        x, y = Evaluation.get_dvh(sol, dose_1d=dose_1d, struct=struct, weight_flag=weight_flag)
+        if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
+            return 0
+        f = interpolate.interp1d(100 * y, x)
+
+        return f(volume_per)
+
+    @staticmethod
     def get_volume(sol: dict, struct: str, dose_value_gy: float, dose_1d: np.ndarray = None,
                    weight_flag: bool = True) -> float:
         """
@@ -267,9 +268,13 @@ class Evaluation:
             org_weights = inf_matrix.get_opt_voxels_volume_cc(struct)
             org_sort_weights = org_weights[sort_ind]
             sum_weight = np.sum(org_sort_weights)
-            y = [1]
+            frac_vol = inf_matrix.get_fraction_of_vol_in_calc_box(struct)
+            if frac_vol is None:
+                y = [1]
+            else:
+                y = [frac_vol]
             for j in range(len(org_sort_weights)):
-                y.append(y[-1] - org_sort_weights[j] / sum_weight)
+                y.append(y[-1] - (org_sort_weights[j] / sum_weight)*frac_vol)
         else:
             y = np.ones(len(vox) + 1) - np.arange(0, len(vox) + 1) / len(vox)
         y[-1] = 0
@@ -312,7 +317,9 @@ class Evaluation:
             return np.array(0)
         if dose_1d is None:
             dose_1d = sol['dose_1d']
-        return np.mean(dose_1d[vox])
+        frac_vol = inf_matrix.get_fraction_of_vol_in_calc_box(struct)
+        mean_dose = (1 / sum(inf_matrix.get_opt_voxels_volume_cc(struct))) * (np.sum((np.multiply(inf_matrix.get_opt_voxels_volume_cc(struct), dose_1d[vox]))))
+        return mean_dose * frac_vol
 
     @staticmethod
     def get_BED(my_plan: Plan, sol: dict = None, dose_per_fraction_1d: np.ndarray = None, alpha=1, beta=1) -> np.ndarray:

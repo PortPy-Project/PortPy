@@ -41,7 +41,7 @@ def beam_orientation_optimization():
     # Load hyper-parameter values for optimization problem for a specified protocol
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
     # Create optimization structures (i.e., Rinds)
-    structs.create_opt_structures(opt_params=opt_params)
+    structs.create_opt_structures(opt_params=opt_params, clinical_criteria=clinical_criteria)
     # Load influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
@@ -108,7 +108,7 @@ def beam_orientation_optimization():
         M = 50  # upper bound on the beamlet intensity
         opt.constraints += [x[start_beamlet:end_beamlet] <= b[i] * M]
     # solve the problem
-    sol_boo = opt.solve(solver='MOSEK', verbose='True')
+    sol_boo = opt.solve(solver='MOSEK', verbose=False)
 
     """
     3) Comparing the plans obtained with manually/optimally selected beams 

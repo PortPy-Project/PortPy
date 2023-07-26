@@ -38,7 +38,7 @@ def inf_matrix_sparsification():
     # Load hyper-parameter values for optimization problem for a specified protocol
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
     # Create optimization structures (i.e., Rinds)
-    structs.create_opt_structures(opt_params=opt_params)
+    structs.create_opt_structures(opt_params=opt_params, clinical_criteria=clinical_criteria)
     # Load influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 

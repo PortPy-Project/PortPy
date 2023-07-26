@@ -47,6 +47,7 @@ class Optimization(object):
         self.prescription_gy = opt_params['prescription_gy']
         self.obj = []
         self.constraints = []
+        self.obj_value = None
         if vars is None:
             x = cp.Variable(inf_matrix.A.shape[1], pos=True, name='x')  # creating variable for beamlet intensity
             self.vars = {'x': x}
@@ -173,6 +174,8 @@ class Optimization(object):
                     if org in my_plan.structures.get_structures():
                         if len(st.get_opt_voxels_idx(org)) == 0:
                             continue
+                        fraction_of_vol_in_calc_box = my_plan.structures.get_fraction_of_vol_in_calc_box(org)
+                        limit = limit/fraction_of_vol_in_calc_box  # modify limit due to fraction of volume receiving no dose
                         constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
@@ -360,6 +363,7 @@ class Optimization(object):
         t = time.time()
         problem.solve(*args, **kwargs)
         elapsed = time.time() - t
+        self.obj_value = problem.value
         print("Optimal value: %s" % problem.value)
         print("Elapsed time: {} seconds".format(elapsed))
         return {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix}
@@ -609,6 +613,8 @@ class Optimization(object):
                     if org in my_plan.structures.get_structures():
                         if len(st.get_opt_voxels_idx(org)) == 0:
                             continue
+                        fraction_of_vol_in_calc_box = my_plan.structures.get_fraction_of_vol_in_calc_box(org)
+                        limit = limit / fraction_of_vol_in_calc_box  # modify limit due to fraction of volume receiving no dose
                         constraints += [(1 / sum(st.get_opt_voxels_volume_cc(org))) *
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              d[st.get_opt_voxels_idx(org)] + delta[st.get_opt_voxels_idx(org)]))))

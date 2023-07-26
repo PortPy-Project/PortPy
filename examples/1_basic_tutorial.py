@@ -47,7 +47,7 @@ def basic_tutorial():
     # Use PortPy DataExplorer class to explore PortPy data
     data = pp.DataExplorer(data_dir=data_dir)
     # display the existing patients in console or browser.
-    data.display_list_of_patients()
+    # data.display_list_of_patients()
 
     # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
     data.patient_id = 'Lung_Phantom_Patient_1'
@@ -80,7 +80,7 @@ def basic_tutorial():
     # Loading hyper-parameter values for optimization problem
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
     # Creating optimization structures (i.e., Rinds)
-    structs.create_opt_structures(opt_params=opt_params)
+    structs.create_opt_structures(opt_params=opt_params, clinical_criteria=clinical_criteria)
     # Loading influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
