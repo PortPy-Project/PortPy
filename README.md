@@ -5,7 +5,7 @@
 # What is PortPy?
 **Note: The package is at its early stages of development (version 0.1.0) and we are now collecting feedback from researchers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx by the end of September 2023. We would love to hear your feedback.**
 
-PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, represents a collective effort to establish the first open-source Python library dedicated to advancing the development and clinical implementation of cancer radiotherapy treatment planning algorithms. This initiative encompasses planning methodologies for Intensity Modulated Radiation Therapy (IMRT), Volumetric Modulated Arc Therapy (VMAT), along with other emerging modalities. PortPy provides clinical-grade data and coding resources that foster *benchmarking*, *reproducibility*, and *community development*.
+PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, represents a collective effort to establish an open-source Python library dedicated to advancing the development and clinical implementation of cancer radiotherapy treatment planning algorithms. This initiative encompasses planning methodologies for Intensity Modulated Radiation Therapy (IMRT), Volumetric Modulated Arc Therapy (VMAT), along with other emerging modalities. PortPy provides clinical-grade data and coding resources that foster *benchmarking*, *reproducibility*, and *community development*.
 
 
 **Contents**
