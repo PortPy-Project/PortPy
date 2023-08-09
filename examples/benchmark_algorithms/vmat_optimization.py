@@ -25,7 +25,7 @@ def vmat_optimization():
     ct = pp.CT(data)
     structs = pp.Structures(data)
     # generating VMAT plan using all the control points is computationally expensive. We select only 8 equidistant beams to create the benchamrk VMAT plan.
-    beam_ids = list(np.arange(0, 72, 10))
+    beam_ids = list(np.arange(0, 72, 11))
     beams = pp.Beams(data, beam_ids=beam_ids)
 
     # Pick a protocol
@@ -35,14 +35,14 @@ def vmat_optimization():
     # Load hyper-parameter values for optimization problem for a specified protocol
     opt_params = data.load_config_opt_params(protocol_name=protocol_name)
     # Create optimization structures (i.e., Rinds)
-    structs.create_opt_structures(opt_params=opt_params)
+    structs.create_opt_structures(opt_params=opt_params, clinical_criteria=clinical_criteria)
     # Load influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
     # create a down-sampled influence matrix
     voxel_down_sample_factors = [6, 6, 1]
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
-    beamlet_down_sample_factor = 8
+    beamlet_down_sample_factor = 6
     new_beamlet_width_mm = beams.get_finest_beamlet_width() * beamlet_down_sample_factor
     new_beamlet_height_mm = beams.get_finest_beamlet_height() * beamlet_down_sample_factor
 

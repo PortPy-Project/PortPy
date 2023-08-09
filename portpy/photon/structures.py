@@ -251,10 +251,6 @@ class Structures:
 
     def create_opt_structures(self, opt_params=None, clinical_criteria=None):
         # create rinds for optimization
-        ct_to_dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-        dose_mask = ct_to_dose_map >= 0
-        dose_mask = dose_mask.astype(int)
-        self.create_structure('dose_mask', dose_mask)
 
         obj_funcs = []
         opt_params_constraints = []
@@ -270,54 +266,20 @@ class Structures:
         print('creating rinds.. This step may take some time due to dilation')
         for ind, obj in enumerate(opt_obj_cons):
             if 'structure_def' in obj:
-                structure_def = obj['structure_def']
                 if obj['structure_name'] not in self.get_structures():
-                    if structure_def['type'] == 'rind':
-                        # param = structure_def['parameters']
-                        rind_name = obj['structure_name']
-                        first_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_start_mm'])
-                        second_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_end_mm'])
-                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_start_mm'],
-                                    new_struct_name=first_dummy_name)
-                        if structure_def['margin_end_mm'] == 'inf':
-                            structure_def['margin_end_mm'] = 500
-                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_end_mm'],
-                                    new_struct_name=second_dummy_name)
-                        self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
-                        self.delete_structure(first_dummy_name)
-                        self.delete_structure(second_dummy_name)
-                        self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
-                    if structure_def['type'] == 'boolean':
-                        expression = structure_def['expression']
-                        mask_3d = self.evaluate_expression(expression)
-                        self.create_structure(new_struct_name=obj['structure_name'], mask_3d=mask_3d)
+                    structure_def = obj['structure_def']
+                    mask_3d = self.evaluate_expression(structure_def)
+                    result = mask_3d & self.get_structure_mask_3d('BODY')
+                    self.create_structure(new_struct_name=obj['structure_name'], mask_3d=result)
 
         for ind, criterion in enumerate(criteria):
             if 'structure_def' in criterion['parameters']:
                 param = criterion['parameters']
                 structure_def = param['structure_def']
                 if param['structure_name'] not in self.get_structures():
-                    if structure_def['type'] == 'rind':
-                        # param = structure_def['parameters']
-                        rind_name = param['structure_name']
-                        first_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_start_mm'])
-                        second_dummy_name = '{}_{}'.format(structure_def['ref_structure'], structure_def['margin_end_mm'])
-                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_start_mm'],
-                                    new_struct_name=first_dummy_name)
-                        if structure_def['margin_end_mm'] == 'inf':
-                            structure_def['margin_end_mm'] = 500
-                        self.expand(structure_def['ref_structure'], margin_mm=structure_def['margin_end_mm'],
-                                    new_struct_name=second_dummy_name)
-                        self.subtract(second_dummy_name, first_dummy_name, new_struct_name=rind_name)
-                        self.delete_structure(first_dummy_name)
-                        self.delete_structure(second_dummy_name)
-                        self.intersect(rind_name, 'dose_mask', new_struct_name=rind_name)
-                    if structure_def['type'] == 'boolean':
-                        expression = structure_def['expression']
-                        mask_3d = self.evaluate_expression(expression)
-                        self.create_structure(new_struct_name=param['structure_name'], mask_3d=mask_3d)
-        if 'dose_mask' in self.get_structures():
-            self.delete_structure('dose_mask')
+                    mask_3d = self.evaluate_expression(structure_def)
+                    result = mask_3d & self.get_structure_mask_3d('BODY')
+                    self.create_structure(new_struct_name=param['structure_name'], mask_3d=result)
 
         print('Optimization structures created!!')
         # for param in rind_params:
@@ -422,6 +384,9 @@ class Structures:
     def apply_operator(self, operators_stack, values_stack):
         operator = operators_stack.pop()
         right_operand = values_stack.pop()
+        if isinstance(right_operand, str):
+            if right_operand == "inf":
+                right_operand = "500"
         left_operand = values_stack.pop()
 
         if isinstance(left_operand, str):

@@ -106,6 +106,7 @@ class Visualization:
         if norm_flag:
             norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
+        count = 0
         for i in range(np.size(all_orgs)):
             if all_orgs[i] not in struct_names:
                 continue
@@ -130,7 +131,8 @@ class Visualization:
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
                 ax.set_ylabel('Volume Fraction (%)')
-            ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[i])
+            ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
+            count = count + 1
             legend.append(all_orgs[i])
 
         if show_criteria is not None:
@@ -436,12 +438,18 @@ class Visualization:
     def get_colors():
         """
 
-        :return: return list of 20 colors
+        :return: return list of 19 colors
         """
-        colors = ['#ffe119', '#4363d8', '#f58231', '#911eb4',
-                  '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
-                  '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
-                  '#000075', '#808080', '#ffffff', '#000000', '#e6194b', '#3cb44b']
+        # colors = ['#4363d8', '#f58231', '#911eb4',
+        #           '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff',
+        #           '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1',
+        #           '#000075', '#808080', '#ffffff', '#e6194b', '#3cb44b']
+        colors = [
+            "#1f77b4", "#2ca02c", "#d62728", "#9467bd", "#ff7f0e",
+            "#8c564b", "#e377c2", "#7f7f7f", "#17becf", "#bcbd22",
+            "#20b2aa", "#ff00ff", "#ffff00", "#87ceeb", "#006400",
+            "#fa8072", "#e6e6fa", "#ffd700", "#8b0000", "#40e0d0"
+        ]
         return colors
 
     @staticmethod

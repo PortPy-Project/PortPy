@@ -22,7 +22,7 @@ def dvh_constraint_optimization():
     # Pick a patient
     data_dir = r'../../data'
     data = pp.DataExplorer(data_dir=data_dir)
-    patient_id = 'Lung_Phantom_Patient_1'
+    patient_id = 'Lung_Patient_7'
     data.patient_id = patient_id
 
     # Load ct, structure and beams objects
@@ -42,7 +42,7 @@ def dvh_constraint_optimization():
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
     # create down-sampled influence matrix
-    voxel_down_sample_factors = [7, 7, 2]
+    voxel_down_sample_factors = [6, 6, 1]
     opt_vox_xyz_res_mm = [ct_res * factor for ct_res, factor in zip(ct.get_ct_res_xyz_mm(), voxel_down_sample_factors)]
     beamlet_down_sample_factor = 4
     new_beamlet_width_mm = beams.get_finest_beamlet_width() * beamlet_down_sample_factor
@@ -66,10 +66,10 @@ def dvh_constraint_optimization():
     2) Obtaining the benchmark global optimal solution
 
     """
-    # Add a dvh constraint V(10Gy) <= 15% for CORD as shown below
-    dvh_org = 'CORD'
-    dose_gy = 10
-    limit_volume_perc = 15
+    # Add a dvh constraint V(20Gy) <= 10% for ESOPHAGUS as shown below
+    dvh_org = 'ESOPHAGUS'
+    dose_gy = 20
+    limit_volume_perc = 10
 
     # extract data for dvh constraint
     A = inf_matrix_dbv.A  # down sample influence matrix

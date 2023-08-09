@@ -41,37 +41,37 @@
 	{
 		"type": "quadratic",
 		"structure_name": "LUNGS_NOT_GTV",
-		"structure_def": {"type":"boolean", "expression":"(LUNG_L | LUNG_R) - GTV"},
+		"structure_def": "(LUNG_L | LUNG_R) - GTV",
         "weight": 10
     },
     {
 		"type": "quadratic",
 		"structure_name": "RIND_0",
-		"structure_def": {"type":"rind", "ref_structure": "PTV", "margin_start_mm": 0, "margin_end_mm":5},
+		"structure_def": "(PTV+5) - PTV",
         "weight": 5
     },
 	{
 		"type": "quadratic",
 		"structure_name": "RIND_1",
-		"structure_def": {"type":"rind", "ref_structure": "PTV", "margin_start_mm": 5, "margin_end_mm":10},
+		"structure_def": "(PTV+10) - (PTV + 5)",
         "weight": 5
     },
 	{
 		"type": "quadratic",
 		"structure_name": "RIND_2",
-		"structure_def": {"type":"rind", "ref_structure": "PTV", "margin_start_mm": 10, "margin_end_mm":30},
+		"structure_def": "(PTV+30) - (PTV + 10)",
         "weight": 3
     },
 	{
 		"type": "quadratic",
 		"structure_name": "RIND_3",
-		"structure_def": {"type":"rind", "ref_structure": "PTV", "margin_start_mm": 30, "margin_end_mm":50},
+		"structure_def": "(PTV+50) - (PTV + 30)",
         "weight": 3
     },
 	{
 		"type": "quadratic",
 		"structure_name": "RIND_4",
-		"structure_def": {"type":"rind", "ref_structure": "PTV", "margin_start_mm": 50, "margin_end_mm":"inf"},
+		"structure_def": "(PTV + inf) - (PTV + 50)",
         "weight": 3
     },
 	{
