@@ -123,7 +123,7 @@ PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and
 # Reference <a name="Reference"></a>
 If you find our work useful in your research or if you use parts of this code please consider citing our [AAPM'23 abstract](https://aapm.confex.com/aapm/2023am/meetingapp.cgi/Paper/4208) :
 ```
-@article{alam2021motion,
+@article{jhanwar2023portpy,
   title={Portpy: An Open-Source Python Package for Planning and Optimization in Radiation Therapy Including Benchmark Data and Algorithms},
   author={Jhanwar, Gourav and Tefagh, Mojtaba and Taasti, Vicki T and Alam, Sadegh R and Tuomaala, Seppo and Nadeem, Saad and Zarepisheh, Masoud},
   journal={AAPM 65th Annual Meeting & Exhibition},
