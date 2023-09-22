@@ -121,7 +121,7 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
 
 # Reference <a name="Reference"></a>
-If you find our work useful in your research or if you use parts of this code please consider citing our [AAPM'23 abstract](https://aapm.confex.com/aapm/2023am/meetingapp.cgi/Paper/4208) :
+If you find our work useful in your research or if you use parts of this code please cite our [AAPM'23 abstract](https://aapm.confex.com/aapm/2023am/meetingapp.cgi/Paper/4208) :
 ```
 @article{jhanwar2023portpy,
   title={Portpy: An Open-Source Python Package for Planning and Optimization in Radiation Therapy Including Benchmark Data and Algorithms},
