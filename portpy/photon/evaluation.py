@@ -180,6 +180,167 @@ class Evaluation:
                 print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
+    def display_clinical_criteria_paper(my_plan: Plan, sol: Union[dict, List[dict]], html_file_name='temp.html',
+                                  sol_names: List[str] = None, clinical_criteria: ClinicalCriteria = None,
+                                  return_df: bool = False, in_browser: bool = False):
+        """
+        Visualization the plan metrics for clinical criteria in browser.
+        It evaluate the plan by comparing the metrics against required criteria.
+
+        If plan value is green color. It meets all the Limits and Goals
+        If plan value is yellow color. It meets limits but not goals
+        If plan value is red color. It violates both limit and goals
+
+        :param my_plan: object of class Plan
+        :param sol: optimal solution dictionary
+        :param html_file_name:  name of the html file to be launched in browser
+        :param sol_names: Default to Plan Value. column names for the plan evaluation
+        :param clinical_criteria: clinical criteria to be evaluated
+        :param return_df: return df instead of visualization
+        :param in_browser: display table in browser
+        :return: plan metrics in browser
+        """
+        import re
+        # convert clinical criteria in dataframe
+        if clinical_criteria is None:
+            clinical_criteria = my_plan.clinical_criteria
+        # df = pd.DataFrame.from_dict(clinical_criteria.clinical_criteria_dict['criteria'])
+        df = pd.json_normalize(clinical_criteria.clinical_criteria_dict['criteria'])
+        dose_volume_ind = df.index[df['name'] == 'dose_volume_V'].tolist()
+        constraint_limit_perc_ind = df.index[~df['constraints.limit_volume_perc'].isnull()].tolist()
+        constraint_goal_perc_ind = df.index[~df['constraints.goal_volume_perc'].isnull()].tolist()
+        constraint_limit_gy_ind = df.index[~df['constraints.limit_dose_gy'].isnull()].tolist()
+        constraint_goal_gy_ind = df.index[~df['constraints.goal_dose_gy'].isnull()].tolist()
+        for ind in dose_volume_ind:
+            df.loc[ind, 'name'] = 'V(' + str(round(df['parameters.dose_gy'][ind])) + 'Gy)'
+        for ind in constraint_limit_gy_ind:
+            df.loc[ind, 'Limit'] = str(round(df['constraints.limit_dose_gy'][ind])) + 'Gy'
+        for ind in constraint_limit_perc_ind:
+            df.loc[ind, 'Limit'] = str(round(df['constraints.limit_volume_perc'][ind])) + '%'
+        for ind in constraint_goal_gy_ind:
+            df.loc[ind, 'Goal'] = str(round(df['constraints.goal_dose_gy'][ind])) + 'Gy'
+        for ind in constraint_goal_perc_ind:
+            df.loc[ind, 'Goal'] = str(round(df['constraints.goal_volume_perc'][ind])) + '%'
+
+        # refine df
+        df = df.rename(columns={'parameters.structure_name': 'structure_name', 'name': 'constraint'})
+        df = df.drop(
+            ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
+             'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')
+
+        if isinstance(sol, dict):
+            sol = [sol]
+        if sol_names is None:
+            if len(sol) > 1:
+                sol_names = ['Plan Value ' + str(i) for i in range(len(sol))]
+            else:
+                sol_names = ['Plan Value']
+        for p, s in enumerate(sol):
+            dose_1d = s['inf_matrix'].A @ (s['optimal_intensity'] * my_plan.get_num_of_fractions())
+            for ind in range(len(df)):  # Loop through the clinical criteria
+                if df.constraint[ind] == 'max_dose':
+                    struct = df.structure_name[ind]
+                    if struct in my_plan.structures.get_structures():
+                        max_dose = Evaluation.get_max_dose(s, dose_1d=dose_1d, struct=struct)  # get max dose_1d
+                        if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
+                            df.at[ind, sol_names[p]] = round(max_dose,2)
+                        elif '%' in str(df.Limit[ind]) or '%' in str(df.Limit[ind]):
+                            df.at[ind, sol_names[p]] = round(max_dose / my_plan.get_prescription() * 100, 2)
+                if df.constraint[ind] == 'mean_dose':
+                    struct = df.structure_name[ind]
+                    if struct in my_plan.structures.get_structures():
+                        mean_dose = Evaluation.get_mean_dose(s, dose_1d=dose_1d, struct=struct)
+                        df.at[ind, sol_names[p]] = round(mean_dose, 2)
+                if "V(" in df.constraint[ind]:
+                    struct = df.structure_name[ind]
+                    if struct in my_plan.structures.get_structures():
+                        if '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]): # we are writing str since nan values throws error
+                            dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                            dose = float(dose)
+                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                            df.at[ind, sol_names[p]] = np.round(volume, 2)
+                        elif 'cc' in str(df.Limit[ind]) or 'cc' in str(df.Goal[ind]):
+                            dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                            dose = float(dose)
+                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                            vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
+                            df.at[ind, sol_names[p]] = np.round(vol_cc, 2)
+        df.round(2)
+        df = df[df['Plan Value'].notna()]  # remove rows for which plan value is Nan
+        df = df.fillna('')
+        # df.dropna(axis=0, inplace=True)  # remove structures which are not present
+        # df.reset_index(drop=True, inplace=True)  # reset the index
+
+        def color_plan_value(row):
+
+            highlight_red = 'background-color: red;'   # red
+            highlight_green = 'background-color: #90ee90'  # green
+            highlight_orange = 'background-color: #ffb38a'  # orange
+            default = ''
+
+            row_color = len(row) * [default]  # default color for all rows initially
+            # must return one string per cell in this row
+            for i in range(len(row) - 2):
+                if 'Limit' in row:
+                    if not row['Limit'] == '':
+                        limit = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Limit'])[0])
+                        if row[i] > limit + 0.0001:  # added epsilon to avoid minor differences
+                            row_color[i] = highlight_red  # make plan value in red
+                        else:
+                            row_color[i] = highlight_green  # make plan value in red
+                if 'Goal' in row:
+                    if not row['Goal'] == '':
+                        goal = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Goal'])[0])
+                        if row[i] > goal + 0.0001:
+                            row_color[i] = highlight_orange  # make plan value in red
+                        else:
+                            row_color[i] = highlight_green  # make plan value in red
+            return row_color
+
+        sol_names.append('Limit')
+        sol_names.append('Goal')
+        df.style.set_properties(**{'text-align': 'right'})
+        styled_df = df.style.apply(color_plan_value, subset=sol_names, axis=1)  # apply
+        styled_df.set_properties(**{'text-align': 'center'}).format(precision=2)
+
+        # color to dataframe using df.style method
+        if return_df:
+            return styled_df
+        if in_browser:
+            html = styled_df.render()  # render to html
+            html_string = '''
+                                                    <html>
+                                                      <head><title>Portpy Clinical Criteria Evaluation</title></head>
+                                                      <style> 
+                                                        table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}
+                                                        th, td {{padding: 5px;}}
+                                                      </style>
+                                                      <body>
+                                                      <h1> Clinical Criteria</h1>
+                                                      <h4 style="color: #90ee90">Meets limit and goal</h4>
+                                                      <h4 style="color: #ffb38a">Meets limit but not goal</h4>
+                                                      <h4 style="color: red">Violate both limit and goal</h4>
+                                                        {table}
+                                                      </body>
+                                                    </html>.
+                                                    '''
+            with open(html_file_name, 'w') as f:
+                f.write(html_string.format(table=html))
+            webbrowser.open('file://' + os.path.realpath(html_file_name))
+
+        else:
+            if Evaluation.is_notebook():
+                from IPython.display import display
+                with pd.option_context('display.max_rows', None,
+                                       'display.max_columns', None,
+                                       'display.precision', 3,
+                                       ):
+
+                    display(styled_df)
+            else:
+                print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
+
+    @staticmethod
     def get_dose(sol: dict, struct: str, volume_per: float, dose_1d: np.ndarray = None,
                  weight_flag: bool = True) -> float:
         """
@@ -301,7 +462,7 @@ class Evaluation:
         return np.max(dose_1d[vox])
 
     @staticmethod
-    def get_mean_dose(sol: dict, struct: str, dose_1d=None) -> np.ndarray:
+    def get_mean_dose(sol: dict, struct: str, dose_1d=None) -> float:
         """
                 Get mean dose_1d for the struct_name
 

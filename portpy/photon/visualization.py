@@ -69,7 +69,7 @@ class Visualization:
         style = options['style'] if 'style' in options else 'solid'
         width = options['width'] if 'width' in options else None
         colors = options['colors'] if 'colors' in options else None
-        legend_font_size = options['legend_font_size'] if 'legend_font_size' in options else 10
+        legend_font_size = options['legend_font_size'] if 'legend_font_size' in options else 15
         figsize = options['figsize'] if 'figsize' in options else (12, 8)
         title = options['title'] if 'title' in options else None
         filename = options['filename'] if 'filename' in options else None
@@ -77,18 +77,17 @@ class Visualization:
         # create_fig = options['create_fig'] if 'create_fig' in options else False
         show_criteria = options['show_criteria'] if 'show_criteria' in options else None
         ax = options['ax'] if 'ax' in options else None
-
+        font_size = options['font_size'] if 'font_size' in options else 18
+        legend_loc = options["legend_loc"] if "legend_loc" in options else "upper right"
         # getting norm options
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
         norm_volume = options['norm_volume'] if 'norm_volume' in options else 90
         norm_struct = options['norm_struct'] if 'norm_struct' in options else 'PTV'
 
-        plt.rcParams['font.size'] = 12
+        plt.rcParams['font.size'] = font_size
+        plt.rc('font', family='serif')
         if width is None:
-            if style == 'dotted' or style == 'dashed':
-                width = 2.5
-            else:
-                width = 2
+            width = 3
         if colors is None:
             colors = Visualization.get_colors()
         if struct_names is None:
@@ -122,7 +121,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel('Dose (%)')
+                ax.set_xlabel('Dose ($\%$)')
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -130,7 +129,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)')
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Volume Fraction (%)')
+                ax.set_ylabel('Volume Fraction ($\%$)')
             ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
             count = count + 1
             legend.append(all_orgs[i])
@@ -145,7 +144,7 @@ class Visualization:
         # plt.ylabel('Volume Fraction (%)')
         ax.set_xlim(0, max_dose * 1.1)
         ax.set_ylim(0, max_vol)
-        ax.legend(legend, prop={'size': legend_font_size}, loc="upper right")
+        ax.legend(legend, prop={'size': legend_font_size}, loc=legend_loc)
         ax.grid(visible=True, which='major', color='#666666', linestyle='-')
 
         # Show the minor grid lines with very faint and almost transparent grey lines
