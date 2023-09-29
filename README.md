@@ -23,7 +23,7 @@ PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herap
 PortPy facilitates the **design**, **testing**, and **clinical validation** of your treatment planning algorithms. This includes both cutting-edge AI-based models and traditional optimization techniques. PortPy provides:
 1. **Benchmark Dataset**
      * Access to data required for optimization, extracted directly from the FDA-approved Eclipse treatment planning system via its API 
-     * A current set of data from 50 lung patients, which will be expanded to 100 lung patients by the end of Oct 2023
+     * A current set of data from 50 lung patients, which will be expanded to 100 lung patients by the end of 2023
      * A **benchmark IMRT plan** for each patient, created using our in-house automated planning system ([Edelman Award Finalist YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572))
    
 2. **Benchmark Algorithms:** Offering globally optimal solutions for:
