@@ -3,7 +3,6 @@
 </p>
 
 # What is PortPy?
-**Note: The package is at its early stages of development (version 0.1.0) and we are now collecting feedback from researchers to further refine the data structure and the main functionality. We are expecting to have a stable version 1.xx by the end of September 2023. We would love to hear your feedback.**
 
 PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, represents a collective effort to establish an open-source Python library dedicated to advancing the development and clinical implementation of cancer radiotherapy treatment planning algorithms. This initiative encompasses planning methodologies for Intensity Modulated Radiation Therapy (IMRT), Volumetric Modulated Arc Therapy (VMAT), along with other emerging modalities. PortPy provides clinical-grade data and coding resources that foster *benchmarking*, *reproducibility*, and *community development*.
 
@@ -36,7 +35,7 @@ PortPy facilitates the **design**, **testing**, and **clinical validation** of y
      * Enhanced visualizations are available through the integration with the popular open-source [3DSlicer](https://www.slicer.org/) package (see [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb))
 5. **Evaluation**  
      * PortPy IMRT plans with optimal fluence can be imported into Eclipse for leaf sequencing and final clinical evaluations  (see [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb))
-     * PortPy IMR/VMAT plans can be imported into FDA approved TPS( e.g. Eclipse, Raystation) using DICOM RT Plan file for final clinical evaluations  (see [TPS-integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/TPS-Integration.ipynb))
+     * PortPy IMRT/VMAT plans can be imported into FDA approved TPS( e.g. Eclipse, Raystation) using DICOM RT Plan file for final clinical evaluations  (see [TPS-integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/TPS-Integration.ipynb))
      * Plans can also be evaluated within PortPy using well-established clinical protocols (e.g., Lung 2Gyx30, see  [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb))
      * Future updates will include more standardized RTOG metrics and outcome models (TCP/NTCP)
 6. **Optimization** 
@@ -53,7 +52,7 @@ PortPy facilitates the **design**, **testing**, and **clinical validation** of y
 3. To learn about enhanced visualization techniques using the 3D-Slicer package, refer to the  [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb) notebook
 4. For algorithm benchmarking, the global optimal solutions are provided for non-convex optimization problems resulting from beam angle optimization [beam_orientation_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmark_algorithms/beam_orientation_optimization.ipynb), incorporating DVH constraints [dvh_constraint_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmark_algorithms/dvh_constraint_optimization.ipynb), and VMAT optimization [vmat_optimization.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/benchmark_algorithms/vmat_optimization.ipynb) using the mixed-integer programming on down-sampled data.
 5. If you encounter computational challenges with large-scale optimization problems, you can opt for down-sampling the voxels/beamlets, as illustrated in the [down_sampling](https://github.com/PortPy-Project/PortPy/blob/master/examples/advanced_tutorials/down_sampling.ipynb) notebook, or further sparsify the influence matrix, as demonstrated in the [inf_matrix_sparsification](https://github.com/PortPy-Project/PortPy/blob/master/examples/advanced_tutorials/inf_matrix_sparsification.ipynb) notebook.
-
+6. To learn about creating a final deliverable plan using AI based model, please refer to [dose_prediction_pipeline.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/AI_tutorials/dose_prediction_pipeline.ipynb) notebook.
 
 # How to contribute? <a name="HowContribute"></a>
 To maintain the lightweight nature and user-friendliness of PortPy modules, our aim is to include only fundamental functionalities, along with benchmark data and algorithms. We will establish separate repositories within the [PortPy-Project orgainization](https://github.com/PortPy-Project) for projects developed by our team using PortPy as a platform. This is similar to what we've done for projects like [LowDimRT](https://github.com/PortPy-Project/LowDimRT) and [VMAT](https://github.com/PortPy-Project/ECHO-VMAT).
@@ -65,8 +64,7 @@ If you're interested in contributing to existing PortPy modules or wish to creat
 Current version of PortPy has the following limitations which would be addressed in the future updates:
 
 1. You can only work with the benchmark dataset provided in this PortPy repo and cannot use your own dataset for now.
-2. PortPy.Photon and PortPy.AI are the only modules available. You cannot do proton research with the current version.
-3. You can only import the optimal fluence of PortPy-IMRT plans into Eclipse. Support for importing control points, VMAT plans, and other commercial systems will be added in the future updates.
+2. PortPy.Photon and PortPy.AI are the only modules available. You cannot do proton research with the current version. Please use [OpenTPS](http://opentps.org/) for proton research.
 
 # Data <a name="Data"></a>
 

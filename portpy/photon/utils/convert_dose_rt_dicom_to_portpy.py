@@ -14,7 +14,7 @@ def read_dicom_dose(dir_name: str = None, dose_file_name: str = None):
     if dir_name is not None:
         dicom_names = os.listdir(dir_name)
         for dcm in dicom_names:
-            if dcm == 'rt_dose':
+            if 'rt_dose' in dcm:
                 dose_file_name = os.path.join(dir_name, dcm)
 
     dose_img = dcmread(dose_file_name)
