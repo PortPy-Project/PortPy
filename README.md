@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./images/PortPy_logo.png" width="50%">
+  <img src="./images/PortPy_logo.png" width="40%" height="40%">
 </p>
 
 # What is PortPy?
