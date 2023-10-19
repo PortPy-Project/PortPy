@@ -694,26 +694,50 @@ class InfluenceMatrix:
                 # add this part in case remove corner beamlets create issue for getting original resolution
                 remove_row = []
                 remove_col = []
-                for row in range(beam_map.shape[0]):
-                    if row < beam_map.shape[0] - 1:
-                        prev_elem = beam_map[row, :][beam_map[row, :] > -1]
-                        next_elem = beam_map[row + 1, :][beam_map[row + 1, :] > -1]
+                for row in range(1, beam_map.shape[0]):
+                        prev_elem = beam_map[row-1, :][beam_map[row-1, :] > -1]
+                        next_elem = beam_map[row, :][beam_map[row, :] > -1]
                         matching_elements = np.intersect1d(prev_elem, next_elem)
                         if len(matching_elements) >= 1:
                             if len(prev_elem) <= len(next_elem):
+                                if (row-1) not in remove_row:
+                                    remove_row.append(row-1)
+                                else:
+                                    remove_row.append(row)
+                            else:
                                 remove_row.append(row)
-                            else:
-                                remove_row.append(row + 1)
-                for col in range(beam_map.shape[1]):
-                    if col < beam_map.shape[1] - 1:
-                        prev_elem = beam_map[:, col][beam_map[:, col] > -1]
-                        next_elem = beam_map[:, col + 1][beam_map[:, col + 1] > -1]
+                for col in range(1, beam_map.shape[1]):
+                        prev_elem = beam_map[:, col-1][beam_map[:, col-1] > -1]
+                        next_elem = beam_map[:, col][beam_map[:, col] > -1]
                         matching_elements = np.intersect1d(prev_elem, next_elem)
                         if len(matching_elements) >= 1:
                             if len(prev_elem) <= len(next_elem):
-                                remove_col.append(col)
+                                if (col - 1) not in remove_col:
+                                    remove_col.append(col-1)
+                                else:
+                                    remove_col.append(col)
                             else:
-                                remove_col.append(col + 1)
+                                remove_col.append(col)
+                # for row in range(beam_map.shape[0]):
+                #     if row < beam_map.shape[0] - 1:
+                #         prev_elem = beam_map[row, :][beam_map[row, :] > -1]
+                #         next_elem = beam_map[row + 1, :][beam_map[row + 1, :] > -1]
+                #         matching_elements = np.intersect1d(prev_elem, next_elem)
+                #         if len(matching_elements) >= 1:
+                #             if len(prev_elem) <= len(next_elem):
+                #                 remove_row.append(row)
+                #             else:
+                #                 remove_row.append(row + 1)
+                # for col in range(beam_map.shape[1]):
+                #     if col < beam_map.shape[1] - 1:
+                #         prev_elem = beam_map[:, col][beam_map[:, col] > -1]
+                #         next_elem = beam_map[:, col + 1][beam_map[:, col + 1] > -1]
+                #         matching_elements = np.intersect1d(prev_elem, next_elem)
+                #         if len(matching_elements) >= 1:
+                #             if len(prev_elem) <= len(next_elem):
+                #                 remove_col.append(col)
+                #             else:
+                #                 remove_col.append(col + 1)
                 mask_rows = np.ones(beam_map.shape[0], dtype=bool)
                 mask_columns = np.ones(beam_map.shape[1], dtype=bool)
                 if len(remove_row) > 0:

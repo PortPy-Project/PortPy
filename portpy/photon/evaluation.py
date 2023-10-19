@@ -334,6 +334,58 @@ class Evaluation:
         return mean_dose * frac_vol
 
     @staticmethod
+    def get_conformity_index(my_plan: Plan, sol: dict = None, dose_3d: np.ndarray = None, target_structure='PTV') -> float:
+        """
+        Calculate conformity index for the dose
+        Closer to 1 is more better
+
+        :param my_plan: object of class Plan
+        :param sol: optimal solution dictionary
+        :param dose_3d: dose in 3d array
+        :param target_structure: target structure name
+
+        :return: paddick conformity index
+
+        """
+        # calulating paddick conformity index
+        percentile = 0.95  # reference isodose
+        pres = my_plan.get_prescription()
+        if dose_3d is None:
+            dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())
+            dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
+        pres_iso_dose_mask = (dose_3d >= pres * percentile).astype(int)
+        V_iso_pres = np.count_nonzero(pres_iso_dose_mask)
+        ptv_mask = my_plan.structures.get_structure_mask_3d(target_structure)
+        V_ptv = np.count_nonzero(ptv_mask)
+        V_pres_iso_ptv = np.count_nonzero(pres_iso_dose_mask * ptv_mask)
+        conformity_index = V_pres_iso_ptv * V_pres_iso_ptv / (V_ptv * V_iso_pres)
+        return conformity_index
+
+    @staticmethod
+    def get_homogeneity_index(my_plan: Plan, sol: dict = None, dose_3d: np.ndarray = None, target_structure='PTV') -> float:
+        """
+                Calculate homogeneity index for the dose
+                Closer to 0 is more better
+
+                :param my_plan: object of class Plan
+                :param sol: optimal solution dictionary
+                :param dose_3d: dose in 3d array
+                :param target_structure: target structure name
+
+                :return: homogeneity index
+
+                """
+        if dose_3d is None:
+            dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())
+            dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
+        ptv = my_plan.structures.get_structure_mask_3d(target_structure)
+        ptv_dose = dose_3d[np.where(ptv == 1)]
+        PTV_D2 = np.percentile(ptv_dose, 98)
+        PTV_D50 = np.percentile(ptv_dose, 50)
+        PTV_D98 = np.percentile(ptv_dose, 2)
+        return (PTV_D2 - PTV_D98) / PTV_D50
+
+    @staticmethod
     def get_BED(my_plan: Plan, sol: dict = None, dose_per_fraction_1d: np.ndarray = None, alpha=1, beta=1) -> np.ndarray:
         """
         Get Biologically equivalent dose (BED) for the struct_name
