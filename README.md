@@ -3,11 +3,8 @@
 </p>
 
 ![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.1&color=darkgreen)
-![Release Date](https://img.shields.io/github/release-date/PortPy-Project/PortPy?label=release%20date&color=darkgreen)
-![Score](https://img.shields.io/github/stars/PortPy-Project/PortPy?label=score&color=darkgreen)
-[![Total Users](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20users)](https://pepy.tech/project/portpy?&left_text=totalusers)
-[![Monthly Users](https://img.shields.io/pypi/dm/portpy?label=monthly%20users&color=blue)](https://pypistats.org/packages/feloopy)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
+
 # What is PortPy?
 
 PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, represents a collective effort to establish an open-source Python library dedicated to advancing the development and clinical implementation of cancer radiotherapy treatment planning algorithms. This initiative encompasses planning methodologies for Intensity Modulated Radiation Therapy (IMRT), Volumetric Modulated Arc Therapy (VMAT), along with other emerging modalities. PortPy provides clinical-grade data and coding resources that foster *benchmarking*, *reproducibility*, and *community development*.
