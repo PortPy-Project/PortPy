@@ -2,10 +2,16 @@
   "prescription_gy": 60,
   "objective_functions": [	
 	{
-		"type": "quadratic-overdose",     
+		"type": "quadratic-overdose",
 		"structure_name": "PTV",
 		"weight": 10000,
 		"dose_gy": "prescription_gy"
+    },
+    {
+		"type": "linear-overdose",
+		"structure_name": "CORD",
+		"weight": 100,
+		"dose_gy": 50
     },
     {
 		"type": "quadratic-underdose",
@@ -81,30 +87,55 @@
 	],
 	"constraints":[
 	{
-		"type": "max",
+	  "type": "max_dose",
+	  "parameters": {
 		"structure_name": "RIND_0",
-        "upper_limit": "1.1*prescription_gy"
-    },
+		"structure_def": "(PTV+5) - PTV"
+	  },
+	  "constraints": {
+		"limit_dose_gy": "1.1*prescription_gy"
+	  }
+	},
 	{
-		"type": "max",
+	  "type": "max_dose",
+	  "parameters": {
 		"structure_name": "RIND_1",
-        "upper_limit": "1.05*prescription_gy"
-    },
+		"structure_def": "(PTV+10) - (PTV + 5)"
+	  },
+	  "constraints": {
+		"limit_dose_gy": "1.05*prescription_gy"
+	  }
+	},
 	{
-		"type": "max",
+	  "type": "max_dose",
+	  "parameters": {
 		"structure_name": "RIND_2",
-        "upper_limit": "0.9*prescription_gy"
-    },
+		"structure_def": "(PTV+30) - (PTV + 10)"
+	  },
+	  "constraints": {
+		"limit_dose_gy": "0.9*prescription_gy"
+	  }
+	},
 	{
-		"type": "max",
+	  "type": "max_dose",
+	  "parameters": {
 		"structure_name": "RIND_3",
-        "upper_limit": "0.85*prescription_gy"
-    },
+		"structure_def": "(PTV+50) - (PTV + 30)"
+	  },
+	  "constraints": {
+		"limit_dose_gy": "0.85*prescription_gy"
+	  }
+	},
 	{
-		"type": "max",
+	  "type": "max_dose",
+	  "parameters": {
 		"structure_name": "RIND_4",
-        "upper_limit": "0.75*prescription_gy"
-    }
+	   "structure_def": "(PTV + inf) - (PTV + 50)"
+	  },
+	  "constraints": {
+		"limit_dose_gy": "0.75*prescription_gy"
+	  }
+	}
 ]
 
 }

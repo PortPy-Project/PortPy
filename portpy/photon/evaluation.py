@@ -57,13 +57,13 @@ class Evaluation:
             clinical_criteria = my_plan.clinical_criteria
         # df = pd.DataFrame.from_dict(clinical_criteria.clinical_criteria_dict['criteria'])
         df = pd.json_normalize(clinical_criteria.clinical_criteria_dict['criteria'])
-        dose_volume_ind = df.index[df['name'] == 'dose_volume_V'].tolist()
+        dose_volume_ind = df.index[df['type'] == 'dose_volume_V'].tolist()
         constraint_limit_perc_ind = df.index[~df['constraints.limit_volume_perc'].isnull()].tolist()
         constraint_goal_perc_ind = df.index[~df['constraints.goal_volume_perc'].isnull()].tolist()
         constraint_limit_gy_ind = df.index[~df['constraints.limit_dose_gy'].isnull()].tolist()
         constraint_goal_gy_ind = df.index[~df['constraints.goal_dose_gy'].isnull()].tolist()
         for ind in dose_volume_ind:
-            df.loc[ind, 'name'] = 'V(' + str(round(df['parameters.dose_gy'][ind])) + 'Gy)'
+            df.loc[ind, 'type'] = 'V(' + str(round(df['parameters.dose_gy'][ind])) + 'Gy)'
         for ind in constraint_limit_gy_ind:
             df.loc[ind, 'Limit'] = str(round(df['constraints.limit_dose_gy'][ind])) + 'Gy'
         for ind in constraint_limit_perc_ind:
@@ -74,7 +74,7 @@ class Evaluation:
             df.loc[ind, 'Goal'] = str(round(df['constraints.goal_volume_perc'][ind])) + '%'
 
         # refine df
-        df = df.rename(columns={'parameters.structure_name': 'structure_name', 'name': 'constraint'})
+        df = df.rename(columns={'parameters.structure_name': 'structure_name', 'type': 'constraint'})
         df = df.drop(
             ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
              'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')

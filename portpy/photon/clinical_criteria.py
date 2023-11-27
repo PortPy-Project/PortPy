@@ -17,7 +17,7 @@ class ClinicalCriteria:
                 "num_of_fractions": 30,
                 "criteria": [
                     {
-                      "name": "max_dose",
+                      "type": "max_dose",
                       "parameters": {
                         "struct": "GTV"
                       }}
@@ -54,75 +54,85 @@ class ClinicalCriteria:
         """
         return self.clinical_criteria_dict['num_of_fractions']
 
-    def add_criterion(self, criterion: str, parameters: dict, constraints: dict) -> None:
+    def add_criterion(self, type: str, parameters: dict, constraints: dict) -> None:
         """
         Add criterion to the clinical criteria dictionary
 
-        :param criterion: criterion name. e.g. max_dose
+        :param type: criterion name. e.g. max_dose
         :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
         :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
         :return: add the criteria to clinical criteria dictionary
 
         """
 
-        self.clinical_criteria_dict['criteria'].append({'name': criterion})
+        self.clinical_criteria_dict['criteria'].append({'type': type})
         self.clinical_criteria_dict['criteria'][-1]['parameters'] = parameters
         self.clinical_criteria_dict['criteria'][-1]['constraints'] = constraints
 
-    def modify_criterion(self, criterion: str, parameters: dict, constraints: dict) -> None:
-        """
-
-        Modify the criterion in clinical criteria dictionary
-
-        :param criterion: criterion name. e.g. max_dose
-        :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
-        :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
-        :return: add the criteria to clinical criteria dictionary
-
-        """
-        criteria = self.clinical_criteria_dict['criteria']
-        ind = [criteria[i]['name'] for i in range(len(criteria)) if criteria[i]['name'] == criterion and
-               criteria[i]['parameters'] == parameters]
-        if len(ind) > 0:
-
-            criteria[ind[0]]['constraints'] = constraints
-        else:
-            raise Exception('No criteria  for name {}  and parameters {}'.format(criterion, parameters))
-
     @staticmethod
-    def create_criterion(criterion: str, parameters: dict, constraints: dict):
+    def create_criterion(type: str, parameters: dict, constraints: dict):
         """
         Create criterion and return list
 
-        :param criterion: criterion name. e.g. max_dose
+        :param type: criterion name. e.g. max_dose
         :param parameters: parameters dictionary e.g. parameters = {'struct':'PTV'}
         :param constraints: constraints dictionary e.g. constraints = {'limit_dose_gy':66, 'goal_dose_gy':60}
         :return: add the criteria to clinical criteria dictionary
 
         """
 
-        criterion = [{'name': criterion, 'parameters': parameters, 'constraints': constraints}]
+        criterion = [{'type': type, 'parameters': parameters, 'constraints': constraints}]
         return criterion
 
-    def get_criteria(self, name: str = None) -> List[dict]:
+    def get_criteria(self, type: str = None) -> List[dict]:
         """
         Returns all the clinical criteria
         :return:
         """
         all_criteria = []
-        if name is None:
+        if type is None:
             all_criteria = self.clinical_criteria_dict['criteria']
-        elif name == 'max_dose':
+        elif type == 'max_dose':
             criteria = self.clinical_criteria_dict['criteria']
-            ind = [i for i in range(len(criteria)) if criteria[i]['name'] == name]
+            ind = [i for i in range(len(criteria)) if criteria[i]['type'] == type]
             if len(ind) > 0:
                 all_criteria = [criteria[i] for i in ind]
-        elif name == 'mean_dose':
+        elif type == 'mean_dose':
             criteria = self.clinical_criteria_dict['criteria']
-            ind = [i for i in range(len(criteria)) if criteria[i]['name'] == name]
+            ind = [i for i in range(len(criteria)) if criteria[i]['type'] == type]
             if len(ind) > 0:
                 all_criteria = [criteria[i] for i in ind]
 
         if isinstance(all_criteria, dict):
             all_criteria = [all_criteria]
         return all_criteria
+
+    def check_criterion_exists(self, criterion, return_ind:bool = False):
+        criterion_exist = False
+        criterion_ind = None
+        for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
+            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
+                for constraint in crit['constraints']:
+                    if constraint == criterion['constraints']:
+                        criterion_exist = True
+                        criterion_ind = ind
+        if return_ind:
+            return criterion_exist,criterion_ind
+        else:
+            return criterion_exist
+
+    def modify_criterion(self, criterion):
+        """
+        Modify the criterion the clinical criteria
+
+
+        """
+        criterion_found = False
+        for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
+            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
+                for constraint in crit['constraints']:
+                    if constraint == criterion['constraints']:
+                        self.clinical_criteria_dict['criteria'][ind]['constraints'][constraint] = criterion['constraints']
+                        criterion_found = True
+        if not criterion_found:
+            raise Warning('No criteria  for {}'.format(criterion))

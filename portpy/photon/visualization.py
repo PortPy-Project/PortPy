@@ -136,7 +136,7 @@ class Visualization:
 
         if show_criteria is not None:
             for s in range(len(show_criteria)):
-                if 'dose_volume' in show_criteria[s]['name']:
+                if 'dose_volume' in show_criteria[s]['type']:
                     x = show_criteria[s]['parameters']['dose_gy']
                     y = show_criteria[s]['constraints']['limit_volume_perc']
                     ax.plot(x, y, marker='x', color='red', markersize=20)

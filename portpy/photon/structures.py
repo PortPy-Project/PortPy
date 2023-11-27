@@ -262,9 +262,9 @@ class Structures:
         if clinical_criteria is not None:
             criteria = clinical_criteria.clinical_criteria_dict['criteria']
 
-        opt_obj_cons = obj_funcs + opt_params_constraints
-        print('creating rinds.. This step may take some time due to dilation')
-        for ind, obj in enumerate(opt_obj_cons):
+        constraints = criteria + opt_params_constraints
+        print('Creating optimization structures.. It may take some time due to dilation')
+        for ind, obj in enumerate(obj_funcs):
             if 'structure_def' in obj:
                 if obj['structure_name'] not in self.get_structures():
                     structure_def = obj['structure_def']
@@ -272,7 +272,7 @@ class Structures:
                     result = mask_3d & self.get_structure_mask_3d('BODY')
                     self.create_structure(new_struct_name=obj['structure_name'], mask_3d=result)
 
-        for ind, criterion in enumerate(criteria):
+        for ind, criterion in enumerate(constraints):
             if 'structure_def' in criterion['parameters']:
                 param = criterion['parameters']
                 structure_def = param['structure_def']

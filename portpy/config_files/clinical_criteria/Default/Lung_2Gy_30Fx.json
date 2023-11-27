@@ -5,7 +5,7 @@
   "num_of_fractions": 30,
   "criteria": [
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "GTV"
       },
@@ -15,7 +15,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "PTV"
       },
@@ -25,7 +25,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "ESOPHAGUS"
       },
@@ -34,7 +34,7 @@
       }
     },
     {
-      "name": "mean_dose",
+      "type": "mean_dose",
       "parameters": {
         "structure_name": "ESOPHAGUS"
       },
@@ -44,7 +44,7 @@
       }
     },
     {
-      "name": "dose_volume_V",
+      "type": "dose_volume_V",
       "parameters": {
         "structure_name": "ESOPHAGUS",
         "dose_gy": 60
@@ -54,7 +54,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "HEART"
       },
@@ -63,7 +63,7 @@
       }
     },
     {
-      "name": "mean_dose",
+      "type": "mean_dose",
       "parameters": {
         "structure_name": "HEART"
       },
@@ -73,7 +73,7 @@
       }
     },
     {
-      "name": "dose_volume_V",
+      "type": "dose_volume_V",
       "parameters": {
         "structure_name": "HEART",
         "dose_gy": 30
@@ -83,7 +83,7 @@
       }
     },
     {
-      "name": "dose_volume_V",
+      "type": "dose_volume_V",
       "parameters": {
         "structure_name": "HEART",
         "dose_gy": 30
@@ -93,7 +93,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "LUNG_L"
       },
@@ -102,7 +102,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "LUNG_R"
       },
@@ -111,7 +111,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "CORD"
       },
@@ -121,7 +121,7 @@
       }
     },
     {
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "SKIN"
       },
@@ -130,7 +130,7 @@
       }
     },
 	{
-      "name": "max_dose",
+      "type": "max_dose",
       "parameters": {
         "structure_name": "LUNGS_NOT_GTV",
 		"structure_def": "(LUNG_L | LUNG_R) - GTV"
@@ -140,7 +140,7 @@
       }
     },
 	{
-      "name": "mean_dose",
+      "type": "mean_dose",
       "parameters": {
         "structure_name": "LUNGS_NOT_GTV",
 		"structure_def": "(LUNG_L | LUNG_R) - GTV"
@@ -151,7 +151,7 @@
       }
     },
 	{
-      "name": "dose_volume_V",
+      "type": "dose_volume_V",
       "parameters": {
         "structure_name": "LUNGS_NOT_GTV",
 		"structure_def": "(LUNG_L | LUNG_R) - GTV",
