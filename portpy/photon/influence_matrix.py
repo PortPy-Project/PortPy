@@ -367,7 +367,7 @@ class InfluenceMatrix:
                 if ind == 0:
                     if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing full influence matrix for beam {}'.format(ind))
-                        inf_matrix = np.hstack(
+                        inf_matrix = np.column_stack(
                             [inf_matrix_full[:, np.unique(opt_beamlets[i])].sum(axis=1) for i in
                              range(len(opt_beamlets))])
                     else:
@@ -376,7 +376,7 @@ class InfluenceMatrix:
                 else:
                     if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing full influence matrix for beam {}'.format(ind))
-                        inf_matrix_2 = np.hstack(
+                        inf_matrix_2 = np.column_stack(
                             [inf_matrix_full[:, np.unique(opt_beamlets[i])].sum(axis=1) for i in
                              range(len(opt_beamlets))])
                         inf_matrix = np.hstack([inf_matrix, inf_matrix_2])
@@ -390,7 +390,7 @@ class InfluenceMatrix:
                     inf_matrix = inf_matrix_full
                 print('creating influence matrix for down sample voxels..')
                 inf_matrix = np.vstack(
-                    [(np.diags(self._vox_weights[i]).dot(inf_matrix[self._vox_map[i], :])).sum(axis=0)
+                    [(np.diag(self._vox_weights[i]).dot(inf_matrix[self._vox_map[i], :])).sum(axis=0)
                      for i in range(len(self._vox_map))])
 
         return inf_matrix
