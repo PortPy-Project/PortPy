@@ -34,7 +34,7 @@ researchers new to this field. Meanwhile, we suggest reviewing relevant literatu
 # Why we created PortPy? <a name="Why"></a>
 
 <p align="center">
-  <img src="./images/PortPy-Figure-1.png" width="60%" height="40%">
+  <img src="./images/PortPyIntegration.png" width="60%" height="40%">
 <p>
 
 
@@ -44,17 +44,18 @@ This limitation stems from the difficulty in fully replicating clinical environm
 linear accelerator configurations and commercial dose calculation engines. Consequently,
 plans generated using novel techniques, such as AI-based automated treatment planning, cannot be objectively compared
 with clinical plans used in patient treatment. To address this limitation, we are integrating PortPy with 
-commercial treatment planning systems (TPSs). PortPy is already compatible with the Varian Eclipse TPS, 
+commercial treatment planning systems (TPSs). PortPy is already compatible with the [Varian Eclipse TPS](https://www.varian.com/), 
 and we plan to expand compatibility to additional TPSs in the future. It's crucial to note that PortPy can 
 be used independently of any TPS, but accessing a TPS is essential for final evaluation within the TPS (see above figure).
 <p align="center">
-  <img src="./images/PortPy-Figure-2.png" width="40%" height="40%">
+  <img src="./images/AI_Pyramid.png" width="40%" height="40%">
 <p>
+
 Above figure highlights the inspiration for developing PortPy, drawing on successful open-source practices 
 from the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets 
 such as ImageNet and algorithms like AlexNet, have transformed AI and data science. Our aim is to emulate 
 this success, providing researchers with comprehensive resources (PortPy integration with commercial TPS 
-and other renowned open-source tools such as 3DSlicer and CVXPy), a benchmark dataset 
+and other renowned open-source tools such as [3DSlicer](https://www.slicer.org/) and [CVXPy](https://www.cvxpy.org/), a benchmark dataset 
 (featuring 50 curated lung patients with expertly selected beams, all necessary optimization data, 
 and benchmark IMRT plans created using our in-house automated planning system, ECHO), 
 and benchmark algorithms, including Mixed Integer Programming (MIP) algorithms for achieving globally optimal solutions.
@@ -124,8 +125,9 @@ may exist variations in dose calculation methods between Eclipse and other TPSs.
 
 # How to contribute? <a name="HowContribute"></a>
 <p align="center">
-<img src="./images/PortPy-Figs_3.jpg" width="90%" height="40%">
+<img src="./images/PortPy_Organization.png" width="90%" height="40%">
 <p>
+
 As illustrated in the above figure, PortPy organization includes "PortPy", which is the current repository, 
 and PortPy extensions, which are the repositories developed using the PortPy as a platform. 
 To maintain the lightweight nature and user-friendliness of PortPy modules, our aim is to include only fundamental 
@@ -139,12 +141,12 @@ If you use PortPy to build your own package, you're welcome to host your package
 [PortPy-Project orgainization](https://github.com/PortPy-Project). 
 Alternatively, you can host your package on your own GitHub page. In this case, 
 please inform us so that we can fork it and feature it under the PortPy-Project organization. 
-For those keen on creating a logo for their repository, we offer the option to customize our [pre-designed logo]().
+For those keen on creating a logo for their repository, we offer the option to customize our [pre-designed logo](https://www.canva.com/design/DAFxivHC0Js/YqZREdr26pmEsIgCeuU-iA/view?utm_content=DAFxivHC0Js&utm_campaign=designshare&utm_medium=link&utm_source=publishsharelink&mode=preview).
 
 
 # Data <a name="Data"></a>
 <p align="center">
-<img src="./images/PortPy-Figs_4_data.jpg" width="90%" height="40%">
+<img src="./images/PortPy Data.png" width="90%" height="40%">
 <p>
 PortPy equips researchers with a robust benchmark patient dataset, sourced from the FDA-approved Eclipse commercial treatment planning system through its API. This dataset embodies all necessary elements for optimizing various machine configurations such as beam angles, aperture shapes, and leaf movements. It includes
 
