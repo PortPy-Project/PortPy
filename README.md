@@ -46,11 +46,11 @@ plans generated using novel techniques, such as AI-based automated treatment pla
 with clinical plans used in patient treatment. To address this limitation, we are integrating PortPy with 
 commercial treatment planning systems (TPSs). PortPy is already compatible with the Varian Eclipse TPS, 
 and we plan to expand compatibility to additional TPSs in the future. It's crucial to note that PortPy can 
-be used independently of any TPS, but accessing a TPS is essential for final evaluation within the TPS (see left figure above).
+be used independently of any TPS, but accessing a TPS is essential for final evaluation within the TPS (see above figure).
 <p align="center">
   <img src="./images/PortPy-Figure-2.png" width="40%" height="40%">
 <p>
-Right figure above highlights the inspiration for developing PortPy, drawing on successful open-source practices 
+Above figure highlights the inspiration for developing PortPy, drawing on successful open-source practices 
 from the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets 
 such as ImageNet and algorithms like AlexNet, have transformed AI and data science. Our aim is to emulate 
 this success, providing researchers with comprehensive resources (PortPy integration with commercial TPS 
