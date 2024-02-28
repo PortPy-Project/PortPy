@@ -34,7 +34,7 @@ researchers new to this field. Meanwhile, we suggest reviewing relevant literatu
 # Why we created PortPy? <a name="Why"></a>
 
 <p align="center">
-  <img src="./images/PortPy-Figure-12.png" width="90%" height="40%">
+  <img src="./images/PortPy-Figure-1.png" width="60%" height="40%">
 <p>
 
 
@@ -47,7 +47,9 @@ with clinical plans used in patient treatment. To address this limitation, we ar
 commercial treatment planning systems (TPSs). PortPy is already compatible with the Varian Eclipse TPS, 
 and we plan to expand compatibility to additional TPSs in the future. It's crucial to note that PortPy can 
 be used independently of any TPS, but accessing a TPS is essential for final evaluation within the TPS (see left figure above).
-
+<p align="center">
+  <img src="./images/PortPy-Figure-2.png" width="40%" height="40%">
+<p>
 Right figure above highlights the inspiration for developing PortPy, drawing on successful open-source practices 
 from the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets 
 such as ImageNet and algorithms like AlexNet, have transformed AI and data science. Our aim is to emulate 
