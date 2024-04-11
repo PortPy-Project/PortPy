@@ -35,8 +35,8 @@ class Plan:
 
     """
 
-    def __init__(self, ct: CT, structs: Structures, beams: Beams, inf_matrix: InfluenceMatrix,
-                 clinical_criteria: ClinicalCriteria = None) -> None:
+    def __init__(self, structs: Structures, beams: Beams, inf_matrix: InfluenceMatrix,
+                 ct: CT = None, clinical_criteria: ClinicalCriteria = None) -> None:
         """
         Creates an object of Plan class for the specified patient
 
@@ -50,13 +50,14 @@ class Plan:
         >>> my_plan = Plan(ct, structs, beams, inf_matrix, clinical_criteria)
         """
 
-        self.beams = beams  # create beams attribute
-        self.structures = structs  # create structures attribute
-        self.ct = ct  # create ct attribute containing ct information as dictionary
-        self.inf_matrix = inf_matrix
+        self.beams: Beams = beams  # create beams attribute
+        self.structures: Structures = structs  # create structures attribute
+        self.ct: CT = ct  # create ct attribute containing ct information as dictionary
+        self.inf_matrix: InfluenceMatrix = inf_matrix
         if clinical_criteria is not None:
-            self.clinical_criteria = clinical_criteria
-        self.patient_id = ct.patient_id
+            self.clinical_criteria: ClinicalCriteria = clinical_criteria
+        if ct is not None:
+            self.patient_id = ct.patient_id
 
     def save_plan(self, plan_name: str = None, path: str = None) -> None:
         """

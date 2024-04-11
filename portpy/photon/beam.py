@@ -27,7 +27,7 @@ class Beams:
 
     """
 
-    def __init__(self, data: DataExplorer, beam_ids: List[int] = None, load_inf_matrix_full: bool = False):
+    def __init__(self, data: DataExplorer, beam_ids:  List[Union[int, str]] = None, load_inf_matrix_full: bool = False):
         """
 
         :param beams_dict: Beams dictionary containing information about beams
@@ -77,6 +77,7 @@ class Beams:
     @staticmethod
     def sort_beamlets(b_map):
         c = b_map[b_map >= 0]
+        c = np.unique(c)
         ind = np.arange(0, len(c))
         c_sort = np.sort(c)
         matrix_ind = [np.where(b_map == c_i) for c_i in c_sort]
@@ -85,6 +86,26 @@ class Beams:
             map_copy[matrix_ind[i]] = ind[i]
         return map_copy
 
+    def make_beamlets_continous(self):
+
+        # make beamlets continuous
+
+        for ind, id in enumerate(self.beams_dict['ID']):
+            beam_map = self.get_beamlet_idx_2d_finest_grid(beam_id=id)
+            std_map = self.sort_beamlets(beam_map)
+            if ind == 0:
+                self.beams_dict['beamlet_idx_2d_finest_grid'][ind] = std_map
+            else:
+
+                beamlet_ind = np.unique(std_map.flatten())
+                beamlet_ind = beamlet_ind[beamlet_ind >= 0]
+                a = np.where(np.isin(std_map, beamlet_ind))
+                mask_2d_grid = np.zeros_like(std_map, dtype=bool)
+                mask_2d_grid[a] = True
+                beam_map = std_map + int(
+                    np.amax(self.beams_dict['beamlet_idx_2d_finest_grid'][ind - 1]) + 1) * mask_2d_grid
+                self.beams_dict['beamlet_idx_2d_finest_grid'][ind] = beam_map
+
     def preprocess_beams(self):
         for i, beam_id in enumerate(self.beams_dict['ID']):
             ind = self.beams_dict['ID'].index(beam_id)
@@ -92,7 +113,7 @@ class Beams:
             self.beams_dict.setdefault('beamlet_idx_2d_finest_grid', []).append(beam_2d_grid)
 
     @staticmethod
-    def get_beamlet_idx_2d_grid(beam_map):
+    def _create_2d_orig_grid(beam_map):
         rowsNoRepeat = [0]
         for i in range(1, np.size(beam_map, 0)):
             if (beam_map[i, :] != beam_map[rowsNoRepeat[-1], :]).any():
@@ -103,6 +124,49 @@ class Beams:
                 colsNoRepeat.append(j)
         beam_map = beam_map[np.ix_(np.asarray(rowsNoRepeat), np.asarray(colsNoRepeat))]
         return beam_map
+
+    def get_beamlet_idx_2d_grid(self, beam_id: Union[Union[int, str], List[Union[int, str]]] = None, ind: int = None,
+                                finest_grid: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
+
+        """
+        get BEV in 2d grid in original resolution where beamlet index is the column number in influence matrix
+
+        :param ind: idx of the beam in beamlets_dict.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :param beam_id: beam_id of the beam.
+        It can be int or List[int]. If int, ndarray is return, If List[int], list[ndarray] is returned
+        :param finest_grid:Default to False. If set to true, it will return 2d grid in finest resolution
+        :return: ndarray/List[ndarray]
+        """
+
+        if beam_id is not None:
+            ind = []
+            if isinstance(beam_id, int) or isinstance(beam_id, str):
+                ind = [i for i in range(len(self.beams_dict['ID'])) if
+                       self.beams_dict['ID'][i] == beam_id]
+                if not ind:
+                    raise ValueError("invalid beam id {}".format(beam_id))
+            elif isinstance(beam_id, list):
+                for idx in beam_id:
+                    try:
+                        ind_1 = [i for i in range(len(self.beams_dict['ID'])) if
+                                 self.beams_dict['ID'][i] == idx][0]
+                        ind.append(ind_1)
+                    except:
+                        raise ValueError("invalid beam id {}".format(idx))
+        # Bug fix. in case ind is int make it as list
+        if isinstance(ind, int) or isinstance(ind, str):
+            ind = [ind]
+        beam_orig = []
+        for b in ind:
+            beam_map = self.beams_dict['beamlet_idx_2d_finest_grid'][b]
+            if not finest_grid:
+                beam_map = self._create_2d_orig_grid(beam_map)
+            beam_orig.append(beam_map)
+        if len(beam_orig) == 1:
+            beam_orig = beam_orig[0]  # return ndarray in case if it is not list
+
+        return beam_orig
 
     @staticmethod
     def get_finest_beamlet_width() -> float:
@@ -124,7 +188,7 @@ class Beams:
 
     def get_beamlet_width(self) -> float:
         """
-        
+
         :return: beamlet width in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
@@ -132,7 +196,7 @@ class Beams:
 
     def get_beamlet_height(self) -> float:
         """
-        
+
         :return: beamlet height in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
@@ -175,7 +239,7 @@ class Beams:
         return beamlet_idx_2d_finest_grid
 
     @staticmethod
-    def get_plan_beams(beam_ids: List[int] = None, meta_data: dict = None) -> dict:
+    def get_plan_beams(beam_ids: List[Union[int, str]] = None, meta_data: dict = None) -> dict:
         """
         Create and return a copy of meta_data with only including the requested beams_dict (beam_ids)
 
@@ -190,7 +254,10 @@ class Beams:
         """
         if beam_ids is None:  # if beam_ids not included, then the beams_dict
             # selected by an expert human planner would be used
-            beam_ids = meta_data['planner_beam_ids']['IDs']
+            if 'planner_beam_ids' in meta_data:
+                beam_ids = meta_data['planner_beam_ids']['IDs']
+            else:
+                beam_ids = meta_data['beams']['ID']
         meta_data_req = meta_data.copy()
         del meta_data_req['beams']  # remove previous beams_dict
         beamReq = dict()

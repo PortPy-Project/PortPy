@@ -31,7 +31,7 @@ class Evaluation:
     """
 
     @staticmethod
-    def display_clinical_criteria(my_plan: Plan, sol: Union[dict, List[dict]], html_file_name='temp.html',
+    def display_clinical_criteria(my_plan: Plan, sol: Union[dict, List[dict]] = None, dose_1d: Union[np.ndarray, List[np.ndarray]]=None, html_file_name='temp.html',
                                   sol_names: List[str] = None, clinical_criteria: ClinicalCriteria = None,
                                   return_df: bool = False, in_browser: bool = False):
         """
@@ -57,65 +57,136 @@ class Evaluation:
             clinical_criteria = my_plan.clinical_criteria
         # df = pd.DataFrame.from_dict(clinical_criteria.clinical_criteria_dict['criteria'])
         df = pd.json_normalize(clinical_criteria.clinical_criteria_dict['criteria'])
-        dose_volume_ind = df.index[df['type'] == 'dose_volume_V'].tolist()
-        constraint_limit_perc_ind = df.index[~df['constraints.limit_volume_perc'].isnull()].tolist()
-        constraint_goal_perc_ind = df.index[~df['constraints.goal_volume_perc'].isnull()].tolist()
-        constraint_limit_gy_ind = df.index[~df['constraints.limit_dose_gy'].isnull()].tolist()
-        constraint_goal_gy_ind = df.index[~df['constraints.goal_dose_gy'].isnull()].tolist()
-        for ind in dose_volume_ind:
-            df.loc[ind, 'type'] = 'V(' + str(round(df['parameters.dose_gy'][ind])) + 'Gy)'
-        for ind in constraint_limit_gy_ind:
-            df.loc[ind, 'Limit'] = str(round(df['constraints.limit_dose_gy'][ind])) + 'Gy'
-        for ind in constraint_limit_perc_ind:
-            df.loc[ind, 'Limit'] = str(round(df['constraints.limit_volume_perc'][ind])) + '%'
-        for ind in constraint_goal_gy_ind:
-            df.loc[ind, 'Goal'] = str(round(df['constraints.goal_dose_gy'][ind])) + 'Gy'
-        for ind in constraint_goal_perc_ind:
-            df.loc[ind, 'Goal'] = str(round(df['constraints.goal_volume_perc'][ind])) + '%'
+        dose_volume_V_ind = df.index[df['type'] == 'dose_volume_V'].tolist()
+        if dose_volume_V_ind:
+            volumn_cols = [col for col in df.columns if 'volume' in col]
+            if volumn_cols:
+                perc_col = [col_name for col_name in volumn_cols if 'perc' in col_name]
+                cc_col = [col_name for col_name in volumn_cols if 'cc' in col_name]
+                for col in perc_col:
+                    if 'limit' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'Limit', col, '%')
+                    if 'goal' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'Goal', col, '%')
+                for col in cc_col:
+                    if 'limit' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'Limit', col, 'cc')
+                    if 'goal' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'Goal', col, 'cc')
+            dose_cols = [col for col in df.columns if 'parameters.dose' in col]
+            if dose_cols:
+                for col in dose_cols:
+                    if 'perc' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'type', col, '%', 'dose_volume_V')
+                    if 'gy' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'type', col, 'Gy', 'dose_volume_V')
+
+        dose_cols = [col for col in df.columns if 'dose' in col]
+        if dose_cols:
+            perc_col = [col_name for col_name in dose_cols if 'perc' in col_name]
+            gy_col = [col_name for col_name in dose_cols if 'gy' in col_name]
+            for col in perc_col:
+                if 'limit' in col:
+                    df = Evaluation.add_dvh_to_frame(my_plan, df, 'Limit', col, '%')
+                if 'goal' in col:
+                    df = Evaluation.add_dvh_to_frame(my_plan, df, 'Goal', col, '%')
+            for col in gy_col:
+                if 'limit' in col:
+                    df = Evaluation.add_dvh_to_frame(my_plan, df, 'Limit', col, 'Gy')
+                if 'goal' in col:
+                    df = Evaluation.add_dvh_to_frame(my_plan, df, 'Goal', col, 'Gy')
+
+        dose_volume_D_ind = df.index[df['type'] == 'dose_volume_D'].tolist()
+        if dose_volume_D_ind:
+            vol_cols = [col for col in df.columns if 'parameters.volume' in col]
+            if vol_cols:
+                for col in vol_cols:
+                    if 'perc' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'type', col, '%', 'dose_volume_D')
+                    if 'cc' in col:
+                        df = Evaluation.add_dvh_to_frame(my_plan, df, 'type', col, 'cc', 'dose_volume_D')
 
         # refine df
         df = df.rename(columns={'parameters.structure_name': 'structure_name', 'type': 'constraint'})
-        df = df.drop(
-            ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
-             'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')
+        # df = df.drop(
+        #     ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
+        #      'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')
+        if 'Goal' not in df:
+            df['Goal'] = ''
+        df = df[['constraint', 'structure_name', 'Limit', 'Goal']]
 
+        dose_1d_list = []
+        dummy_sol = {}
         if isinstance(sol, dict):
             sol = [sol]
+        if dose_1d is None:
+            for p, s in enumerate(sol):
+                dose_1d_list.append(s['inf_matrix'].A @ (s['optimal_intensity'] * my_plan.get_num_of_fractions()))
+        else:
+            if isinstance(dose_1d, np.ndarray):
+                dose_1d_list = [dose_1d]
+            else:
+                dose_1d_list = dose_1d
         if sol_names is None:
-            if len(sol) > 1:
-                sol_names = ['Plan Value ' + str(i) for i in range(len(sol))]
+            if len(dose_1d_list) > 1:
+                sol_names = ['Plan Value ' + str(i) for i in range(len(dose_1d_list))]
             else:
                 sol_names = ['Plan Value']
-        for p, s in enumerate(sol):
-            dose_1d = s['inf_matrix'].A @ (s['optimal_intensity'] * my_plan.get_num_of_fractions())
+        for p, dose_1d in enumerate(dose_1d_list):
+            dummy_sol['inf_matrix'] = my_plan.inf_matrix
+            dummy_sol['dose_1d'] = dose_1d
             for ind in range(len(df)):  # Loop through the clinical criteria
                 if df.constraint[ind] == 'max_dose':
                     struct = df.structure_name[ind]
                     if struct in my_plan.structures.get_structures():
-                        max_dose = Evaluation.get_max_dose(s, dose_1d=dose_1d, struct=struct)  # get max dose_1d
+
+                        max_dose = Evaluation.get_max_dose(dummy_sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
                         if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = round(max_dose,2)
-                        elif '%' in str(df.Limit[ind]) or '%' in str(df.Limit[ind]):
+                        elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = round(max_dose / my_plan.get_prescription() * 100, 2)
-                if df.constraint[ind] == 'mean_dose':
+                elif df.constraint[ind] == 'mean_dose':
                     struct = df.structure_name[ind]
                     if struct in my_plan.structures.get_structures():
-                        mean_dose = Evaluation.get_mean_dose(s, dose_1d=dose_1d, struct=struct)
-                        df.at[ind, sol_names[p]] = round(mean_dose, 2)
-                if "V(" in df.constraint[ind]:
+                        mean_dose = Evaluation.get_mean_dose(dummy_sol, dose_1d=dose_1d, struct=struct)
+                        if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
+                            df.at[ind, sol_names[p]] = round(mean_dose, 2)
+                        elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
+                            df.at[ind, sol_names[p]] = round(mean_dose / my_plan.get_prescription() * 100, 2)
+                elif "V(" in df.constraint[ind]:
                     struct = df.structure_name[ind]
                     if struct in my_plan.structures.get_structures():
-                        if '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]): # we are writing str since nan values throws error
-                            dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                        dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                        # convert dose to Gy
+                        if '%' in df.constraint[ind]:
                             dose = float(dose)
-                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                            dose = dose * my_plan.get_prescription() / 100
+                        elif 'Gy' in df.constraint[ind]:
+                            dose = float(dose)
+                        # get volume in perc
+                        volume = Evaluation.get_volume(dummy_sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
+                        if '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]): # we are writing str since nan values throws error
                             df.at[ind, sol_names[p]] = np.round(volume, 2)
                         elif 'cc' in str(df.Limit[ind]) or 'cc' in str(df.Goal[ind]):
-                            dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
-                            dose = float(dose)
-                            volume = Evaluation.get_volume(s, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
                             vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
                             df.at[ind, sol_names[p]] = np.round(vol_cc, 2)
+                elif "D(" in df.constraint[ind]:
+                    struct = df.structure_name[ind]
+                    if struct in my_plan.structures.get_structures():
+                        volume = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                        # convert volume to perc
+                        if '%' in df.constraint[ind]:
+                            volume = float(volume)
+                        elif 'cc' in df.constraint[ind]:
+                            volume = float(volume)
+                            volume = volume / my_plan.structures.get_volume_cc(structure_name=struct) * 100
+
+                        # get dose
+                        dose = Evaluation.get_dose(dummy_sol, dose_1d=dose_1d, struct=struct, volume_per=volume)
+                        if '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]): # we are writing str since nan values throws error
+                            df.at[ind, sol_names[p]] = np.round(dose, 2)/my_plan.get_prescription()*100
+                        elif 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
+                            df.at[ind, sol_names[p]] = np.round(dose, 2)
         df.round(2)
         df = df[df['Plan Value'].notna()]  # remove rows for which plan value is Nan
         df = df.fillna('')
@@ -404,6 +475,28 @@ class Evaluation:
             bed_d = bed_d + (dose_per_fraction_1d + (dose_per_fraction_1d**2/(alpha/beta)))
         return bed_d
 
+    @staticmethod
+    def add_dvh_to_frame(my_plan: Plan, df: pd.DataFrame, new_column_name: str, old_column_name: str, unit: str, dvh_type=None):
+        req_ind = df.index[~df[old_column_name].isnull()].tolist()
+        for ind in req_ind:
+            if dvh_type is None:
+                df.loc[ind, new_column_name] = str(round(Evaluation.get_num(my_plan, df[old_column_name][ind]), 2)) + unit
+            elif dvh_type is not None:
+                if dvh_type == 'dose_volume_V':
+                    df.loc[ind, new_column_name] = 'V(' + str(round(Evaluation.get_num(my_plan, df[old_column_name][ind]), 2)) + unit + ')'
+                elif dvh_type == 'dose_volume_D':
+                    df.loc[ind, new_column_name] = 'D(' + str(round(Evaluation.get_num(my_plan, df[old_column_name][ind]), 2)) + unit + ')'
+        return df
+
+    @staticmethod
+    def get_num(my_plan, string: Union[str, float]):
+        if "prescription_gy" in str(string):
+            prescription_gy = my_plan.get_prescription()
+            return eval(string)
+        elif isinstance(string, float) or isinstance(string, int):
+            return string
+        else:
+            raise Exception('Invalid constraint')
     @staticmethod
     def is_notebook() -> bool:
         try:

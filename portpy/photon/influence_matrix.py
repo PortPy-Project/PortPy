@@ -38,9 +38,9 @@ class InfluenceMatrix:
 
     """
 
-    def __init__(self, ct: CT, structs: Structures, beams: Beams,
-                 beamlet_width_mm: float = None, beamlet_height_mm: float = None, opt_vox_xyz_res_mm: List[float] = None,
-                 is_full: bool = False, target_structure: str = 'PTV', opt_beamlets_PTV_margin_mm: float = 3) -> None:
+    def __init__(self, structs: Structures, beams: Beams,
+                 ct: CT = None, beamlet_width_mm: float = None, beamlet_height_mm: float = None, opt_vox_xyz_res_mm: List[float] = None,
+                 is_full: bool = False, target_structure: str = 'PTV', opt_beamlets_PTV_margin_mm: float = 3, is_bev: bool = False) -> None:
         """
         Create a influence matrix object for Influence Matrix class based upon beamlet resolution and opt_vox_xyz_res_mm
 
@@ -54,6 +54,7 @@ class InfluenceMatrix:
                 e.g. opt_vox_xyz_res = [5*ct.res.x,5*ct.res.y,1*ct.res.z]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
                 defaults to None. When None it will use the original optimization voxel resolution.
         :param is_full: Load full or sparse matrix. defaults to False. If True, will load full matrix
+        :param is_bev: True, if the given beams are already in beam eye view and influence matrix should not beamlets according to ptv margin
 
         """
         if beamlet_width_mm is None and beamlet_height_mm is None:
@@ -67,11 +68,12 @@ class InfluenceMatrix:
                 raise ValueError('beamlet_width_mm and beamlet_height_mm should be multiple of 2.5')
         self._beams = beams
         self._structs = structs
-        self._ct = ct
+        if ct is not None:
+            self._ct = ct
 
         down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
         if opt_vox_xyz_res_mm is not None:
-            down_sample_xyz = [round(i / j) for i, j in zip(opt_vox_xyz_res_mm, ct.get_ct_res_xyz_mm())]
+            down_sample_xyz = [round(i / j) for i, j in zip(opt_vox_xyz_res_mm, structs.get_ct_res_xyz_mm())]
             if np.all(np.array(down_sample_xyz) == 1):  # if all are 1 then no down sample
                 down_sample_xyz = None
 
@@ -95,9 +97,9 @@ class InfluenceMatrix:
             self.beamlets_dict[i]['beam_id'] = beams.beams_dict['ID'][i]  # save beam_id in beamlet_dict
 
         self.opt_beamlets_PTV_margin_mm = opt_beamlets_PTV_margin_mm
-        self.opt_voxels_dict['ct_origin_xyz_mm'] = ct.ct_dict['origin_xyz_mm']  # store ct origin from plan
+        # self.opt_voxels_dict['ct_origin_xyz_mm'] = ct.ct_dict['origin_xyz_mm']  # store ct origin from plan
         print('Creating BEV..')
-        self.preprocess_beams(structure=target_structure)
+        self.preprocess_beams(structure=target_structure, is_bev=is_bev)
         if self._down_sample_xyz is not None:
             self.pre_process_voxels()  # create new optimization voxel indices based on down-sample resolution
 
@@ -451,79 +453,91 @@ class InfluenceMatrix:
                 mask = np.zeros_like(XX, dtype=bool)
             for row in range(XX.shape[0]):
                 for col in range(XX.shape[1]):
-                    ind = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
+                    ind1 = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
 
                     # if (beamlets[ind]['position_x_mm'], beamlets[ind]['position_y_mm']) in x_and_y:
-                    if (beamlets['position_x_mm'][0][ind], beamlets['position_y_mm'][0][ind]) in x_and_y:
+                    if (beamlets['position_x_mm'][0][ind1], beamlets['position_y_mm'][0][ind1]) in x_and_y:
                         # beam_map[row, col] = beamlets[ind]['id']
                         mask[row, col] = True
         return mask
 
-    def preprocess_beams(self, structure='PTV', remove_corner_beamlets=False):
+    def preprocess_beams(self, structure='PTV', remove_corner_beamlets=False, is_bev=False):
         """
         Preprocess beams to create beamlets dictionary based on beamlet resolution.
 
-        :param beams: object of class Beams
         :param structure: projection of the struct_name on BEV for which beamlets to be considered for creating influence matrix. defaults to PTV
         :param remove_corner_beamlets: If remove corner beamlet is true, it will remove the corner beamlets during down sampling.
+        :param is_bev: if True, don't generate beam eye veiw beamlets
         :return: beamlets for processing influence matrix
         """
 
         for ind in range(len(self.beamlets_dict)):
             # ind = my_plan.beamlets_dict['ID'].index(beam_id)
-            mask = self.create_BEV_mask_from_contours(ind=ind, structure=structure,
-                                                      margin_mm=self.opt_beamlets_PTV_margin_mm)
-            beam_2d_grid = self.create_beamlet_idx_2d_finest_grid(ind=ind)
-            beamlets = self.beamlets_dict[ind]
+            if not is_bev:
+                mask = self.create_BEV_mask_from_contours(ind=ind, structure=structure,
+                                                          margin_mm=self.opt_beamlets_PTV_margin_mm)
+                beam_2d_grid = self.create_beamlet_idx_2d_finest_grid(ind=ind)
+                beamlets = self.beamlets_dict[ind]
 
-            # creating beam_map of original resolution so that mask can be multiplied with it
-            beam_map = self.get_orig_res_2d_grid(ind)
-            beam_map = np.multiply((beam_map + int(1)), mask)  # add and subtract one to maintain 0th beamlet
-            beam_map = beam_map - int(1)  # subtract one again to get original beamlets
+                # creating beam_map of original resolution so that mask can be multiplied with it
+                beam_map = self.get_orig_res_2d_grid(ind)
+                beam_map = np.multiply((beam_map + int(1)), mask)  # add and subtract one to maintain 0th beamlet
+                beam_map = beam_map - int(1)  # subtract one again to get original beamlets
 
-            # get mask and beam_map in 2.5mm resolution
-            beamlet_ind = np.unique(beam_map.flatten())
-            beamlet_ind = beamlet_ind[beamlet_ind >= 0]
-            a = np.where(np.isin(beam_2d_grid, beamlet_ind))
-            mask_2d_grid = np.zeros_like(beam_2d_grid, dtype=bool)
-            mask_2d_grid[a] = True
-            beam_2d_grid = (beam_2d_grid + int(1)) * mask_2d_grid  # add and subtract 1 to retain ids
-            beam_2d_grid = beam_2d_grid - int(1)
-            beam_map = beam_2d_grid
-
-            # get opt beamlets for down_sample grid as list of original inf_matrix beamlet
-            if self.beamlet_width_mm > self._beams.get_beamlet_width() or \
-                    self.beamlet_height_mm > self._beams.get_beamlet_height():
-                down_sample_2d_grid = self.down_sample_2d_grid(ind=ind, beamlet_width_mm=self.beamlet_width_mm,
-                                                               beamlet_height_mm=self.beamlet_height_mm)
-                down_sample_2d_grid = (down_sample_2d_grid + int(1)) * mask_2d_grid  # add and subtract 1 to retain ids
-                down_sample_2d_grid = down_sample_2d_grid - int(1)
-                down_sample_beamlets, counts = np.unique(np.sort(down_sample_2d_grid[down_sample_2d_grid >= 0]),
-                                                         return_counts=True)
-                # remove corner beamlets in coarse resolution and updating down sample map
-                if remove_corner_beamlets:
-                    count_ind = np.where(counts >= (self.beamlet_width_mm / 2.5) * (self.beamlet_height_mm / 2.5))
-                    down_sample_beamlets = down_sample_beamlets[count_ind]
-                    # updating down sample grid after removing corner beamlets
-                    inds_down_sample = down_sample_2d_grid == down_sample_beamlets[:, None,
-                                                              None]  # keep only down sample beamlets and remove others
-                    down_sample_2d_grid[~np.any(inds_down_sample, axis=0)] = -1
-
-                a = np.where(np.isin(down_sample_2d_grid, down_sample_beamlets))
+                # get mask and beam_map in 2.5mm resolution
+                beamlet_ind = np.unique(beam_map.flatten())
+                beamlet_ind = beamlet_ind[beamlet_ind >= 0]
+                a = np.where(np.isin(beam_2d_grid, beamlet_ind))
                 mask_2d_grid = np.zeros_like(beam_2d_grid, dtype=bool)
                 mask_2d_grid[a] = True
-                # actual_beamlets = beam_2d_grid[a]
-                actual_beamlets = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'][a]
-                sampled_beamlets = down_sample_2d_grid[a]
-                b = [np.where(sampled_beamlets == down_sample_beamlets[i]) for i in range(len(down_sample_beamlets))]
-                opt_beamlets = [actual_beamlets[i] for i in b]
+                beam_2d_grid = (beam_2d_grid + int(1)) * mask_2d_grid  # add and subtract 1 to retain ids
+                beam_2d_grid = beam_2d_grid - int(1)
+                beam_map = beam_2d_grid
 
-                beam_map = down_sample_2d_grid
+                # get opt beamlets for down_sample grid as list of original inf_matrix beamlet
+                if self.beamlet_width_mm > self._beams.get_beamlet_width() or \
+                        self.beamlet_height_mm > self._beams.get_beamlet_height():
+                    down_sample_2d_grid = self.down_sample_2d_grid(ind=ind, beamlet_width_mm=self.beamlet_width_mm,
+                                                                   beamlet_height_mm=self.beamlet_height_mm)
+                    down_sample_2d_grid = (down_sample_2d_grid + int(1)) * mask_2d_grid  # add and subtract 1 to retain ids
+                    down_sample_2d_grid = down_sample_2d_grid - int(1)
+                    down_sample_beamlets, counts = np.unique(np.sort(down_sample_2d_grid[down_sample_2d_grid >= 0]),
+                                                             return_counts=True)
+                    # remove corner beamlets in coarse resolution and updating down sample map
+                    if remove_corner_beamlets:
+                        count_ind = np.where(counts >= (self.beamlet_width_mm / 2.5) * (self.beamlet_height_mm / 2.5))
+                        down_sample_beamlets = down_sample_beamlets[count_ind]
+                        # updating down sample grid after removing corner beamlets
+                        inds_down_sample = down_sample_2d_grid == down_sample_beamlets[:, None,
+                                                                  None]  # keep only down sample beamlets and remove others
+                        down_sample_2d_grid[~np.any(inds_down_sample, axis=0)] = -1
+
+                    a = np.where(np.isin(down_sample_2d_grid, down_sample_beamlets))
+                    mask_2d_grid = np.zeros_like(beam_2d_grid, dtype=bool)
+                    mask_2d_grid[a] = True
+                    # actual_beamlets = beam_2d_grid[a]
+                    actual_beamlets = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'][a]
+                    sampled_beamlets = down_sample_2d_grid[a]
+                    b = [np.where(sampled_beamlets == down_sample_beamlets[i]) for i in range(len(down_sample_beamlets))]
+                    opt_beamlets = [actual_beamlets[i] for i in b]
+
+                    beam_map = down_sample_2d_grid
+                else:
+                    opt_beamlets = np.unique(np.sort(beam_map[beam_map >= 0]))
+                # make beamlets continuous
+                std_map = self.sort_beamlets(beam_map)
             else:
-                opt_beamlets = np.unique(np.sort(beam_map[beam_map >= 0]))
+                beam_map = self._beams.beams_dict['beamlet_idx_2d_finest_grid'][ind]
+                beamlets = self.beamlets_dict[ind]
+                beamlet_ind = np.unique(beam_map.flatten())
+                beamlet_ind = beamlet_ind[beamlet_ind >= 0]
+                a = np.where(np.isin(beam_map, beamlet_ind))
+                mask_2d_grid = np.zeros_like(beam_map, dtype=bool)
+                mask_2d_grid[a] = True
+                # make beamlets continuous
+                std_map = self.sort_beamlets(beam_map)
+                opt_beamlets = np.unique(np.sort(std_map[std_map >= 0]))
 
-            # make beamlets continuous
-            std_map = self.sort_beamlets(beam_map)
             if ind == 0:
                 beam_map = std_map
             else:
@@ -645,7 +659,7 @@ class InfluenceMatrix:
         # beam_map = beam_map - int(1)  # subtract one again to get original beamlets
         return beam_map
 
-    def get_bev_2d_grid(self, beam_id: Union[int, List[int]] = None, ind: int = None,
+    def get_bev_2d_grid(self, beam_id: Union[Union[int, str], List[Union[int, str]]] = None, ind: int = None,
                         finest_grid: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
 
         """
@@ -661,12 +675,12 @@ class InfluenceMatrix:
 
         if beam_id is not None:
             ind = []
-            if isinstance(beam_id, int):
+            if isinstance(beam_id, int) or isinstance(beam_id, str):
                 ind = [i for i in range(len(self.beamlets_dict)) if
                        self.beamlets_dict[i]['beam_id'] == beam_id]
                 if not ind:
                     raise ValueError("invalid beam id {}".format(beam_id))
-            elif isinstance(beam_id, list):
+            if isinstance(ind, int) or isinstance(ind, str):
                 for idx in beam_id:
                     try:
                         ind_1 = [i for i in range(len(self.beamlets_dict)) if
@@ -675,7 +689,7 @@ class InfluenceMatrix:
                     except:
                         raise ValueError("invalid beam id {}".format(idx))
         # Bug fix. in case ind is int make it as list
-        if isinstance(ind, int):
+        if isinstance(ind, int) or isinstance(ind, str):
             ind = [ind]
         beam_orig = []
         for b in ind:
@@ -922,6 +936,6 @@ class InfluenceMatrix:
         # vox_ind = np.where(my_plan.opt_voxels_dict['voxel_structure_map'][0][:, ind] == 1)[0]
         return vox_weights
 
-    def get_all_beam_ids(self) -> List[int]:
+    def get_all_beam_ids(self) -> List[Union[int, str]]:
         ids = [self.beamlets_dict[i]['beam_id'] for i in range(len(self.beamlets_dict))]
         return ids
