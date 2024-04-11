@@ -1,5 +1,13 @@
+from __future__ import annotations
 from typing import List
+import pandas as pd
 from .data_explorer import DataExplorer
+import json
+from typing import TYPE_CHECKING, Union
+if TYPE_CHECKING:
+    from portpy.photon.plan import Plan
+from copy import deepcopy
+import numpy as np
 
 
 class ClinicalCriteria:
@@ -28,14 +36,20 @@ class ClinicalCriteria:
 
     """
 
-    def __init__(self, data: DataExplorer, protocol_name: str = None, protocol_type: str = 'Default'):
+    def __init__(self, data: DataExplorer = None, protocol_name: str = None, protocol_type: str = 'Default', file_name: str = None):
         """
 
         :param clinical_criteria: dictionary containing information about clinical criteria
 
         """
-        clinical_criteria_dict = data.load_config_clinical_criteria(protocol_name, protocol_type=protocol_type)
+        if file_name is None:
+            clinical_criteria_dict = data.load_config_clinical_criteria(protocol_name, protocol_type=protocol_type)
+        else:
+            f = open(file_name)
+            clinical_criteria_dict = json.load(f)
+            f.close()
         self.clinical_criteria_dict = clinical_criteria_dict
+        self.dvh_table = pd.DataFrame()
 
     def get_prescription(self) -> float:
         """
@@ -136,3 +150,156 @@ class ClinicalCriteria:
                         criterion_found = True
         if not criterion_found:
             raise Warning('No criteria  for {}'.format(criterion))
+
+
+    def get_num(self, string: Union[str, float]):
+        if "prescription_gy" in str(string):
+            prescription_gy = self.get_prescription()
+            return eval(string)
+        elif isinstance(string, float) or isinstance(string, int):
+            return string
+        else:
+            raise Exception('Invalid constraint')
+
+    def matching_keys(self, dictionary, search_string):
+        get_key = None
+        for key, val in dictionary.items():
+            if search_string in key:
+                get_key = key
+        if get_key is not None:
+            return get_key
+        else:
+            return ''
+
+    @staticmethod
+    def convert_dvh_to_dose_gy_vol_perc(my_plan, old_criteria):
+        """
+        Get dose volume in Gy and Percent format
+        """
+        criteria = deepcopy(old_criteria)
+        struct_name = criteria['parameters']['structure_name']
+        if criteria['type'] == 'dose_volume_D':
+            constraint_keys = criteria['constraints'].keys()
+            for key in constraint_keys:
+                if 'perc' in key:
+                    value = criteria['constraints'][key]
+                    new_key = key.replace('perc', 'gy')
+                    criteria['constraints'][new_key] = criteria['constraints'].pop(key)
+                    criteria['constraints'][new_key] = value / 100 * my_plan.get_prescription()
+            param_keys = criteria['parameters'].keys()
+            for key in param_keys:
+                if 'volume_cc' in key:
+                    value = criteria['parameters'][key]
+                    new_key = key.replace('cc', 'perc')
+                    criteria['parameters'][new_key] = criteria['parameters'].pop(key)
+                    criteria['parameters'][new_key] = value / my_plan.structures.get_volume_cc(
+                        struct_name.upper()) * 100
+        if criteria['type'] == 'dose_volume_V':
+            constraint_keys = criteria['constraints'].keys()
+            for key in constraint_keys:
+                if 'volume_cc' in key:
+                    value = criteria['constraints'][key]
+                    new_key = key.replace('cc', 'perc')
+                    criteria['constraints'][new_key] = criteria['constraints'].pop(key)
+                    criteria['constraints'][new_key] = value / my_plan.structures.get_volume_cc(
+                        struct_name.upper()) * 100
+            param_keys = criteria['parameters'].keys()
+            for key in param_keys:
+                if 'dose_perc' in key:
+                    value = criteria['parameters'][key]
+                    new_key = key.replace('perc', 'gy')
+                    criteria['parameters'][new_key] = criteria['parameters'].pop(key)
+                    criteria['parameters'][new_key] = value / 100 * my_plan.get_prescription()
+        return criteria
+
+
+    def get_dvh_table(self, my_plan: Plan, constraint_list: list = None):
+        if constraint_list is None:
+            constraint_list = self.clinical_criteria_dict['criteria']
+        dvh_updated_list = []
+        for i, constraint in enumerate(constraint_list):
+            if constraint['parameters']['structure_name'] in my_plan.structures.get_structures():
+                updated_constraint = self.convert_dvh_to_dose_gy_vol_perc(my_plan, constraint)
+                dvh_updated_list.append(updated_constraint)
+        import pandas as pd
+        df = pd.DataFrame()
+        count = 0
+        for i in range(len(dvh_updated_list)):
+            if 'dose_volume_V' in dvh_updated_list[i]['type']:
+                limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
+                if limit_key in dvh_updated_list[i]['constraints']:
+                    df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
+                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['parameters']['dose_gy'])
+                    df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][limit_key]
+                    df.at[count, 'dvh_type'] = 'constraint'
+                    count = count + 1
+                goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
+                if goal_key in dvh_updated_list[i]['constraints']:
+                    df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
+                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['parameters']['dose_gy'])
+                    df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
+                    df.at[count, 'dvh_type'] = 'goal'
+                    count = count + 1
+            if 'dose_volume_D' in dvh_updated_list[i]['type']:
+                limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
+                if limit_key in dvh_updated_list[i]['constraints']:
+                    df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
+                    df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
+                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['constraints'][limit_key])
+                    df.at[count, 'dvh_type'] = 'constraint'
+                    count = count + 1
+                goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
+                if goal_key in dvh_updated_list[i]['constraints']:
+                    df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
+                    df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
+                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['constraints'][goal_key])
+                    df.at[count, 'dvh_type'] = 'goal'
+                    count = count + 1
+        self.dvh_table = df
+        return self.dvh_table
+
+
+    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray):
+        dvh_table = self.dvh_table
+        inf_matrix = my_plan.inf_matrix
+        for ind in dvh_table.index:
+            structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
+            dvh_table['volume_perc'][ind]
+            dvh_type = dvh_table['dvh_type'][ind]
+            struct_vox = inf_matrix.get_opt_voxels_idx(structure_name)
+            n_struct_vox = len(struct_vox)
+            sort_ind = np.argsort(dose[struct_vox])
+            voxel_sort = struct_vox[sort_ind]
+            weights = inf_matrix.get_opt_voxels_volume_cc(structure_name)
+            weights_sort = weights[sort_ind]
+            weight_all_sum = np.sum(weights_sort)
+            w_sum = 0
+            if dvh_type == 'constraint':
+                for w_ind in range(n_struct_vox):
+                    w_sum = w_sum + weights_sort[w_ind]
+                    w_ratio = w_sum / weight_all_sum
+                    if w_ratio * 100 >= vol_perc:
+                        break
+                low_dose_voxels = voxel_sort[:w_ind+1]
+                if ind == 0:
+                    dvh_table.at[ind, 'low_dose_voxels'] = object  # fix issue with adding array to dataframe
+                dvh_table.at[ind, 'low_dose_voxels'] = low_dose_voxels
+
+        return self.dvh_table
+
+    def get_max_tol(self, constraints_list: list = None):
+        if constraints_list is None:
+            constraints_list = self.clinical_criteria_dict['criteria']
+        dvh_table = self.dvh_table
+        for ind in dvh_table.index:
+            structure_name, dose_gy = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind]
+            max_tol = 100
+            for criterion in constraints_list:
+                if criterion['type'] == 'max_dose':
+                    if criterion['parameters']['structure_name'] == structure_name:
+                        key = self.matching_keys(criterion['constraints'], 'limit')
+                        print(key)
+                        max_tol = self.get_num(criterion['constraints'][key])
+            dvh_table.at[ind, 'max_tol'] = max_tol
+
+        return self.dvh_table
