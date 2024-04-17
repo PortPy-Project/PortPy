@@ -142,17 +142,17 @@ class Evaluation:
 
                         max_dose = Evaluation.get_max_dose(dummy_sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
                         if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
-                            df.at[ind, sol_names[p]] = round(max_dose,2)
+                            df.at[ind, sol_names[p]] = np.round(max_dose,2)
                         elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
-                            df.at[ind, sol_names[p]] = round(max_dose / my_plan.get_prescription() * 100, 2)
+                            df.at[ind, sol_names[p]] = np.round(max_dose / my_plan.get_prescription() * 100, 2)
                 elif df.constraint[ind] == 'mean_dose':
                     struct = df.structure_name[ind]
                     if struct in my_plan.structures.get_structures():
                         mean_dose = Evaluation.get_mean_dose(dummy_sol, dose_1d=dose_1d, struct=struct)
                         if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
-                            df.at[ind, sol_names[p]] = round(mean_dose, 2)
+                            df.at[ind, sol_names[p]] = np.round(mean_dose, 2)
                         elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
-                            df.at[ind, sol_names[p]] = round(mean_dose / my_plan.get_prescription() * 100, 2)
+                            df.at[ind, sol_names[p]] = np.round(mean_dose / my_plan.get_prescription() * 100, 2)
                 elif "V(" in df.constraint[ind]:
                     struct = df.structure_name[ind]
                     if struct in my_plan.structures.get_structures():
