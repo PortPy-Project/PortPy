@@ -33,7 +33,7 @@ class Evaluation:
     @staticmethod
     def display_clinical_criteria(my_plan: Plan, sol: Union[dict, List[dict]] = None, dose_1d: Union[np.ndarray, List[np.ndarray]]=None, html_file_name='temp.html',
                                   sol_names: List[str] = None, clinical_criteria: ClinicalCriteria = None,
-                                  return_df: bool = False, in_browser: bool = False):
+                                  return_df: bool = False, in_browser: bool = False, path: str = None, open_browser: bool = True):
         """
         Visualization the plan metrics for clinical criteria in browser.
         It evaluate the plan by comparing the metrics against required criteria.
@@ -49,6 +49,8 @@ class Evaluation:
         :param clinical_criteria: clinical criteria to be evaluated
         :param return_df: return df instead of visualization
         :param in_browser: display table in browser
+        :param path: path for saving the html file which opens up in browser
+        :param open_browser: if true, html will be launched in browser
         :return: plan metrics in browser
         """
         import re
@@ -188,7 +190,7 @@ class Evaluation:
                         elif 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(dose, 2)
         df.round(2)
-        df = df[df['Plan Value'].notna()]  # remove rows for which plan value is Nan
+        df = df[df[sol_names].notna().all(axis=1)]  # remove rows for which plan value is Nan
         df = df.fillna('')
         # df.dropna(axis=0, inplace=True)  # remove structures which are not present
         # df.reset_index(drop=True, inplace=True)  # reset the index
@@ -246,9 +248,13 @@ class Evaluation:
                                                       </body>
                                                     </html>.
                                                     '''
-            with open(html_file_name, 'w') as f:
+            if path is None:
+                path = os.getcwd()
+            html_file_path = os.path.join(path, html_file_name)
+            with open(html_file_path, 'w') as f:
                 f.write(html_string.format(table=html))
-            webbrowser.open('file://' + os.path.realpath(html_file_name))
+            if open_browser:
+                webbrowser.open('file://' + os.path.realpath(html_file_path))
 
         else:
             if Evaluation.is_notebook():
