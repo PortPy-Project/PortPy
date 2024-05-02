@@ -44,6 +44,7 @@ class Evaluation:
 
         :param my_plan: object of class Plan
         :param sol: optimal solution dictionary
+        :param dose_1d: vectorized dose 1d array
         :param html_file_name:  name of the html file to be launched in browser
         :param sol_names: Default to Plan Value. column names for the plan evaluation
         :param clinical_criteria: clinical criteria to be evaluated

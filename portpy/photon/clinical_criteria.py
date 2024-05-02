@@ -213,9 +213,22 @@ class ClinicalCriteria:
         return criteria
 
 
-    def get_dvh_table(self, my_plan: Plan, constraint_list: list = None):
+    def get_dvh_table(self, my_plan: Plan, constraint_list: list = None, opt_params: Union[list, dict] = None):
         if constraint_list is None:
             constraint_list = self.clinical_criteria_dict['criteria']
+        if opt_params is not None:
+            # add/modify constraints definition if present in opt params
+            for opt_constraint in opt_params['constraints']:
+                # add constraint
+                param = opt_constraint['parameters']
+                if param['structure_name'] in my_plan.structures.get_structures():
+                    criterion_exist, criterion_ind = self.check_criterion_exists(opt_constraint,
+                                                                                              return_ind=True)
+                    if criterion_exist:
+                        constraint_list[criterion_ind] = opt_constraint
+                    else:
+                        constraint_list += [opt_constraint]
+
         dvh_updated_list = []
         for i, constraint in enumerate(constraint_list):
             if constraint['parameters']['structure_name'] in my_plan.structures.get_structures():
@@ -256,6 +269,7 @@ class ClinicalCriteria:
                     df.at[count, 'dvh_type'] = 'goal'
                     count = count + 1
         self.dvh_table = df
+        self.get_max_tol(constraints_list=constraint_list)
         return self.dvh_table
 
 
