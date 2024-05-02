@@ -577,8 +577,8 @@ class InfluenceMatrix:
         right_ind = np.argmax(x_positions)
         bottom_ind = np.argmin(y_positions)
         w_all = np.column_stack((x_positions, y_positions))  # top left corners of all beamlets
-        x_coord = np.arange(np.min(x_positions), np.max(x_positions) + beamlets['width_mm'][0][right_ind], 2.5)
-        y_coord = np.arange(np.max(y_positions), np.min(y_positions) - beamlets['height_mm'][0][bottom_ind], -2.5)
+        x_coord = np.arange(np.min(x_positions), np.max(x_positions) + beamlets['width_mm'][0][right_ind].item(), 2.5)
+        y_coord = np.arange(np.max(y_positions), np.min(y_positions) - beamlets['height_mm'][0][bottom_ind].item(), -2.5)
         XX, YY = np.meshgrid(x_coord, y_coord)
         beamlet_idx_2d_grid = np.ones_like(XX, dtype=int)
         beamlet_idx_2d_grid = beamlet_idx_2d_grid * int(-1)
@@ -587,8 +587,8 @@ class InfluenceMatrix:
                 ind = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))
                 if np.size(ind) > 0:
                     ind = ind[0][0]
-                    num_width = int(beamlets['width_mm'][0][ind] / 2.5)
-                    num_height = int(beamlets['height_mm'][0][ind] / 2.5)
+                    num_width = int(beamlets['width_mm'][0][ind].item() / 2.5)
+                    num_height = int(beamlets['height_mm'][0][ind].item() / 2.5)
                     beamlet_idx_2d_grid[row:row + num_height, col:col + num_width] = ind
 
         return beamlet_idx_2d_grid
