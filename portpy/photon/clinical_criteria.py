@@ -215,8 +215,7 @@ class ClinicalCriteria:
 
     def get_dvh_table(self, my_plan: Plan, constraint_list: list = None, opt_params: Union[list, dict] = None):
         if constraint_list is None:
-            constraint_list = self.clinical_criteria_dict['criteria']
-        if opt_params is not None:
+            constraint_list = deepcopy(self.clinical_criteria_dict['criteria'])
             # add/modify constraints definition if present in opt params
             for opt_constraint in opt_params['constraints']:
                 # add constraint
