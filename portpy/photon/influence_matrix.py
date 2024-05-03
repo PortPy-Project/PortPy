@@ -459,6 +459,7 @@ class InfluenceMatrix:
                     if (beamlets['position_x_mm'][0][ind1], beamlets['position_y_mm'][0][ind1]) in x_and_y:
                         # beam_map[row, col] = beamlets[ind]['id']
                         mask[row, col] = True
+        mask = self._process_matrix(mask)
         return mask
 
     def preprocess_beams(self, structure='PTV', remove_corner_beamlets=False, is_bev=False):
@@ -937,5 +938,24 @@ class InfluenceMatrix:
         return vox_weights
 
     def get_all_beam_ids(self) -> List[Union[int, str]]:
+        """
+        Return all beam ids for the plan
+        """
         ids = [self.beamlets_dict[i]['beam_id'] for i in range(len(self.beamlets_dict))]
         return ids
+
+    @staticmethod
+    def _process_matrix(matrix:np.ndarray):
+        """
+        Process beam eye view matrix so that there are only ones between left and right leaf
+        """
+        result = np.zeros_like(matrix, dtype=bool)
+        for r, row in enumerate(matrix):
+            true_indices = np.where(row)[0]
+            if len(true_indices) > 1:  # Check if there are more than one True
+                start = true_indices[0]
+                end = true_indices[-1]
+                result[r, start:end + 1] = True
+            elif len(true_indices) == 1:  # If only one True, keep it as it is
+                result[r, true_indices] = True
+        return result
