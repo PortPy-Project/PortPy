@@ -231,6 +231,8 @@ class ClinicalCriteria:
         dvh_updated_list = []
         for i, constraint in enumerate(constraint_list):
             if constraint['parameters']['structure_name'] in my_plan.structures.get_structures():
+                if len(my_plan.inf_matrix.get_opt_voxels_idx(constraint['parameters']['structure_name'])) == 0:
+                    continue
                 updated_constraint = self.convert_dvh_to_dose_gy_vol_perc(my_plan, constraint)
                 dvh_updated_list.append(updated_constraint)
         import pandas as pd
