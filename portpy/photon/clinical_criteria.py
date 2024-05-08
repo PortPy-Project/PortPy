@@ -171,6 +171,15 @@ class ClinicalCriteria:
         else:
             return ''
 
+    def dose_to_gy(self, key, value):
+        if "prescription_gy" in str(value):
+            prescription_gy = self.get_prescription()
+            return eval(value)
+        elif 'gy' in key:
+            return value
+        elif 'perc' in key:
+            return value*self.get_prescription()/100
+
     @staticmethod
     def convert_dvh_to_dose_gy_vol_perc(my_plan, old_criteria):
         """
@@ -216,6 +225,7 @@ class ClinicalCriteria:
     def get_dvh_table(self, my_plan: Plan, constraint_list: list = None, opt_params: Union[list, dict] = None):
         if constraint_list is None:
             constraint_list = deepcopy(self.clinical_criteria_dict['criteria'])
+        if opt_params is not None:
             # add/modify constraints definition if present in opt params
             for opt_constraint in opt_params['constraints']:
                 # add constraint
@@ -241,16 +251,17 @@ class ClinicalCriteria:
         for i in range(len(dvh_updated_list)):
             if 'dose_volume_V' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
+                dose_key = self.matching_keys(dvh_updated_list[i]['parameters'], 'dose_')
                 if limit_key in dvh_updated_list[i]['constraints']:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
-                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['parameters']['dose_gy'])
+                    df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][limit_key]
                     df.at[count, 'dvh_type'] = 'constraint'
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
-                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['parameters']['dose_gy'])
+                    df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
                     df.at[count, 'dvh_type'] = 'goal'
                     count = count + 1
@@ -259,14 +270,14 @@ class ClinicalCriteria:
                 if limit_key in dvh_updated_list[i]['constraints']:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
-                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['constraints'][limit_key])
+                    df.at[count, 'dose_gy'] = self.dose_to_gy(limit_key, dvh_updated_list[i]['constraints'][limit_key])
                     df.at[count, 'dvh_type'] = 'constraint'
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
-                    df.at[count, 'dose_gy'] = self.get_num(dvh_updated_list[i]['constraints'][goal_key])
+                    df.at[count, 'dose_gy'] = self.dose_to_gy(goal_key, dvh_updated_list[i]['constraints'][goal_key])
                     df.at[count, 'dvh_type'] = 'goal'
                     count = count + 1
         self.dvh_table = df
@@ -313,8 +324,7 @@ class ClinicalCriteria:
                 if criterion['type'] == 'max_dose':
                     if criterion['parameters']['structure_name'] == structure_name:
                         key = self.matching_keys(criterion['constraints'], 'limit')
-                        print(key)
-                        max_tol = self.get_num(criterion['constraints'][key])
+                        max_tol = self.dose_to_gy(key, criterion['constraints'][key])
             dvh_table.at[ind, 'max_tol'] = max_tol
 
         return self.dvh_table
