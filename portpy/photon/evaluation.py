@@ -187,7 +187,7 @@ class Evaluation:
                         # get dose
                         dose = Evaluation.get_dose(dummy_sol, dose_1d=dose_1d, struct=struct, volume_per=volume)
                         if '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]): # we are writing str since nan values throws error
-                            df.at[ind, sol_names[p]] = np.round(dose, 2)/my_plan.get_prescription()*100
+                            df.at[ind, sol_names[p]] = np.round(dose/my_plan.get_prescription()*100, 2)
                         elif 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(dose, 2)
         df.round(2)
@@ -291,7 +291,9 @@ class Evaluation:
         if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
             return 0
         f = interpolate.interp1d(100 * y, x)
-
+        if volume_per > 100.1:
+            print('Warning: Volume Percentage: {} for structure {} is invalid'.format(volume_per, struct))
+            return 0
         return f(volume_per)
 
     @staticmethod

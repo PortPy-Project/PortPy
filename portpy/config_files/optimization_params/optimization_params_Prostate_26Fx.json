@@ -1,0 +1,138 @@
+{
+  "prescription_gy": 70.2,
+  "objective_functions": [	
+	{
+		"type": "quadratic-overdose",
+		"structure_name": "PTV",
+		"weight": 10000,
+		"dose_perc": 100
+    },
+    {
+		"type": "quadratic-underdose",
+		"structure_name": "PTV",
+        "weight": 100000,
+        "dose_perc": 100
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "CAUDA",
+        "weight": 10
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "RECTUM",
+        "weight": 20
+    },
+	{
+		"type": "quadratic",     
+		"structure_name": "BLADDER",
+        "weight": 20
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "CAUDA_PTV_OVERLAP",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "BOWEL_SM",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "BOWEL_LG",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "FEMUR_L",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "FEMUR_R",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "FEMURS",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "UREHTRA",
+        "weight": 10
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "RIND_0",
+		"structure_def": "(PTV+2) - PTV",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_1",
+		"structure_def": "(PTV+20) - (PTV + 2)",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_2",
+		"structure_def": "(PTV+40) - (PTV + 20)",
+        "weight": 3
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_3",
+		"structure_def": "(PTV + inf) - (PTV + 40)",
+        "weight": 3
+    },
+	{
+		"type": "smoothness-quadratic",    
+        "weight": 100
+    }
+	],
+	"constraints":[
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_0",
+		"structure_def": "(PTV+2) - PTV"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 110
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_1",
+		"structure_def": "(PTV+20) - (PTV + 2)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 100
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_2",
+		"structure_def": "(PTV+40) - (PTV + 20)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 70
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_3",
+		"structure_def": "(PTV+inf) - (PTV + 40)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 50
+	  }
+	}
+]
+
+}

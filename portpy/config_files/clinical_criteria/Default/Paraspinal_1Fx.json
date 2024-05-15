@@ -1,0 +1,755 @@
+{
+  "disease_site": "Paraspinal",
+  "protocol_name": "Paraspinal_1Fx",
+  "pres_per_fraction_gy": 24,
+  "num_of_fractions": 1,
+  "criteria": [
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 120
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD"
+      },
+      "constraints": {
+        "limit_dose_gy": 14
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD-TREATED"
+      },
+      "constraints": {
+        "limit_dose_gy": 12
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD_TRANS"
+      },
+      "constraints": {
+        "limit_dose_gy": 10
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CAUDA"
+      },
+      "constraints": {
+        "limit_dose_gy": 18
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CAUDA-TREATED"
+      },
+      "constraints": {
+        "limit_dose_gy": 14
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "AORTA"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "ARTERIES"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "NFZ"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PBT"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CHESTWALL"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "FEMUR_L"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "FEMUR_R"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LARYNX_MINUS_PTV",
+		"structure_def":"LARYNX - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LARYNX_INTER_PTV",
+		"structure_def":"LARYNX & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PHARYNX_MINUS_PTV",
+		"structure_def":"PHARYNX - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PHARYNX_INTER_PTV",
+		"structure_def":"PHARYNX & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "TRACHEA_MINUS_PTV",
+		"structure_def":"TRACHEA - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "TRACHEA_INTER_PTV",
+		"structure_def":"TRACHEA & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "STOMACH"
+      },
+      "constraints": {
+        "limit_dose_gy": 15
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BOWEL-LG"
+      },
+      "constraints": {
+        "limit_dose_gy": 16
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BOWEL-SM"
+      },
+      "constraints": {
+        "limit_dose_gy": 16
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "DUODENUM"
+      },
+      "constraints": {
+        "limit_dose_gy": 15
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RECTUM"
+      },
+      "constraints": {
+        "limit_dose_gy": 16
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "ESOPHAGUS_MINUS_PTV",
+		"structure_def": "ESOPHAGUS - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "ESOPHAGUS_INTER_PTV",
+		"structure_def": "ESOPHAGUS & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRPLX_L_MINUS_PTV_3",
+		"structure_def": "BRPLX_L - (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_gy": 24
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRPLX_L_INTER_PTV_3",
+		"structure_def": "BRPLX_L & (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRPLX_R_MINUS_PTV_3",
+		"structure_def": "BRPLX_R - (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_gy": 24
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRPLX_R_INTER_PTV_3",
+		"structure_def": "BRPLX_R & (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SACRAPLEXUS_L_MINUS_PTV_3",
+		"structure_def": "SACRAPLEXUS_L - (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_gy": 24
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SACRAPLEXUS_L_INTER_PTV_3",
+		"structure_def": "SACRAPLEXUS_L & (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SACRAPLEXUS_R_MINUS_PTV_3",
+		"structure_def": "SACRAPLEXUS_R - (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_gy": 24
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SACRAPLEXUS_R_INTER_PTV_3",
+		"structure_def": "SACRAPLEXUS_R & (PTV + 3)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "HEART"
+      },
+      "constraints": {
+        "limit_dose_gy": 22
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RIND11"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RIND12"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RIND13"
+      },
+      "constraints": {
+        "limit_dose_perc": 80
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RIND14"
+      },
+      "constraints": {
+        "limit_dose_perc": 60
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SKIN"
+      },
+      "constraints": {
+        "limit_dose_gy": 26
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRAINSTEM"
+      },
+      "constraints": {
+        "limit_dose_gy": 18
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PAROTID_L_MINUS_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PAROTID_L_INTER_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PAROTID_R_MINUS_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PAROTID_R_INTER_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "ORAL_CAV_MINUS_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "ORAL_CAV_INTER_PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KID_L_MINUS_PTV",
+		"structure_def": "KID_L - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KID_L_INTER_PTV",
+		"structure_def": "KID_L & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KID_R_MINUS_PTV",
+		"structure_def": "KID_R - PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KID_R_INTER_PTV",
+		"structure_def": "KID_R & PTV"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KIDNEYS"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "KID_SINGLEFUNCTION"
+      },
+      "constraints": {
+        "limit_dose_perc": 105
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BLADDER"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LIVER"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "THYROID"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_L_MINUS_PTV_2",
+		"structure_def": "LUNG_L - (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_L_INTER_PTV_2",
+		"structure_def": "LUNG_L & (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_R_MINUS_PTV_2",
+		"structure_def": "LUNG_R - (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_R_INTER_PTV_2",
+		"structure_def": "LUNG_L & (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV_MINUS_PTV_2",
+		"structure_def": "LUNGS_NOT_GTV - (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 100
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV_INTER_PTV_2",
+		"structure_def": "LUNGS_NOT_GTV & (PTV + 2)"
+      },
+      "constraints": {
+        "limit_dose_perc": 110
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD"
+      },
+      "constraints": {
+        "goal_dose_gy": 13
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD-TREATED"
+      },
+      "constraints": {
+        "goal_dose_gy": 11
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CORD_TRANS"
+      },
+      "constraints": {
+        "goal_dose_gy": 9
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CAUDA"
+      },
+      "constraints": {
+        "goal_dose_gy": 17
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CAUDA-TREATED"
+      },
+      "constraints": {
+        "goal_dose_gy": 13
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BOWEL-SM"
+      },
+      "constraints": {
+        "goal_dose_gy": 15.5
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BOWEL-LG"
+      },
+      "constraints": {
+        "goal_dose_gy": 15.5
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "STOMACH"
+      },
+      "constraints": {
+        "goal_dose_gy": 14.5
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "DUODENUM"
+      },
+      "constraints": {
+        "goal_dose_gy": 14.5
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "RECTUM"
+      },
+      "constraints": {
+        "goal_dose_gy": 15.5
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRAINSTEM"
+      },
+      "constraints": {
+        "goal_dose_gy": 15
+      }
+    },
+    {
+      "type": "dose_volume_V",
+      "parameters": {
+        "structure_name": "LUNGS_NOT_GTV",
+        "dose_gy": 20
+      },
+      "constraints": {
+        "limit_volume_perc": 10
+      }
+    },
+    {
+      "type": "dose_volume_D",
+      "parameters": {
+        "structure_name": "CORD",
+        "volume_cc": 0.35,
+		"weight":10
+      },
+      "constraints": {
+        "goal_dose_gy": 10
+      }
+    },
+    {
+      "type": "dose_volume_V",
+      "parameters": {
+        "structure_name": "ESOPHAGUS",
+        "dose_gy": 18
+      },
+      "constraints": {
+        "limit_volume_cc": 2.5
+      }
+    },
+    {
+      "type": "dose_volume_V",
+      "parameters": {
+        "structure_name": "ESOPHAGUS",
+        "dose_gy": 14,
+		"weight":10
+      },
+      "constraints": {
+        "goal_volume_cc": 2.5
+      }
+    },
+    {
+      "type": "dose_volume_D",
+      "parameters": {
+        "structure_name": "HEART",
+        "volume_cc": 15,
+		"weight":10
+		
+      },
+      "constraints": {
+        "goal_dose_gy": 16
+      }
+    },
+    {
+      "type": "dose_volume_D",
+      "parameters": {
+        "structure_name": "SKIN",
+        "volume_cc": 10
+      },
+      "constraints": {
+        "limit_dose_gy": 23
+      }
+    }
+  ]
+}

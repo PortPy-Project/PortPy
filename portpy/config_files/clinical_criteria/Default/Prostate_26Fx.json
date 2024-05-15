@@ -1,0 +1,214 @@
+{
+  "disease_site": "Prostate",
+  "protocol_name": "Prostate_26_Fx",
+  "pres_per_fraction_gy": 2.7,
+  "num_of_fractions": 26,
+  "criteria": [
+    {
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "PTV"
+		},
+		"constraints": {
+			"limit_dose_perc": 110
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "RECTUM"
+		},
+		"constraints": {
+			"limit_dose_perc": 102
+		}
+	},
+	{
+		"type": "mean_dose",
+		"parameters": {
+			"structure_name": "RECTUM"
+		},
+		"constraints": {
+			"limit_dose_perc": 35
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "BLADDER"
+		},
+		"constraints": {
+			"limit_dose_perc": 107
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "BLADDER_TRIGONE"
+		},
+		"constraints": {
+			"limit_dose_gy": 105
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "CAUDA"
+		},
+		"constraints": {
+			"limit_dose_perc": 55
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "CAUDA_PTV_OVERLAP"
+		},
+		"constraints": {
+			"limit_dose_perc": 65
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "BOWEL_SM"
+		},
+		"constraints": {
+			"limit_dose_perc": 70
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "BOWEL_LG"
+		},
+		"constraints": {
+			"limit_dose_perc": 75
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "FEMUR_L"
+		},
+		"constraints": {
+			"limit_dose_perc": 78
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "FEMUR_R"
+		},
+		"constraints": {
+			"limit_dose_perc": 78
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "FEMURS"
+		},
+		"constraints": {
+			"limit_dose_perc": 78
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "UREHTRA"
+		},
+		"constraints": {
+			"limit_dose_perc": 105
+		}
+	},
+	{
+		"type": "max_dose",
+		"parameters": {
+			"structure_name": "SKIN"
+		},
+		"constraints": {
+			"limit_dose_perc": 100
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "RECTUM",
+			"volume_cc": 8
+		},
+		"constraints": {
+			"limit_dose_perc": 76
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "RECTUM",
+			"volume_perc": 25
+		},
+		"constraints": {
+			"limit_dose_perc": 58
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "BLADDER",
+			"volume_perc": 10
+		},
+		"constraints": {
+			"limit_dose_perc": 94
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "BLADDER",
+			"volume_perc": 50
+		},
+		"constraints": {
+			"limit_dose_perc": 46
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "FEMURS",
+			"volume_cc": 10
+		},
+		"constraints": {
+			"limit_dose_perc": 51
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "BOWEL_SM",
+			"volume_cc": 5
+		},
+		"constraints": {
+			"limit_dose_perc": 68
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "URETHRA",
+			"volume_cc": 1
+		},
+		"constraints": {
+			"limit_dose_gy": 72.3
+		}
+	},
+	{
+		"type": "dose_volume_D",
+		"parameters": {
+			"structure_name": "BLADDER_TRIGONE",
+			"volume_cc": 1
+		},
+		"constraints": {
+			"limit_dose_gy": 72.3
+		}
+	}
+  ]
+}

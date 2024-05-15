@@ -91,7 +91,8 @@ class Optimization(object):
                     struct = obj_funcs[i]['structure_name']
                     if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
                         continue
-                    dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
                     dO = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
                     obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dO))]
                     constraints += [A[st.get_opt_voxels_idx(struct), :] @ x <= dose_gy + dO]
@@ -100,7 +101,8 @@ class Optimization(object):
                     struct = obj_funcs[i]['structure_name']
                     if len(st.get_opt_voxels_idx(struct)) == 0:
                         continue
-                    dose_gy = self.get_num(obj_funcs[i]['dose_gy']) / clinical_criteria.get_num_of_fractions()
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
                     dU = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
                     obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(dU))]
                     constraints += [A[st.get_opt_voxels_idx(struct), :] @ x >= dose_gy - dU]
@@ -137,8 +139,9 @@ class Optimization(object):
         # Adding max/mean constraints
         for i in range(len(constraint_def)):
             if constraint_def[i]['type'] == 'max_dose':
-                if 'limit_dose_gy' in constraint_def[i]['constraints']:
-                    limit = self.get_num(constraint_def[i]['constraints']['limit_dose_gy'])
+                limit_key = self.matching_keys(constraint_def[i]['constraints'], 'limit')
+                if limit_key:
+                    limit = self.dose_to_gy(limit_key, constraint_def[i]['constraints'][limit_key])
                     org = constraint_def[i]['parameters']['structure_name']
                     if org != 'GTV' and org != 'CTV':
                         if org in my_plan.structures.get_structures():
@@ -146,8 +149,9 @@ class Optimization(object):
                                 continue
                             constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
             elif constraint_def[i]['type'] == 'mean_dose':
-                if 'limit_dose_gy' in constraint_def[i]['constraints']:
-                    limit = self.get_num(constraint_def[i]['constraints']['limit_dose_gy'])
+                limit_key = self.matching_keys(constraint_def[i]['constraints'], 'limit')
+                if limit_key:
+                    limit = self.dose_to_gy(limit_key, constraint_def[i]['constraints'][limit_key])
                     org = constraint_def[i]['parameters']['structure_name']
                     # mean constraints using voxel weights
                     if org in my_plan.structures.get_structures():
@@ -612,3 +616,12 @@ class Optimization(object):
             return string
         else:
             raise Exception('Invalid constraint')
+
+    def dose_to_gy(self, key, value):
+        if "prescription_gy" in str(value):
+            prescription_gy = self.clinical_criteria.get_prescription()
+            return eval(value)
+        elif 'gy' in key:
+            return value
+        elif 'perc' in key:
+            return value*self.clinical_criteria.get_prescription()/100
