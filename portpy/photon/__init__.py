@@ -9,3 +9,7 @@ from .visualization import Visualization
 from .evaluation import Evaluation
 from .clinical_criteria import ClinicalCriteria
 from portpy.photon.utils import *
+try:
+    from portpy.photon.vmat_scp import *
+except ImportError:
+    pass
