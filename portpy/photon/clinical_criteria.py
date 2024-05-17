@@ -304,7 +304,7 @@ class ClinicalCriteria:
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum
-                    if w_ratio * 100 >= vol_perc/inf_matrix.get_fraction_of_vol_in_calc_box('structure_name'):
+                    if w_ratio * 100 >= vol_perc/inf_matrix.get_fraction_of_vol_in_calc_box(structure_name):
                         break
                 low_dose_voxels = voxel_sort[:w_ind+1]
                 if ind == 0:
