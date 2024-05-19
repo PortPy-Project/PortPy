@@ -292,6 +292,7 @@ class ClinicalCriteria:
             structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
             dvh_table['volume_perc'][ind]
             dvh_type = dvh_table['dvh_type'][ind]
+            vol_perc = vol_perc / inf_matrix.get_fraction_of_vol_in_calc_box(structure_name)
             struct_vox = inf_matrix.get_opt_voxels_idx(structure_name)
             n_struct_vox = len(struct_vox)
             sort_ind = np.argsort(dose[struct_vox])
@@ -304,7 +305,7 @@ class ClinicalCriteria:
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum
-                    if w_ratio * 100 >= vol_perc/inf_matrix.get_fraction_of_vol_in_calc_box(structure_name):
+                    if w_ratio * 100 >= (100 - vol_perc):
                         break
                 low_dose_voxels = voxel_sort[:w_ind+1]
                 if ind == 0:
