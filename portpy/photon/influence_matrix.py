@@ -451,10 +451,10 @@ class InfluenceMatrix:
                 mask = np.zeros_like(XX, dtype=bool)
             for row in range(XX.shape[0]):
                 for col in range(XX.shape[1]):
-                    ind = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
+                    ind1 = np.where((w_all[:, 0] == XX[row, col]) & (w_all[:, 1] == YY[row, col]))[0][0]
 
                     # if (beamlets[ind]['position_x_mm'], beamlets[ind]['position_y_mm']) in x_and_y:
-                    if (beamlets['position_x_mm'][0][ind], beamlets['position_y_mm'][0][ind]) in x_and_y:
+                    if (beamlets['position_x_mm'][0][ind1], beamlets['position_y_mm'][0][ind1]) in x_and_y:
                         # beam_map[row, col] = beamlets[ind]['id']
                         mask[row, col] = True
         return mask

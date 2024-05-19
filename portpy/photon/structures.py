@@ -268,19 +268,24 @@ class Structures:
             if 'structure_def' in obj:
                 if obj['structure_name'] not in self.get_structures():
                     structure_def = obj['structure_def']
-                    mask_3d = self.evaluate_expression(structure_def)
-                    result = mask_3d & self.get_structure_mask_3d('BODY')
-                    self.create_structure(new_struct_name=obj['structure_name'], mask_3d=result)
+                    try:
+                        mask_3d = self.evaluate_expression(structure_def)
+                        result = mask_3d & self.get_structure_mask_3d('BODY')
+                        self.create_structure(new_struct_name=obj['structure_name'], mask_3d=result)
+                    except:
+                        Warning('Cannot evaluate structure defintion'.format(structure_def))
 
         for ind, criterion in enumerate(constraints):
             if 'structure_def' in criterion['parameters']:
                 param = criterion['parameters']
                 structure_def = param['structure_def']
                 if param['structure_name'] not in self.get_structures():
-                    mask_3d = self.evaluate_expression(structure_def)
-                    result = mask_3d & self.get_structure_mask_3d('BODY')
-                    self.create_structure(new_struct_name=param['structure_name'], mask_3d=result)
-
+                    try:
+                        mask_3d = self.evaluate_expression(structure_def)
+                        result = mask_3d & self.get_structure_mask_3d('BODY')
+                        self.create_structure(new_struct_name=param['structure_name'], mask_3d=result)
+                    except:
+                        Warning('Cannot evaluate structure defintion'.format(structure_def))
         print('Optimization structures created!!')
         # for param in rind_params:
         #     self.set_opt_voxel_idx(struct_name=param['name'])
@@ -369,6 +374,9 @@ class Structures:
         for key in self.structures_dict.keys():
             del self.structures_dict[key][ind]
 
+    def get_ct_voxel_resolution_xyz_mm(self):
+        return self._ct_voxel_resolution_xyz_mm
+
     def set_opt_voxel_idx(self, struct_name):
         ind = self.structures_dict['name'].index(struct_name)
         vox_3d = self.structures_dict['structure_mask_3d'][ind] * \
@@ -391,10 +399,16 @@ class Structures:
 
         if isinstance(left_operand, str):
             if not left_operand.isnumeric():
-                left_operand = self.get_structure_mask_3d(left_operand)
+                if left_operand not in self.structures_dict['name']:
+                    raise Exception("Invalid structure {}".format(left_operand))
+                else:
+                    left_operand = self.get_structure_mask_3d(left_operand)
         if isinstance(right_operand, str):
             if not right_operand.isnumeric():
-                right_operand = self.get_structure_mask_3d(right_operand)
+                if right_operand not in self.structures_dict['name']:
+                    raise Exception("Invalid structure {}".format(right_operand))
+                else:
+                    right_operand = self.get_structure_mask_3d(right_operand)
 
         if operator == '+':
             if isinstance(right_operand, str):
@@ -435,7 +449,10 @@ class Structures:
                 i = j - 1
             elif expression[i] in '+-|&':
                 while operators_stack and operators_stack[-1] in '+-|&':
-                    self.apply_operator(operators_stack, values_stack)
+                    try:
+                        self.apply_operator(operators_stack, values_stack)
+                    except:
+                        raise Exception("Cannot evaluate expression")
                 operators_stack.append(expression[i])
             elif expression[i] == '(':
                 operators_stack.append(expression[i])
@@ -447,6 +464,9 @@ class Structures:
             i += 1
 
         while operators_stack:
-            self.apply_operator(operators_stack, values_stack)
+            try:
+                self.apply_operator(operators_stack, values_stack)
+            except:
+                raise Exception("Cannot evaluate expression")
 
         return values_stack[0]
