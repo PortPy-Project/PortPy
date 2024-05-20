@@ -1,0 +1,166 @@
+{
+  "prescription_gy": 60,
+  "objective_functions": [	
+	{
+		"type": "quadratic-overdose",
+		"structure_name": "PTV",
+		"weight": 10000,
+		"dose_perc": 100
+    },
+    {
+		"type": "linear-overdose",
+		"structure_name": "CORD",
+		"weight": 100,
+		"dose_gy": 50
+    },
+    {
+		"type": "quadratic-underdose",
+		"structure_name": "PTV",
+        "weight": 100000,
+        "dose_perc": 100
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "CORD",
+        "weight": 10
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "ESOPHAGUS",
+        "weight": 20
+    },
+	{
+		"type": "quadratic",     
+		"structure_name": "HEART",
+        "weight": 20
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "LUNG_L",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "LUNG_R",
+        "weight": 10
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "LUNGS_NOT_GTV",
+		"structure_def": "(LUNG_L | LUNG_R) - GTV",
+        "weight": 10
+    },
+    {
+		"type": "quadratic",
+		"structure_name": "RIND_0",
+		"structure_def": "(PTV+5) - PTV",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_1",
+		"structure_def": "(PTV+10) - (PTV + 5)",
+        "weight": 5
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_2",
+		"structure_def": "(PTV+30) - (PTV + 10)",
+        "weight": 3
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_3",
+		"structure_def": "(PTV+50) - (PTV + 30)",
+        "weight": 3
+    },
+	{
+		"type": "quadratic",
+		"structure_name": "RIND_4",
+		"structure_def": "(PTV + inf) - (PTV + 50)",
+        "weight": 3
+    },
+	{
+		"type": "smoothness-quadratic",    
+        "weight": 100
+    }
+	],
+	"constraints":[
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_0",
+		"structure_def": "(PTV+5) - PTV"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 110
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_1",
+		"structure_def": "(PTV+10) - (PTV + 5)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 105
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_2",
+		"structure_def": "(PTV+30) - (PTV + 10)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 90
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_3",
+		"structure_def": "(PTV+50) - (PTV + 30)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 85
+	  }
+	},
+	{
+	  "type": "max_dose",
+	  "parameters": {
+		"structure_name": "RIND_4",
+	   "structure_def": "(PTV + inf) - (PTV + 50)"
+	  },
+	  "constraints": {
+		"limit_dose_perc": 75
+	  }
+	}
+],
+	"opt_parameters":{
+	"minimum_dynamic_leaf_gap_mm": 0.5,
+    "initial_leaf_pos": "BEV",
+    "initial_step_size": 0,
+    "step_size_increment": 1,
+    "ss_termination": 1,
+    "step_size_f": 0,
+    "step_size_b": 0,
+    "min_dynamic_leaf_gap_beamlet": 1.01,
+    "termination_gap": 2,
+    "min_iteration_threshold": 10,
+    "dose_threshold": 0.0001,
+    "mu_max": 0.167,
+    "mu_min": 0.001,
+    "epsilon_mu": 1e-06,
+    "forward_backward": 1,
+    "total_iter_step1": 0,
+    "flag_end_of_runs": 0,
+    "last_beam_ratio": 1,
+	"first_beam_adj": 0,
+    "second_beam_adj": 0.5,
+    "last_beam_adj": 1,
+    "w_ai_obj": 10,
+    "w_as_obj": 20
+	}
+
+}
