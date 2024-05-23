@@ -1,0 +1,206 @@
+{
+  "disease_site": "HN",
+  "protocol_name": "HN_Default_1Gy_1Fr",
+  "pres_per_fraction_gy": 1,
+  "num_of_fractions": 1,
+  "criteria": [
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "GTV"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.15,
+        "goal_dose_gy": 1.14
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "PTV"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.15,
+        "goal_dose_gy": 1.14
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "BRAINSTEM"
+      },
+      "constraints": {
+        "limit_dose_gy": 1,
+        "goal_dose_gy": 0.9
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "EYE_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "EYE_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LARYNX"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "mean_dose",
+      "parameters": {
+        "structure_name": "LARYNX"
+      },
+      "constraints": {
+        "limit_dose_gy": 0.5,
+        "goal_dose_gy": 0.25
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LENS_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LENS_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "LUNG_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "MANDIBLE"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "OPTIC_NERVE_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1,
+        "goal_dose_gy": 0.9
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "OPTIC_NERVE_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1,
+        "goal_dose_gy": 0.9
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "CHIASM"
+      },
+      "constraints": {
+        "limit_dose_gy": 1,
+        "goal_dose_gy": 0.9
+      }
+    },
+    {
+      "type": "mean_dose",
+      "parameters": {
+        "structure_name": "PAROTID_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05,
+        "goal_dose_gy": 0.05
+      }
+    },
+    {
+      "type": "mean_dose",
+      "parameters": {
+        "structure_name": "PAROTID_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05,
+        "goal_dose_gy": 0.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SPINAL_CANAL"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "TEMPORAL_LOBE_L"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "TEMPORAL_LOBE_R"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    },
+    {
+      "type": "max_dose",
+      "parameters": {
+        "structure_name": "SKIN"
+      },
+      "constraints": {
+        "limit_dose_gy": 1.05
+      }
+    }
+  ]
+}

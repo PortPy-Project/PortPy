@@ -74,6 +74,31 @@ class Beams:
         elif isinstance(beam_id, list):
             return [self.beams_dict['collimator_angle'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
+    def get_jaw_positions(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+        """
+        Get jaw positions
+
+        :param beam_id: beam_id for the beam
+        :return: jaw position for the beam_id
+        """
+        if isinstance(beam_id, int):
+            ind = self.beams_dict['ID'].index(beam_id)
+            return self.beams_dict['jaw_position'][ind]
+        elif isinstance(beam_id, list):
+            return [self.beams_dict['jaw_position'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
+
+    def get_iso_center(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+        """
+        Get iso center for the given beam_id/ids
+
+        :param beam_id: beam_id for the beam
+        :return: iso center for the beam_id
+        """
+        if isinstance(beam_id, int):
+            ind = self.beams_dict['ID'].index(beam_id)
+            return self.beams_dict['iso_center'][ind]
+        elif isinstance(beam_id, list):
+            return [self.beams_dict['iso_center'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
     @staticmethod
     def sort_beamlets(b_map):
         c = b_map[b_map >= 0]

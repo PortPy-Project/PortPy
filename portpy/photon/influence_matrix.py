@@ -288,6 +288,12 @@ class InfluenceMatrix:
 
         for i in range(len(new_inf_matrix.beamlets_dict)):
             new_inf_matrix.beamlets_dict[i]['beamlet_idx_2d_finest_grid'] = deepcopy(self.beamlets_dict[i]['beamlet_idx_2d_finest_grid'])
+            # new_inf_matrix.beamlets_dict[i]['position_x_mm'][0] = deepcopy(self.beamlets_dict[i]['position_x_mm'][0])
+            # new_inf_matrix.beamlets_dict[i]['position_y_mm'][0] = deepcopy(self.beamlets_dict[i]['position_y_mm'][0])
+            # new_inf_matrix.beamlets_dict[i]['width_mm'][0] = deepcopy(self.beamlets_dict[i]['width_mm'][0])
+            # new_inf_matrix.beamlets_dict[i]['height_mm'][0] = deepcopy(self.beamlets_dict[i]['height_mm'][0])
+            # new_inf_matrix.beamlets_dict[i]['MLC_leaf_idx'][0] = deepcopy(self.beamlets_dict[i]['MLC_leaf_idx'][0]))
+
         down_sample_xyz = None  # Temporary variable to check if we want to down sample or not
         if opt_vox_xyz_res_mm is not None:
             down_sample_xyz = [round(i / j) for i, j in zip(opt_vox_xyz_res_mm, self.opt_voxels_dict['ct_voxel_resolution_xyz_mm'])]
@@ -516,12 +522,12 @@ class InfluenceMatrix:
                     a = np.where(np.isin(down_sample_2d_grid, down_sample_beamlets))
                     mask_2d_grid = np.zeros_like(beam_2d_grid, dtype=bool)
                     mask_2d_grid[a] = True
-                    # actual_beamlets = beam_2d_grid[a]
                     actual_beamlets = self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'][a]
                     sampled_beamlets = down_sample_2d_grid[a]
                     b = [np.where(sampled_beamlets == down_sample_beamlets[i]) for i in range(len(down_sample_beamlets))]
                     opt_beamlets = [actual_beamlets[i] for i in b]
-
+                    orig_beamlets = beam_2d_grid[a]
+                    opt_orig_beamlets = np.stack([orig_beamlets[i] for i in b])
                     beam_map = down_sample_2d_grid
                 else:
                     opt_beamlets = np.unique(np.sort(beam_map[beam_map >= 0]))
@@ -554,7 +560,15 @@ class InfluenceMatrix:
             # update beamlet dict
             if self.beamlet_width_mm > self._beams.get_beamlet_width() or \
                     self.beamlet_height_mm > self._beams.get_beamlet_height():
-                pass
+                if remove_corner_beamlets:
+                    self.beamlets_dict[ind]['position_x_mm'][0] = np.mean(beamlets['position_x_mm'][0][opt_orig_beamlets], axis=1)
+                    self.beamlets_dict[ind]['position_y_mm'][0] = np.mean(beamlets['position_y_mm'][0][opt_orig_beamlets], axis=1)
+                    self.beamlets_dict[ind]['width_mm'][0] = self.beamlet_width_mm * np.ones(len(opt_orig_beamlets))
+                    self.beamlets_dict[ind]['height_mm'][0] = self.beamlet_height_mm * np.ones(len(opt_orig_beamlets))
+                    leaf_idx_arr = np.unique(beamlets['MLC_leaf_idx'][0][opt_orig_beamlets], axis=1)
+                    self.beamlets_dict[ind]['MLC_leaf_idx'][0] = [arr for arr in leaf_idx_arr]
+                else:
+                    pass
             else:
                 self.beamlets_dict[ind]['position_x_mm'][0] = beamlets['position_x_mm'][0][opt_beamlets]
                 self.beamlets_dict[ind]['position_y_mm'][0] = beamlets['position_y_mm'][0][opt_beamlets]
