@@ -202,15 +202,15 @@ def write_rt_plan_vmat(my_plan: Plan, out_rt_plan_file: str, in_rt_plan_file: st
         for b, beam in enumerate(arc['vmat_opt']):
             beam_id = beam['beam_id']
             leaf_pos = np.empty((total_lp, 2), dtype='object')
-            start = int(beam['start_leaf_pair'])  # remember to change it for higher resolution
+            stop = int(beam['start_leaf_pair']) - 1  # We are doing it in reverse way since rt plan have reverse index list
             for r in range(beam['num_rows']):
-                stop = start - len(beam['MLC_leaf_idx'][0][0])
+                start = stop - len(beam['MLC_leaf_idx'][0][0])
                 if beam['field_size'][r] < 0.5:
-                    leaf_pos[stop:start, 1] = [0]
+                    leaf_pos[start:stop, 1] = [0]
                 else:
-                    leaf_pos[stop:start, 0] = [beam['bank_b'][r]]
-                    leaf_pos[stop:start, 1] = [beam['bank_a'][r]]
-                start = start - len(beam['MLC_leaf_idx'][0][0])
+                    leaf_pos[start:stop, 0] = [beam['bank_b'][r]]
+                    leaf_pos[start:stop, 1] = [beam['bank_a'][r]]
+                stop = stop - len(beam['MLC_leaf_idx'][0][0])
 
             leaf_pos[:, 0][leaf_pos[:, 0] == None] = 0.5
             leaf_pos[:, 1][leaf_pos[:, 1] == None] = 0.5
