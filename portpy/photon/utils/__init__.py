@@ -7,3 +7,4 @@ from .view_in_slicer_jupyter import view_in_slicer_jupyter
 from .convert_dose_rt_dicom_to_portpy import convert_dose_rt_dicom_to_portpy
 from .leaf_sequencing_siochi import leaf_sequencing_siochi
 from .write_rt_plan_imrt import write_rt_plan_imrt
+from .write_rt_plan_vmat import write_rt_plan_vmat

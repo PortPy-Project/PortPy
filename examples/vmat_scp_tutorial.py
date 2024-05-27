@@ -63,7 +63,7 @@ def vmat_scp_tutorial():
     # Assign discrete beam/control_point_ids to arcs and create arcs dictionary.
     # Below is an example of creating 2 arcs. Users can create single or multiple arcs.
     arcs_dict = {'arcs': [{'arc_id': "01", "control_point_ids": beam_ids[0:int(len(beam_ids) / 2)]},
-                          {'arc_id': "02", "control_point_ids": beam_ids[int(len(beam_ids) / 2):-1]}]}
+                          {'arc_id': "02", "control_point_ids": beam_ids[int(len(beam_ids) / 2):]}]}
     arcs = pp.Arcs(arcs_dict=arcs_dict, inf_matrix=inf_matrix)
 
     # create a plan using ct, structures, beams and influence matrix. Clinical criteria is optional
@@ -103,9 +103,15 @@ def vmat_scp_tutorial():
     # # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
     pp.save_plan(my_plan, plan_name='my_plan_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
     pp.save_optimal_sol(sol, sol_name='sol_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-
     # # my_plan = pp.load_plan(plan_name='my_plan_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
     # # sol = pp.load_optimal_sol(sol_name='sol_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+
+    # write plan to dicom file
+    # create dicom RT Plan file to be imported in TPS
+    out_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_portpy_vmat.dcm'  # change this file directory based upon your needs
+    in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_imrt.dcm'  # change this directory as per your
+    pp.write_rt_plan_vmat(my_plan=my_plan, in_rt_plan_file=in_rt_plan_file, out_rt_plan_file=out_rt_plan_file)
+
 
 if __name__ == "__main__":
     vmat_scp_tutorial()

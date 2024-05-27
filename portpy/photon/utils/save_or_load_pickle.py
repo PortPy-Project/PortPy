@@ -42,7 +42,7 @@ def save_obj_as_pickle(obj, obj_name: str = None, path: str = None):
         # pickle the dictionary and write it to file
         pickle.dump(obj, pickle_file)
 
-def load_obj_as_pickle(obj_name: str = None, path: str = None):
+def load_pickle_as_obj(obj_name: str = None, path: str = None):
     if path is None:
         path = os.getcwd()
     elif not os.path.exists(path):
