@@ -99,6 +99,20 @@ class Beams:
             return self.beams_dict['iso_center'][ind]
         elif isinstance(beam_id, list):
             return [self.beams_dict['iso_center'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
+
+    def get_beamlets(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+        """
+        Get jaw positions
+
+        :param beam_id: beam_id for the beam
+        :return: jaw position for the beam_id
+        """
+        if isinstance(beam_id, int):
+            ind = self.beams_dict['ID'].index(beam_id)
+            return self.beams_dict['beamlets'][ind]
+        elif isinstance(beam_id, list):
+            return [self.beams_dict['beamlets'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
+
     @staticmethod
     def sort_beamlets(b_map):
         c = b_map[b_map >= 0]
@@ -217,7 +231,7 @@ class Beams:
         :return: beamlet width in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
-        return beamlets['width_mm'][0][0][0]
+        return np.squeeze(beamlets['width_mm'][0])[0]
 
     def get_beamlet_height(self) -> float:
         """
@@ -225,7 +239,7 @@ class Beams:
         :return: beamlet height in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
-        return beamlets['height_mm'][0][0][0]
+        return np.squeeze(beamlets['height_mm'][0])[0]
 
     def get_all_beam_ids(self) -> List[int]:
         return self.beams_dict['ID']

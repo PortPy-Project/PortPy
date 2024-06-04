@@ -109,7 +109,7 @@ def vmat_scp_tutorial():
     # write plan to dicom file
     # create dicom RT Plan file to be imported in TPS
     out_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_portpy_vmat.dcm'  # change this file directory based upon your needs
-    in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_imrt.dcm'  # change this directory as per your
+    in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_vmat.dcm'  # change this directory as per your
     pp.write_rt_plan_vmat(my_plan=my_plan, in_rt_plan_file=in_rt_plan_file, out_rt_plan_file=out_rt_plan_file)
 
 

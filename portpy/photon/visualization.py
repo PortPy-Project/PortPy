@@ -77,15 +77,15 @@ class Visualization:
         # create_fig = options['create_fig'] if 'create_fig' in options else False
         show_criteria = options['show_criteria'] if 'show_criteria' in options else None
         ax = options['ax'] if 'ax' in options else None
-        font_size = options['font_size'] if 'font_size' in options else 18
+        fontsize = options['fontsize'] if 'fontsize' in options else 12
         legend_loc = options["legend_loc"] if "legend_loc" in options else "upper right"
         # getting norm options
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
         norm_volume = options['norm_volume'] if 'norm_volume' in options else 90
         norm_struct = options['norm_struct'] if 'norm_struct' in options else 'PTV'
 
-        plt.rcParams['font.size'] = font_size
-        plt.rc('font', family='serif')
+        # plt.rcParams['font.size'] = font_size
+        # plt.rc('font', family='serif')
         if width is None:
             width = 3
         if colors is None:
@@ -117,19 +117,19 @@ class Visualization:
             x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
             if dose_scale == 'Absolute(Gy)':
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel('Dose (Gy)')
+                ax.set_xlabel('Dose (Gy)', fontsize=fontsize)
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel('Dose ($\%$)')
+                ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
                 max_vol = np.maximum(max_vol, y[1] * 100)
-                ax.set_ylabel('Volume (cc)')
+                ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Volume Fraction ($\%$)')
+                ax.set_ylabel('Volume Fraction ($\%$)', fontsize=fontsize)
             ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
             count = count + 1
             legend.append(all_orgs[i])
@@ -142,7 +142,9 @@ class Visualization:
                     ax.plot(x, y, marker='x', color='red', markersize=20)
         # plt.xlabel('Dose (Gy)')
         # plt.ylabel('Volume Fraction (%)')
-        ax.set_xlim(0, max_dose * 1.1)
+        current_xlim = ax.get_xlim()
+        final_xmax = max(current_xlim[1], max_dose * 1.1)
+        ax.set_xlim(0, final_xmax)
         ax.set_ylim(0, max_vol)
         ax.legend(legend, prop={'size': legend_font_size}, loc=legend_loc)
         ax.grid(visible=True, which='major', color='#666666', linestyle='-')
