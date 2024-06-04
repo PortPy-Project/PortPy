@@ -3,6 +3,7 @@ from portpy.photon.data_explorer import DataExplorer
 from portpy.photon.influence_matrix import InfluenceMatrix
 import json
 from copy import deepcopy
+from typing import Union, List
 
 class Arcs:
     """
@@ -18,13 +19,23 @@ class Arcs:
                   }
 
         :type arcs_dict: dict
+        :param inf_matrix: object of InfluenceMatrix class
+        :type inf_matrix: object
+        :param file_name: json file containing arcs information
+        :type file_name: str
+        :param data: object of DataExplorer class
+        :type data: object
+
 
     - **Methods** ::
 
-        :get_gantry_angle(beam_id: Optional(int, List[int]):
-            Get gantry angle in degrees
-        :get_collimator_angle(beam_id):
-            Get collimator angle in degrees
+        method get_all_arcs: Get all arcs as a list
+        method get_arc: Get arc based upon arc id
+        method get_initial_leaf_pos: Get initial leaf position based upon BEV or other user defined criteria to start SCP
+        method gen_interior_and_boundary_beamlets: Generate interior and boundary beamlets based upon step size
+        method calc_actual_from_intermediate_sol: Calculate actual solution from intermediate solution
+
+
 
     """
 
@@ -53,6 +64,32 @@ class Arcs:
         f.close()
         return arcs_dict
 
+    def get_all_arcs(self):
+        """
+        Get all arcs as a list
+
+        """
+        return self.arcs_dict['arcs']
+
+    def get_arc(self, arc_id: Union[Union[int, str], List[Union[int, str]]]):
+        """
+        Get arc based upon arc id
+        :param arc_id: arc id for the arc needed
+        :return: list of arcs
+
+        """
+        ind = []
+        if isinstance(arc_id, int) or isinstance(arc_id, str):
+            ind = [i for i in range(len(self.arcs_dict['arcs'])) if
+                   self.arcs_dict['arcs'][i]['arc_id'] == arc_id]
+            if not ind:
+                raise ValueError("invalid arc id {}".format(arc_id))
+        arcs = []
+        for a in ind:
+            arc = self.arcs_dict['arcs'][a]
+            arcs.append(arc)
+        return arcs
+
     def get_max_cols(self):
         max_cols = 0
         arcs = self.arcs_dict['arcs']
@@ -73,11 +110,12 @@ class Arcs:
             arc['vmat_opt'] = beams_list
 
     def get_initial_leaf_pos(self, initial_leaf_pos='BEV'):
+        """
+            Initialize leaf positions for the scp.
+            :param initial_leaf_pos: initial leaf position. Default is BEV
+            :return: None
+        """
         arcs_dict = self.arcs_dict
-        """
-        Initialize leaf positions for the scp
-        """
-
         for i, arc in enumerate((arcs_dict['arcs'])):
             beams_list = arc['vmat_opt']
             for j, beam in enumerate(beams_list):
@@ -118,6 +156,11 @@ class Arcs:
     def gen_interior_and_boundary_beamlets(self, forward_backward: int = 1, step_size_f: int = 8, step_size_b: int = 8):
         """
         Create interior and boundary beamlets based upon step_size and forward backward
+
+        :param forward_backward: forward backward value. Default is 1. If 1, forward, if 0, backward
+        :param step_size_f: step size for forward. Default is 8
+        :param step_size_b: step size for backward. Default is 8
+        :return: None
 
         """
         arcs_dict = self.arcs_dict
@@ -210,7 +253,12 @@ class Arcs:
                 vmat[b]['int_ind'] = int_ind
 
     def calc_actual_from_intermediate_sol(self, sol: dict):
+        """
+        Create actual solution from intermediate solution.
+        :param sol: solution dictionary
+        :return: None
 
+        """
         int_v = sol['int_v']
         bound_v_l = sol['bound_v_l']
         bound_v_r = sol['bound_v_r']
@@ -266,6 +314,10 @@ class Arcs:
                         1] * (1 - forward_backward)
 
     def update_best_solution(self):
+        """
+        Update best solution if the current solution is better than the best solution.
+        :return: None
+        """
         arcs = self.arcs_dict['arcs']
         for a, arc in enumerate(arcs):
             for b, beam in enumerate(arc['vmat_opt']):
@@ -274,6 +326,11 @@ class Arcs:
             arc['best_w_beamlet_act'] = arc['w_beamlet_act']
 
     def calculate_beamlet_value(self):
+        """
+        Calculate beamlet values between (0-1) for the intermediate solution.
+        :return: None
+
+        """
         # calculates the beamlet values between (0-1)
         arcs = self.arcs_dict['arcs']
         num_beamlets_so_far = 0
@@ -297,6 +354,16 @@ class Arcs:
         return arcs
 
     def calculate_dose(self, inf_matrix: InfluenceMatrix, sol: dict, vmat_params: dict, best_plan: bool = False):
+        """
+
+        Calculate dose from the solution.
+        :param inf_matrix: object of InfluenceMatrix class
+        :param sol: solution dictionary
+        :param vmat_params: vmat parameters
+        :param best_plan: if True, calculate dose for best plan. Default is False
+        :return: solution dictionary containing dose values
+
+        """
         A = inf_matrix.A
         arcs = self.arcs_dict['arcs']
         adj1 = vmat_params['second_beam_adj']
@@ -339,6 +406,10 @@ class Arcs:
         return sol
 
     def intermediate_to_actual(self):
+        """
+        Convert intermediate solution to actual feasible solution.
+
+        """
         arcs = self.arcs_dict['arcs']
         beamlet_so_far = 0
         # Convert intermediate solution to actual feasible solution
@@ -407,6 +478,13 @@ class Arcs:
             beamlet_so_far = beamlet_so_far + num_beamlets
 
     def _update_reference_leaf_pos(self):
+        """
+        Update reference leaf position in forward and backward direction. The following leaf positions are updated only if a solution is accepted
+        they are necessary because if a solution is rejected and forward/backward
+        is changed then you need to go back to this reference leaf positions to
+        update your leaf positions
+
+        """
         arcs = self.arcs_dict['arcs']
         for arc in arcs:
 
@@ -434,6 +512,12 @@ class Arcs:
                         beam['leaf_pos_f'][r][1] = beam['leaf_pos_right'][r]
 
     def _get_leaf_pos_in_beamlet(self, sol):
+        """
+        Get leaf position relative to beamlets.
+        :param sol: solution dictionary
+        :return: None
+
+        """
         arcs = self.arcs_dict['arcs']
         leaf_pos_mu_l = sol['leaf_pos_mu_l']
         leaf_pos_mu_r = sol['leaf_pos_mu_r']

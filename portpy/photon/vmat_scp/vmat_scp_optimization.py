@@ -15,6 +15,32 @@ from copy import deepcopy
 
 
 class VmatScpOptimization(Optimization):
+    """
+    Class for VMAT optimization using Sequential Convex Programming (SCP) method
+
+    - **Attributes** ::
+        :param my_plan: object of class Plan
+        :param inf_matrix: object of class InfluenceMatrix
+        :param clinical_criteria: object of class ClinicalCriteria
+        :param opt_params: dictionary of vmat optimization parameters
+        :param vars: dictionary of variables
+        :param sol: Optional. solution to be passed for the optimization
+        :param arcs: Optional. object of class Arcs
+
+    :Example:
+    >>> vmat_opt = VmatScpOptimization(my_plan=my_plan, inf_matrix=inf_matrix, clinical_criteria=clinical_criteria, opt_params=vmat_opt_params)
+    >>> vmat_opt.run_sequential_cvx_algo(solver='MOSEK', verbose=True)
+
+    - **Methods** ::
+        :run_sequential_cvx_algo(solver: str, verbose: bool = False)
+            Run Sequential Convex Programming algorithm for VMAT optimization
+        :create_cvxpy_intermediate_problem()
+            Creates cvxpy problem for ECHO
+        :resolve_infeasibility_of_actual_solution(sol: dict, *args, **kwargs)
+            Resolve infeasibility of the intermediate solution
+        :create_cvxpy_actual_problem()
+            Construct actual problem for optimizing MU
+    """
     def __init__(self, my_plan: Plan, inf_matrix: InfluenceMatrix = None,
                  clinical_criteria: ClinicalCriteria = None,
                  opt_params: dict = None, vars: dict = None, sol=None, arcs: Arcs = None):
@@ -41,7 +67,10 @@ class VmatScpOptimization(Optimization):
 
     def create_cvxpy_intermediate_problem(self):
         """
-        Creates cvxpy problem for ECHO
+
+        Creates intermediate cvxpy problem for optimizing interior and boundary beamlets
+        :return: None
+
         """
         # unpack data
         my_plan = self.my_plan
@@ -108,6 +137,9 @@ class VmatScpOptimization(Optimization):
                     voxels_vol_cc = st.get_opt_voxels_volume_cc(struct)
                     self.vars[dO] = cp.Variable(len(voxels), pos=True)
                     obj += [(1 / cp.sum(voxels_vol_cc)) * (obj_funcs[i]['weight']*cp.sum_squares(cp.multiply(cp.sqrt(voxels_vol_cc), self.vars[dO])))]
+                    # inf_int is interior influence matrix, inf_bound_l is left boundary influence matrix, inf_bound_r is right boundary influence matrix
+                    # int_v is interior beamlet intensity, bound_v_l is left boundary beamlet intensity, bound_v_r is right boundary beamlet intensity
+                    # map_adj_int is mapping between interior variable and controlling MU for first and last beam due to inertia, map_adj_bound is similar
                     constraints += [inf_int[voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[voxels, :] @ cp.multiply(bound_v_l, map_adj_bound)
                                     + inf_bound_r[voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) <= dose_gy + self.vars[dO]]
                     print('Objective function type: {} , structure:{}, dose_gy:{}, weight:{} created..'.format(
@@ -410,6 +442,7 @@ class VmatScpOptimization(Optimization):
         """
         Create influence matrix based on interior and boundary beamlets
 
+        :return: inf_int, inf_bound_l, inf_bound_r
         """
         print("Modifying influence matrix for boundary and interior beamlets. This process may take sometime..")
         A = self.inf_matrix.A
@@ -465,6 +498,8 @@ class VmatScpOptimization(Optimization):
 
         """
         Create cvxpy related matrices for objective function and constraints
+
+
         """
         if not actual_sol_correction:
             arcs = self.arcs.arcs_dict['arcs']
@@ -659,7 +694,9 @@ class VmatScpOptimization(Optimization):
 
     def run_sequential_cvx_algo(self, *args, **kwargs):
         """
-        Returns sol and convergence of the sequential convex algorithm for optimizing the plan
+        Returns sol and convergence of the sequential convex algorithm for optimizing the plan.
+        Solver parameters can be passed in args.
+
         """
         # running scp algorithm:
         inner_iteration = int(0)

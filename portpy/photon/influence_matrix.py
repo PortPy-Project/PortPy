@@ -695,7 +695,7 @@ class InfluenceMatrix:
                        self.beamlets_dict[i]['beam_id'] == beam_id]
                 if not ind:
                     raise ValueError("invalid beam id {}".format(beam_id))
-            if isinstance(ind, int) or isinstance(ind, str):
+            elif isinstance(beam_id, list):
                 for idx in beam_id:
                     try:
                         ind_1 = [i for i in range(len(self.beamlets_dict)) if
