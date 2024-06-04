@@ -1,7 +1,8 @@
 """
 
 This example demonstrates the use of portpy.photon.vmat_scp module to create VMAT plan using sequential convex programming method.
-Please refer to Dursun et al., 2021[https://iopscience.iop.org/article/10.1088/1361-6560/abee58/meta] for more details about the scp based algorithm
+Please refer to [Dursun et al 2021](https://iopscience.iop.org/article/10.1088/1361-6560/abee58/meta) and
+[Dursun et al 2023](https://iopscience.iop.org/article/10.1088/1361-6560/ace09e/meta) for more details about the scp based algorithm
 
 """
 
@@ -64,6 +65,7 @@ def vmat_scp_tutorial():
     # Below is an example of creating 2 arcs. Users can create single or multiple arcs.
     arcs_dict = {'arcs': [{'arc_id': "01", "control_point_ids": beam_ids[0:int(len(beam_ids) / 2)]},
                           {'arc_id': "02", "control_point_ids": beam_ids[int(len(beam_ids) / 2):]}]}
+    # Create arcs object using arcs dictionary and influence matrix
     arcs = pp.Arcs(arcs_dict=arcs_dict, inf_matrix=inf_matrix)
 
     # create a plan using ct, structures, beams and influence matrix. Clinical criteria is optional
@@ -76,11 +78,13 @@ def vmat_scp_tutorial():
     # Initialize Optimization
     vmat_opt = pp.VmatScpOptimization(my_plan=my_plan,
                                       opt_params=vmat_opt_params)
-    # Run Sequential convex algorithm for optimising the plan
+    # Run Sequential convex algorithm for optimising the plan.
+    # The final result will be stored in sol and convergence will store the convergence history (i.e., results of each iteration)
     sol, convergence = vmat_opt.run_sequential_cvx_algo(solver='MOSEK', verbose=True)
 
-    # visualize convergence
+    # Visualize convergence. The convergence dataframe contains the following columns:
     df = pd.DataFrame(convergence, columns=['outer_iteration', 'inner_iteration', 'step_size_f_b', 'forward_backward', 'intermediate_obj_value', 'actual_obj_value', 'accept'])
+    # We can, for example, plot the actual and intermediate objective values against the outer iteration
     df.plot(x='outer_iteration', y=['actual_obj_value', 'intermediate_obj_value'])
     plt.show()
 
@@ -108,6 +112,8 @@ def vmat_scp_tutorial():
 
     # write plan to dicom file
     # create dicom RT Plan file to be imported in TPS
+    # We suggest you to go through notebook [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb)
+    # to learn about how to address the dependencies between optimization and final dose calculation before importing the plan into TPS.
     out_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_portpy_vmat.dcm'  # change this file directory based upon your needs
     in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_vmat.dcm'  # change this directory as per your
     pp.write_rt_plan_vmat(my_plan=my_plan, in_rt_plan_file=in_rt_plan_file, out_rt_plan_file=out_rt_plan_file)
