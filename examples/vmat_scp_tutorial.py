@@ -95,7 +95,7 @@ def vmat_scp_tutorial():
 
     # plot dvh for the above structures
     fig, ax = plt.subplots(figsize=(12, 8))
-    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'RIND_0', 'RIND_1', 'LUNGS_NOT_GTV']
+    struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'LUNGS_NOT_GTV']
     pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=struct_names, style='dashed', ax=ax)
     plt.show()
     print('Done')
