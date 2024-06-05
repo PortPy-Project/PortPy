@@ -4,6 +4,10 @@ from .structures import Structures
 from .beam import Beams
 from .influence_matrix import InfluenceMatrix
 from .clinical_criteria import ClinicalCriteria
+try:
+    from portpy.photon.vmat_scp import Arcs
+except ImportError:
+    Arcs = None
 
 
 class Plan:
@@ -19,9 +23,11 @@ class Plan:
         :param inf_matrix: object of class Influence matrix
         :type inf_matrix: object
         :param clinial_criteria: an object of class ClincialCriteria that contains information about the goals and constraints of the treatment plan
-        :type inf_matrix: object
+        :type clinical_criteria: object
         :param ct: dictionary containing ct metadata. It includes metadata about important ct parameters like resolution, ct in HU etc.
         :type ct: object
+        :param arcs: an object of class Arcs containing information about number of arcs and arcs features
+        :type arcs: object
 
     - **Methods** ::
 
@@ -35,8 +41,8 @@ class Plan:
 
     """
 
-    def __init__(self, ct: CT, structs: Structures, beams: Beams, inf_matrix: InfluenceMatrix,
-                 clinical_criteria: ClinicalCriteria = None) -> None:
+    def __init__(self, structs: Structures, beams: Beams, inf_matrix: InfluenceMatrix,
+                 ct: CT = None, clinical_criteria: ClinicalCriteria = None, arcs: Arcs = None) -> None:
         """
         Creates an object of Plan class for the specified patient
 
@@ -44,19 +50,23 @@ class Plan:
         :param structs: object of class structures
         :param beams: object of class Beams
         :param inf_matrix: object of class Influence matrix
+        :param arcs: object of class Arcs
 
         :Example:
 
-        >>> my_plan = Plan(ct, structs, beams, inf_matrix, clinical_criteria)
+        >>> my_plan = Plan(structs, beams, inf_matrix, ct, clinical_criteria)
         """
 
-        self.beams = beams  # create beams attribute
-        self.structures = structs  # create structures attribute
-        self.ct = ct  # create ct attribute containing ct information as dictionary
-        self.inf_matrix = inf_matrix
+        self.beams: Beams = beams  # create beams attribute
+        self.structures: Structures = structs  # create structures attribute
+        self.ct: CT = ct  # create ct attribute containing ct information as dictionary
+        self.inf_matrix: InfluenceMatrix = inf_matrix
         if clinical_criteria is not None:
-            self.clinical_criteria = clinical_criteria
-        self.patient_id = ct.patient_id
+            self.clinical_criteria: ClinicalCriteria = clinical_criteria
+        if ct is not None:
+            self.patient_id = ct.patient_id
+        if arcs is not None:
+            self.arcs: Arcs = arcs
 
     def save_plan(self, plan_name: str = None, path: str = None) -> None:
         """
@@ -68,7 +78,7 @@ class Plan:
         :return: save pickled object of class Plan
 
         :Example:
-        >>> my_plan.save_plan(plan_name='my_plan', path=r"path/to/save_plan")
+        >>> Plan.save_plan(plan_name='my_plan', path=r"path/to/save_plan")
         """
         save_plan(self, plan_name=plan_name, path=path)
 
@@ -113,7 +123,7 @@ class Plan:
         :return: save pickled file of optimal solution dictionary
 
         :Example:
-        >>> my_plan.save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
+        >>> Plan.save_optimal_sol(sol=sol, sol_name='sol', path=r'path/to/save_solution')
         """
         save_optimal_sol(sol=sol, sol_name=sol_name, path=path)
 

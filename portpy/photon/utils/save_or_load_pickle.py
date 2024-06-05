@@ -30,6 +30,29 @@ def save_plan(my_plan: Plan, plan_name: str = None, path: str = None) -> None:
         # pickle the dictionary and write it to file
         pickle.dump(my_plan, pickle_file)
 
+def save_obj_as_pickle(obj, obj_name: str = None, path: str = None):
+    if path is None:
+        path = os.getcwd()
+    elif not os.path.exists(path):
+        os.makedirs(path)
+
+    if obj_name is None:
+        obj_name = 'obj'
+    with open(os.path.join(path, obj_name), 'wb') as pickle_file:
+        # pickle the dictionary and write it to file
+        pickle.dump(obj, pickle_file)
+
+def load_pickle_as_obj(obj_name: str = None, path: str = None):
+    if path is None:
+        path = os.getcwd()
+    elif not os.path.exists(path):
+        os.makedirs(path)
+
+    if obj_name is None:
+        obj_name = 'obj'
+    with open(os.path.join(path, obj_name), 'rb') as pickle_file:
+        return pickle.load(pickle_file)
+
 
 def load_plan(plan_name: str = None, path: str = None):
     """

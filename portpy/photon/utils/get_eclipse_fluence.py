@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from portpy.photon.plan import Plan
 
 
-def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: List[str] = None) -> None:
+def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: List[str] = None, normalize_fluence: bool = True) -> None:
     """
     save eclipse fluence in the path directory
 
@@ -15,7 +15,7 @@ def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: Li
     :param sol: dictionary containing optimal intensity
     :param path: directory for saving the optimal fluence
     :param beam_ids: list of string containing beam ids
-
+    :param normalize_fluence: normalize the fluence with prescription per fraction
     """
     if path is None:
         path = os.getcwd()
@@ -32,17 +32,18 @@ def get_eclipse_fluence(my_plan: Plan, sol: dict, path: str = None, beam_ids: Li
         file_name = 'ID' + beam_id + '.optimal_fluence'
         filepath = os.path.join(path, file_name)
         f = open(filepath, 'w')
-        fluence_2d = optimal_fluence_2d[i]/(my_plan.get_prescription()/my_plan.get_num_of_fractions())
+        if normalize_fluence:
+            fluence_2d = optimal_fluence_2d[i] /(my_plan.get_prescription()/my_plan.get_num_of_fractions())
+        else:
+            fluence_2d = optimal_fluence_2d[i]
         f.write('optimalfluence\n')
         f.write('SizeX      {}\n'.format(fluence_2d.shape[1]))
         f.write('SizeY      {}\n'.format(fluence_2d.shape[0]))
         f.write('SpacingX   {}\n'.format(2.5))
         f.write('SpacingY   {}\n'.format(2.5))
         beamlets = inf_matrix._beams.beams_dict['beamlets'][i]
-        x_positions = beamlets['position_x_mm'][0] - beamlets['width_mm'][
-            0] / 2  # x position is center of beamlet. Get left corner
-        y_positions = beamlets['position_y_mm'][0] + beamlets['height_mm'][
-            0] / 2  # y position is center of beamlet. Get top corner
+        x_positions = beamlets['position_x_mm'][0] - beamlets['width_mm'][0] / 2  # x position is center of beamlet. Get left corner
+        y_positions = beamlets['position_y_mm'][0] + beamlets['height_mm'][0] / 2  # y position is center of beamlet. Get top corner
         f.write('OriginX    {}\n'.format(np.min(x_positions) + 1.25))  # originX should be the center of the first beamlet, but beamlet.X is the left
         f.write('OriginY    {}\n'.format(np.max(y_positions) - 1.25))  # originY should be the center of the first beamlet, but beamlet.Y is the top
         f.write('Values\n')
