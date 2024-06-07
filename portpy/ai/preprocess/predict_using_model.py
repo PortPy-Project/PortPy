@@ -289,7 +289,7 @@ def predict_using_model(patient_id, in_dir, model_name='portpy_test_1', out_dir=
 
     # create prediction
     os.system(
-        'python test.py --dataroot ./dataset --netG unet_128 --name {} --phase test --model test --input_nc 8 --output_nc 1 --direction AtoB --dataset_mode single --norm batch'.format(model_name))
+        'python test.py --dataroot ./dataset --netG unet_128 --name {} --phase test --model test --eval --input_nc 8 --output_nc 1 --direction AtoB --dataset_mode single --norm batch'.format(model_name))
 
     # read predicted dose in down sampled resolution
     filename = os.path.join(gt_dir, patient_id + '_CT2DOSE.nrrd')
