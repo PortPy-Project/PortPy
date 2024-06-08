@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 
 # specify the patient data location.
-data_dir = r'../data'
+data_dir = r'../../data'
 # Use PortPy DataExplorer class to explore PortPy data
 data = pp.DataExplorer(data_dir=data_dir)
 # Pick a patient

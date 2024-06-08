@@ -22,7 +22,7 @@ def vmat_scp_tutorial():
     """
 
     # specify the patient data location.
-    data_dir = r'../data'
+    data_dir = r'../../data'
     # Use PortPy DataExplorer class to explore PortPy data
     data = pp.DataExplorer(data_dir=data_dir)
 
@@ -112,7 +112,7 @@ def vmat_scp_tutorial():
 
     # write plan to dicom file
     # create dicom RT Plan file to be imported in TPS
-    # We suggest you to go through notebook [eclipse_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb)
+    # We suggest you to go through notebook [VMAT_TPS_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_integration.ipynb)
     # to learn about how to address the dependencies between optimization and final dose calculation before importing the plan into TPS.
     out_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_portpy_vmat.dcm'  # change this file directory based upon your needs
     in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_vmat.dcm'  # change this directory as per your
