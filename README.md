@@ -109,7 +109,7 @@ of free (e.g., [SCIP](https://www.scipopt.org/), [SCIPY](https://docs.scipy.org/
 purposes) (see [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb) notebook)
      * PortPy.AI module is equipped with essential functionalities for AI-based planning. These include data access, 
 data pre-processing, model training and testing, and patient-specific 3D dose prediction 
-(see [IMRT_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/IMRT_dose_prediction.ipynb) notebook)
+(see [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb) notebook)
 
 3. **Plan Visualization and Evaluation**
      * Basic built-in visualization tools (e.g., DVH, dose distribution) are integrated into PortPy 
