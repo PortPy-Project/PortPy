@@ -17,28 +17,19 @@
 # 5. Comparing the PortPy plan against the TPS plan for validation and analysis 
 # 
 
-# In[1]:
-
-
 import sys
 sys.path.append('..')
-
-
-# In[8]:
-
 
 import portpy.photon as pp
 import os
 import matplotlib.pyplot as plt
 import cvxpy as cp
 import numpy as np
+import pandas as pd
 
 
 # ### 1) Creating a simple IMRT plan (Plan class, Optimization class)
 # 
-
-# In[3]:
-
 
 # specify the patient data location.
 data_dir = r'../data'
@@ -49,10 +40,6 @@ data = pp.DataExplorer(data_dir=data_dir)
 data.patient_id = 'Lung_Patient_3'
 # # display the data of the patient in console or browser.
 # data.display_patient_metadata()
-
-
-# In[9]:
-
 
 # Load ct and structure set for the above patient using CT and Structures class
 ct = pp.CT(data)
@@ -88,11 +75,6 @@ arcs = pp.Arcs(arcs_dict=arcs_dict, inf_matrix=inf_matrix)
 my_plan = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix, clinical_criteria=clinical_criteria, arcs=arcs)
 
 
-# #### Optimize VMAT plan using sequential convex programming
-
-# In[ ]:
-
-
 # Initialize Optimization
 vmat_opt = pp.VmatScpOptimization(my_plan=my_plan,
                                   opt_params=vmat_opt_params)
@@ -117,24 +99,13 @@ plt.show()
 # 3. Finally, in TPS, execute final dose calculation.
 # 
 
-# In[4]:
-
-
 my_plan = pp.load_plan(plan_name='my_plan_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
 sol = pp.load_optimal_sol(sol_name='sol_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-
-
-# In[ ]:
-
 
 # create dicom RT Plan file to be imported in TPS
 out_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_portpy_vmat.dcm'  # change this file directory based upon your needs
 in_rt_plan_file = r'C:\Temp\Lung_Patient_3\rt_plan_echo_vmat.dcm'  # change this directory as per your
 pp.write_rt_plan_vmat(my_plan=my_plan, in_rt_plan_file=in_rt_plan_file, out_rt_plan_file=out_rt_plan_file)
-
-
-# In[7]:
-
 
 # get the corresponding tcia collection/subject ID
 data.get_tcia_metadata()
@@ -142,9 +113,6 @@ data.get_tcia_metadata()
 
 # ### 3) Exporting the finally calculated dose from the TPS system into PortPy
 # After the final dose calculation in Eclipse, export the dose in DICOM RT-Dose format using the Eclipse Export module. Then, utilize the following lines of code to convert the exported dose into the PortPy format for visualization or evaluation purposes
-
-# In[10]:
-
 
 # Specify the location and name of the DICOM RT Dose file
 dose_file_name = os.path.join(r'C:\temp', data.patient_id, 'rt_dose_portpy_vmat.dcm')  
@@ -156,19 +124,11 @@ ecl_dose_1d = inf_matrix.dose_3d_to_1d(dose_3d=ecl_dose_3d)
 # ### 4)  Comparing the PortPy VMAT plan against the TPS plan for validation and analysis 
 # 
 # Finally dose exported from TPS in RT-dose DICOM file can be compared against PortPy dose using full influence matrix
-# 
-
-# In[12]:
-
 
 beams_full = pp.Beams(data, beam_ids=beam_ids, load_inf_matrix_full=True)
 # load influence matrix based upon beams and structure set
 inf_matrix_full = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams_full, is_full=True)
 dose_full_1d = inf_matrix_full.A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())  # calculate dose using full matrix
-
-
-# In[13]:
-
 
 # Visualize the DVH discrepancy between eclipse dose and dose using full matrix in portpy
 struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'LUNGS_NOT_GTV']
@@ -177,10 +137,6 @@ ax = pp.Visualization.plot_dvh(my_plan, dose_1d=dose_full_1d, struct_names=struc
 ax = pp.Visualization.plot_dvh(my_plan, dose_1d=ecl_dose_1d, struct_names=struct_names, style='dotted', ax=ax, norm_flag=True)
 ax.set_title('- PortPy VMAT(Using full matrix) .. Eclipse')
 plt.show()
-
-
-# In[ ]:
-
-
+print('Done')
 
 

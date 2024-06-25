@@ -68,7 +68,7 @@ def inf_matrix_sparsification():
     beams_full = pp.Beams(data, load_inf_matrix_full=True)
     # load influence matrix based upon beams and structure set
     inf_matrix_full = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams_full, is_full=True)
-    plan_full = pp.Plan(ct, structs, beams, inf_matrix_full, clinical_criteria)
+    plan_full = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix_full, clinical_criteria=clinical_criteria)
     # use the full influence matrix to calculate the dose for the plan obtained by sparse matrix
     dose_full_1d = plan_full.inf_matrix.A @ (sol_sparse['optimal_intensity'] * plan_full.get_num_of_fractions())
 

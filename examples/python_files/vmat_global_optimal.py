@@ -176,7 +176,7 @@ def vmat_optimization():
     """
     # plot dvh for the structures in the given list. Default dose_1d is in Gy and volume is in relative scale(%).
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
-    pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=struct_names, title=patient_id)
+    pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=struct_names, title=data.patient_id)
 
     # plot 2d axial slice for the given solution and display the structures contours on the slice
     pp.Visualization.plot_2d_slice(my_plan=my_plan, sol=sol, slice_num=60, struct_names=['PTV'])
