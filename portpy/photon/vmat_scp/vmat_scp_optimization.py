@@ -174,16 +174,16 @@ class VmatScpOptimization(Optimization):
                 apt_reg_m = self.cvxpy_params['apt_reg_m']
                 card_ar = self.cvxpy_params['card_ar']
                 weight = obj_funcs[i]['weight'] * (my_plan.get_prescription() / my_plan.get_num_of_fractions())
-                obj += [weight / card_ar * (cp.sum(cp.sum_squares(apt_reg_m @ leaf_pos_mu_l)) + cp.sum(
-                    cp.sum_squares(apt_reg_m @ leaf_pos_mu_r)))]
+                obj += [weight / card_ar * (cp.sum_squares(apt_reg_m @ leaf_pos_mu_l) +
+                    cp.sum_squares(apt_reg_m @ leaf_pos_mu_r))]
                 print('Objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
             elif obj_funcs[i]['type'] == 'aperture_similarity_quadratic':
                 apt_sim_m = self.cvxpy_params['apt_sim_m']
                 card_as = self.cvxpy_params['card_as']
                 weight = obj_funcs[i]['weight'] * (my_plan.get_prescription() / my_plan.get_num_of_fractions())
-                obj += [weight / card_as * (cp.sum(cp.sum_squares(apt_sim_m @ leaf_pos_mu_l)) + cp.sum(
-                    cp.sum_squares(apt_sim_m @ leaf_pos_mu_r)))]
+                obj += [weight / card_as * (cp.sum_squares(apt_sim_m @ leaf_pos_mu_l) +
+                    cp.sum_squares(apt_sim_m @ leaf_pos_mu_r))]
                 print('Objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
         # Create convex leaf positions
@@ -392,16 +392,16 @@ class VmatScpOptimization(Optimization):
                 apt_reg_m = self.cvxpy_params['apt_reg_m']
                 card_ar = self.cvxpy_params['card_ar']
                 weight = obj_funcs[i]['weight'] * pres_per_fraction
-                obj_actual += [weight / card_ar * (cp.sum(cp.sum_squares(apt_reg_m @ cp.multiply(fixed_leaf_pos_l, beam_mu[map_int_v]))) + cp.sum(
-                    cp.sum_squares(apt_reg_m @ cp.multiply(fixed_leaf_pos_r, beam_mu[map_int_v]))))]
+                obj_actual += [weight / card_ar * (cp.sum_squares(apt_reg_m @ cp.multiply(fixed_leaf_pos_l, beam_mu[map_int_v])) +
+                    cp.sum_squares(apt_reg_m @ cp.multiply(fixed_leaf_pos_r, beam_mu[map_int_v])))]
                 print('Actual objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
             elif obj_funcs[i]['type'] == 'aperture_similarity_quadratic':
                 apt_sim_m = self.cvxpy_params['apt_sim_m']
-                card_ar = self.cvxpy_params['card_ar']
+                card_as = self.cvxpy_params['card_as']
                 weight = obj_funcs[i]['weight'] * pres_per_fraction
-                obj_actual += [weight / card_ar * (cp.sum(cp.sum_squares(apt_sim_m @ cp.multiply(fixed_leaf_pos_l, beam_mu[map_int_v]))) + cp.sum(
-                    cp.sum_squares(apt_sim_m @ cp.multiply(fixed_leaf_pos_r, beam_mu[map_int_v]))))]
+                obj_actual += [weight / card_as * (cp.sum_squares(apt_sim_m @ cp.multiply(fixed_leaf_pos_l, beam_mu[map_int_v])) +
+                    cp.sum_squares(apt_sim_m @ cp.multiply(fixed_leaf_pos_r, beam_mu[map_int_v])))]
                 print('Actual objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
 
@@ -757,8 +757,8 @@ class VmatScpOptimization(Optimization):
                     print('solution rejected..')
                     sol['inner_iteration'] = inner_iteration
                     if vmat_params['step_size_f'] > 1:
-                        vmat_params['step_size_f'] = int(np.round(vmat_params['step_size_f'] / 2))
-                        vmat_params['step_size_b'] = int(np.round(vmat_params['step_size_b'] / 2))
+                        vmat_params['step_size_f'] = int(np.ceil(vmat_params['step_size_f'] / 2))
+                        vmat_params['step_size_b'] = int(np.ceil(vmat_params['step_size_b'] / 2))
                     else:
                         if (not sol_convergence[self.outer_iteration - 1]['accept']) and (sol_convergence[self.outer_iteration - 1]['forward_backward'] == ((vmat_params['forward_backward'] + 1) % 2)) and \
                                 vmat_params['step_size_f'] == 1:
@@ -951,8 +951,8 @@ class VmatScpOptimization(Optimization):
                     print('solution rejected..')
                     sol['inner_iteration'] = inner_iteration
                     if vmat_params['step_size_f'] > 1:
-                        vmat_params['step_size_f'] = int(np.round(vmat_params['step_size_f'] / 2))
-                        vmat_params['step_size_b'] = int(np.round(vmat_params['step_size_b'] / 2))
+                        vmat_params['step_size_f'] = int(np.ceil(vmat_params['step_size_f'] / 2))
+                        vmat_params['step_size_b'] = int(np.ceil(vmat_params['step_size_b'] / 2))
                     else:
                         if (not sol_convergence[self.outer_iteration - 1]['accept']) and (sol_convergence[self.outer_iteration - 1]['forward_backward'] == ((vmat_params['forward_backward'] + 1) % 2)) and \
                                 vmat_params['step_size_f'] == 1:

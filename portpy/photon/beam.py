@@ -39,7 +39,7 @@ class Beams:
         self.beams_dict = beams_dict
         self.preprocess_beams()
 
-    def get_beamlet_idx_2d_finest_grid(self, beam_id: int) -> np.ndarray:
+    def get_beamlet_idx_2d_finest_grid(self, beam_id: Union[int, str]) -> np.ndarray:
         """
 
         :param beam_id: beam_id for the beam
@@ -48,66 +48,66 @@ class Beams:
         ind = self.beams_dict['ID'].index(beam_id)
         return self.beams_dict['beamlet_idx_2d_finest_grid'][ind]
 
-    def get_gantry_angle(self, beam_id: Union[int, List[int]]) -> Union[int, List[int]]:
+    def get_gantry_angle(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[int, List[int]]:
         """
         Get gantry angle
 
         :param beam_id: beam_id for the beam
         :return: gantry angle for the beam_id
         """
-        if isinstance(beam_id, int):
+        if isinstance(beam_id, int) or isinstance(beam_id, str):
             ind = self.beams_dict['ID'].index(beam_id)
             return self.beams_dict['gantry_angle'][ind]
         elif isinstance(beam_id, list):
             return [self.beams_dict['gantry_angle'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
-    def get_collimator_angle(self, beam_id: Union[int, List[int]]) -> Union[int, List[int]]:
+    def get_collimator_angle(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[int, List[int]]:
         """
         Get collimator angle
 
         :param beam_id: beam_id for the beam
         :return: collimator angle for the beam_id
         """
-        if isinstance(beam_id, int):
+        if isinstance(beam_id, int) or isinstance(beam_id, str):
             ind = self.beams_dict['ID'].index(beam_id)
             return self.beams_dict['collimator_angle'][ind]
         elif isinstance(beam_id, list):
             return [self.beams_dict['collimator_angle'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
-    def get_jaw_positions(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+    def get_jaw_positions(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[dict, List[dict]]:
         """
         Get jaw positions
 
         :param beam_id: beam_id for the beam
         :return: jaw position for the beam_id
         """
-        if isinstance(beam_id, int):
+        if isinstance(beam_id, int) or isinstance(beam_id, str):
             ind = self.beams_dict['ID'].index(beam_id)
             return self.beams_dict['jaw_position'][ind]
         elif isinstance(beam_id, list):
             return [self.beams_dict['jaw_position'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
-    def get_iso_center(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+    def get_iso_center(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[dict, List[dict]]:
         """
         Get iso center for the given beam_id/ids
 
         :param beam_id: beam_id for the beam
         :return: iso center for the beam_id
         """
-        if isinstance(beam_id, int):
+        if isinstance(beam_id, int) or  isinstance(beam_id, str):
             ind = self.beams_dict['ID'].index(beam_id)
             return self.beams_dict['iso_center'][ind]
         elif isinstance(beam_id, list):
             return [self.beams_dict['iso_center'][self.beams_dict['ID'].index(idx)] for idx in beam_id]
 
-    def get_beamlets(self, beam_id: Union[int, List[int]]) -> Union[dict, List[dict]]:
+    def get_beamlets(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[dict, List[dict]]:
         """
         Get jaw positions
 
         :param beam_id: beam_id for the beam
         :return: jaw position for the beam_id
         """
-        if isinstance(beam_id, int):
+        if isinstance(beam_id, int) or isinstance(beam_id, str):
             ind = self.beams_dict['ID'].index(beam_id)
             return self.beams_dict['beamlets'][ind]
         elif isinstance(beam_id, list):
