@@ -919,9 +919,9 @@ class VmatScpOptimization(Optimization):
                 vmat_params['step_size_b'] = intial_step_size
                 best_obj_value = sol['actual_obj_value']
                 self.arcs.update_best_solution()
+                sol['inner_iteration'] = inner_iteration
                 inner_iteration = inner_iteration + 1
                 sol['accept'] = True
-                sol['inner_iteration'] = inner_iteration
 
             else:
                 if sol['actual_obj_value'] < best_obj_value:

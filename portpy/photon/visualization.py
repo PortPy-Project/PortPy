@@ -311,7 +311,11 @@ class Visualization:
         if show_dose:
             dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity'] * my_plan.get_num_of_fractions())
             dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
-            masked = np.ma.masked_where(dose_3d[slice_num, :, :] <= 0, dose_3d[slice_num, :, :])
+            if hasattr(my_plan, 'structures'):
+                body_mask = my_plan.structures.get_structure_mask_3d('BODY')
+                masked = np.ma.masked_where(~body_mask[slice_num, :, :].astype(bool), dose_3d[slice_num, :, :])
+            else:
+                masked = np.ma.masked_where(dose_3d[slice_num, :, :] < 0, dose_3d[slice_num, :, :])
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
                            cmap='rainbow')
 
