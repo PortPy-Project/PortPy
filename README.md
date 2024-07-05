@@ -188,14 +188,14 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
 # Team <a name="Team"></a>
 PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
 
-| Name                                                                         | Expertise                                        | Institution |
-|------------------------------------------------------------------------------|--------------------------------------------------|-------------|
-| [Masoud Zarepisheh](https://masoudzp.github.io/)                             | Treatment Planning and Optimization              | MSK         |
-| [Saad Nadeem](https://nadeemlab.org/)                                        | Computer Vision and AI in Medical Imaging        | MSK         |
-| [Gourav Jhanwar](https://github.com/gourav3017)                              | Algorithm Design and Development                 | MSK         |
-| [Mojtaba Tefagh](https://github.com/mtefagh)                                 | Mathematical Modeling and Reinforcement Learning | SUT         |
-| [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) | Physics and Planning of Proton Therapy           | MAASTRO     |
-| [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/)        | Eclispe API Scripting                            | VARIAN      |
+| Name                                                                         | Expertise                                        | Institution                            |
+|------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------|
+| [Masoud Zarepisheh](https://masoudzp.github.io/)                             | Treatment Planning and Optimization              | Memorial Sloan Kettering Cancer Center |
+| [Saad Nadeem](https://nadeemlab.org/)                                        | Computer Vision and AI in Medical Imaging        | Memorial Sloan Kettering Cancer Center |
+| [Gourav Jhanwar](https://github.com/gourav3017)                              | Algorithm Design and Development                 | Memorial Sloan Kettering Cancer Center |
+| [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)                | Mathematical Modeling and Reinforcement Learning | University of Edinburgh, scotland      |
+| [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) | Physics and Planning of Proton Therapy           | Aarhus University, Denmak              |
+| [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/)        | Eclispe API Scripting                            | Varian Medical Systems                 |
 
 # License <a name="License"></a>
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
