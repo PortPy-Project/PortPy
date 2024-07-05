@@ -193,7 +193,7 @@ PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Cent
 | [Masoud Zarepisheh](https://masoudzp.github.io/)                             | Treatment Planning and Optimization              | Memorial Sloan Kettering Cancer Center |
 | [Saad Nadeem](https://nadeemlab.org/)                                        | Computer Vision and AI in Medical Imaging        | Memorial Sloan Kettering Cancer Center |
 | [Gourav Jhanwar](https://github.com/gourav3017)                              | Algorithm Design and Development                 | Memorial Sloan Kettering Cancer Center |
-| [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)                | Mathematical Modeling and Reinforcement Learning | University of Edinburgh, scotland      |
+| [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)                | Mathematical Modeling and Reinforcement Learning | University of Edinburgh, Scotland      |
 | [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) | Physics and Planning of Proton Therapy           | Aarhus University, Denmak              |
 | [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/)        | Eclispe API Scripting                            | Varian Medical Systems                 |
 
