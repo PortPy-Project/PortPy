@@ -526,8 +526,9 @@ class InfluenceMatrix:
                     sampled_beamlets = down_sample_2d_grid[a]
                     b = [np.where(sampled_beamlets == down_sample_beamlets[i]) for i in range(len(down_sample_beamlets))]
                     opt_beamlets = [actual_beamlets[i] for i in b]
-                    orig_beamlets = beam_2d_grid[a]
-                    opt_orig_beamlets = np.stack([orig_beamlets[i] for i in b])
+                    if remove_corner_beamlets:
+                        orig_beamlets = beam_2d_grid[a]
+                        opt_orig_beamlets = np.stack([orig_beamlets[i] for i in b])
                     beam_map = down_sample_2d_grid
                 else:
                     opt_beamlets = np.unique(np.sort(beam_map[beam_map >= 0]))
