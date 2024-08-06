@@ -9,7 +9,7 @@ from portpy.photon.ct import CT
 from portpy.photon.structures import Structures
 
 
-def save_nrrd(my_plan: Plan = None, sol: dict = None, data_dir: str = None, ct: CT = None,
+def save_nrrd(my_plan: Plan = None, sol: dict = None, dose_1d: np.ndarray = None, data_dir: str = None, ct: CT = None,
               structs: Structures = None, ct_filename: str = 'ct', dose_filename: str = 'dose',
               rt_struct_filename: str = 'rtss') -> None:
     """
@@ -17,6 +17,7 @@ def save_nrrd(my_plan: Plan = None, sol: dict = None, data_dir: str = None, ct: 
 
     :param my_plan: object of class Plan
     :param sol: optimal solution dict
+    :param dose_1d: dose as 1d array
     :param data_dir: save nrrd images of ct, dose_1d and struct_name set in path directory
     :param ct: object of class CT
     :param structs: object of class structs
@@ -46,6 +47,8 @@ def save_nrrd(my_plan: Plan = None, sol: dict = None, data_dir: str = None, ct: 
     if sol is not None:
         dose_1d = sol['inf_matrix'].A @ (sol['optimal_intensity']*my_plan.get_num_of_fractions())
         dose_arr = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
+    else:
+        dose_arr = my_plan.inf_matrix.dose_1d_to_3d(dose_1d=dose_1d)
     dose = sitk.GetImageFromArray(dose_arr)
     dose.SetOrigin(ct.ct_dict['origin_xyz_mm'])
     dose.SetSpacing(ct.ct_dict['resolution_xyz_mm'])
