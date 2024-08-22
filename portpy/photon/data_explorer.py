@@ -388,7 +388,7 @@ class DataExplorer:
             item = meta_data[key]
             if type(item) is dict:
                 meta_data[key] = self.load_file(item)
-            elif key == 'beamlets':  # added this part to check if there are beamlets since beamlets are list of dictionary
+            elif key == 'beamlets' or key == 'spots':  # added this part to check if there are beamlets since beamlets are list of dictionary
                 if type(item[0]) is dict:
                     for ls in range(len(item)):
                         self.load_file(item[ls])

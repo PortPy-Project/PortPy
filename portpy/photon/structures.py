@@ -273,7 +273,7 @@ class Structures:
                         result = mask_3d & self.get_structure_mask_3d('BODY')
                         self.create_structure(new_struct_name=obj['structure_name'], mask_3d=result)
                     except:
-                        Warning('Cannot evaluate structure defintion'.format(structure_def))
+                        print('Cannot evaluate structure defintion {}'.format(structure_def))
 
         for ind, criterion in enumerate(constraints):
             if 'structure_def' in criterion['parameters']:
@@ -285,7 +285,7 @@ class Structures:
                         result = mask_3d & self.get_structure_mask_3d('BODY')
                         self.create_structure(new_struct_name=param['structure_name'], mask_3d=result)
                     except:
-                        Warning('Cannot evaluate structure defintion'.format(structure_def))
+                        print('Cannot evaluate structure defintion {}'.format(structure_def))
         print('Optimization structures created!!')
         # for param in rind_params:
         #     self.set_opt_voxel_idx(struct_name=param['name'])
