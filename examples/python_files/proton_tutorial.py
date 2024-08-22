@@ -86,9 +86,9 @@ def proton_tutorial():
                       'Cord38': 'CORD',
                       'Patient Surfac38': 'BODY'}
     # get num points from influence matrix rows
-    # num_points = beams.beams_dict['influenceMatrixSparse'][0].shape[0]
+    num_points = beams.beams_dict['influenceMatrixSparse'][0].shape[0]
     # Create ct dose voxel map. It modify raw data to create data in PortPy format
-    # create_ct_dose_voxel_map(os.path.join(data.data_dir, data.patient_id), num_points=num_points)
+    create_ct_dose_voxel_map(os.path.join(data.data_dir, data.patient_id), num_points=num_points)
     structs = pp.Structures(data)
 
     dicom_structure_names = map_structures.keys()
