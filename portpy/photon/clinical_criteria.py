@@ -264,6 +264,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
                     df.at[count, 'dvh_type'] = 'goal'
+                    df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     count = count + 1
             if 'dose_volume_D' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
@@ -279,6 +280,7 @@ class ClinicalCriteria:
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
                     df.at[count, 'dose_gy'] = self.dose_to_gy(goal_key, dvh_updated_list[i]['constraints'][goal_key])
                     df.at[count, 'dvh_type'] = 'goal'
+                    df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
@@ -301,7 +303,7 @@ class ClinicalCriteria:
             weights_sort = weights[sort_ind]
             weight_all_sum = np.sum(weights_sort)
             w_sum = 0
-            if dvh_type == 'constraint':
+            if dvh_type == 'constraint' or dvh_type == 'goal':
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum

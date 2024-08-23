@@ -2,43 +2,25 @@ import os
 import SimpleITK as sitk
 from pydicom import dcmread
 import numpy as np
-import matplotlib.pyplot as plt
 import json
 from scipy.spatial import cKDTree
 import h5py
 
 
-def read_dicom(in_dir, case):
-    dicom_names = os.listdir(os.path.join(in_dir, case))
-    dicom_paths = []
-    for dcm in dicom_names:
-        if dcm[:2] == 'CT':
-            dicom_paths.append(os.path.join(in_dir, case, dcm))
-
-    img_positions = []
-    for dcm in dicom_paths:
-        ds = dcmread(dcm)
-        img_positions.append(ds.ImagePositionPatient[2])
-
-    indexes = np.argsort(np.asarray(img_positions))
-    dicom_names = list(np.asarray(dicom_paths)[indexes])
-
-    reader = sitk.ImageSeriesReader()
-    reader.SetFileNames(dicom_names)
-    img = reader.Execute()
-
-    return img
-
-
-def create_ct_dose_vox_map_zyx(ct: sitk.Image, points_xyz: np.ndarray, uniform: bool = False, output_folder=None,
+def create_ct_dose_vox_map_zyx(ct: sitk.Image, points_xyz: np.ndarray, uniform: bool = False, data_dir=None,
                                num_points=None) -> np.ndarray:
+    """
+    Create ct to dose voxel map based on dose points in side body
+    Returns: ct dose voxel map (ZYX)
+    """
     ct_dose_map_zyx = np.ones_like(sitk.GetArrayFromImage(ct), dtype=int) * int(-1)
     if not uniform:
         for point_num, row in enumerate(points_xyz):
             curr_indx = ct.TransformPhysicalPointToIndex(row)  # X,Y,Z
             ct_dose_map_zyx[curr_indx[::-1]] = point_num  # zyx
-            if point_num == num_points-1:     # Temp due to Bug #TODO
-                break
+            if num_points is not None:
+                if point_num == num_points-1:     # Temp due to Bug
+                    break
 
         mask = np.where(ct_dose_map_zyx > -1)
         z_max, z_min = np.amax(mask[0]), np.amin(mask[0])
@@ -53,7 +35,7 @@ def create_ct_dose_vox_map_zyx(ct: sitk.Image, points_xyz: np.ndarray, uniform: 
         ct_dose_map_zyx[z_min:z_max + 1, y_min:y_max + 1, x_min:x_max + 1] = calc_box
         return ct_dose_map_zyx
     else:
-        fname = os.path.join(output_folder, 'OptimizationVoxels_MetaData.json')
+        fname = os.path.join(data_dir, 'OptimizationVoxels_MetaData.json')
         # Opening JSON file
         f = open(fname)
         voxels_metadata = json.load(f)
@@ -84,25 +66,18 @@ def load_json(file_name):
     return json_data
 
 
-def create_ct_dose_voxel_map(output_folder, num_points):
+def create_ct_dose_voxel_map(data_dir: str, num_points: int = None):
     # output_folder = r'\\pisiz3echo\ECHO\Prostate\Test\outputs\ECHO_PROST_1$ECHO_20200009\HP_PyTest_GJ_IMRT'
     print('starting python code..')
-    if os.path.exists(os.path.join(output_folder, 'CT')):
-        ct = read_dicom(output_folder, 'CT')
-        ct_zyx = sitk.GetArrayFromImage(ct)  # zyx
-        # sitk.WriteImage(ct, os.path.join(output_folder, 'CT.nrrd'))
 
-        with h5py.File(os.path.join(output_folder, 'CT_Data.h5'), 'w') as hf:
-            hf.create_dataset("ct_hu_3d", data=ct_zyx, chunks=True, compression='gzip', compression_opts=9)
-    else:
-        opt_metadata = load_json(os.path.join(output_folder, 'OptimizationVoxels_MetaData.json'))
-        ct = sitk.Image(opt_metadata['ct_size_xyz'], sitk.sitkInt32)
-        ct.SetOrigin(opt_metadata['ct_origin_xyz_mm'])
-        ct.SetSpacing(opt_metadata['ct_voxel_resolution_xyz_mm'])
-        ct.SetDirection([1, 0, 0, 0, 1, 0, 0, 0, 1])
+    opt_metadata = load_json(os.path.join(data_dir, 'OptimizationVoxels_MetaData.json'))
+    ct = sitk.Image(opt_metadata['ct_size_xyz'], sitk.sitkInt32)
+    ct.SetOrigin(opt_metadata['ct_origin_xyz_mm'])
+    ct.SetSpacing(opt_metadata['ct_voxel_resolution_xyz_mm'])
+    ct.SetDirection([1, 0, 0, 0, 1, 0, 0, 0, 1])
     # creating voxel map
 
-    filename = os.path.join(output_folder, 'OptimizationVoxels_Data.h5')
+    filename = os.path.join(data_dir, 'OptimizationVoxels_Data.h5')
 
     with h5py.File(filename, "r") as f:
         # if 'ct_to_dose_voxel_map' in f:
@@ -112,10 +87,10 @@ def create_ct_dose_voxel_map(output_folder, num_points):
 
     # create ct to dose voxel map
     print('Creating ct to dose voxel map..')
-    ct_dose_map_zyx = create_ct_dose_vox_map_zyx(ct, voxel_coordinate_XYZ_mm, uniform=False, output_folder=output_folder, num_points=num_points)
+    ct_dose_map_zyx = create_ct_dose_vox_map_zyx(ct, voxel_coordinate_XYZ_mm, uniform=False, data_dir=data_dir, num_points=num_points)
 
     # consider only inside body dose voxels
-    with h5py.File(os.path.join(output_folder, 'StructureSet_Data.h5'), 'r') as f:
+    with h5py.File(os.path.join(data_dir, 'StructureSet_Data.h5'), 'r') as f:
         patient_surface_name = [s for s in f.keys() if 'Patient S' in s]
         if patient_surface_name:
             body = f[patient_surface_name[0]][:]
@@ -125,7 +100,7 @@ def create_ct_dose_voxel_map(output_folder, num_points):
 
     # write ct to doze voxel map in optimization voxel data.h5
     with h5py.File(
-            os.path.join(output_folder, 'OptimizationVoxels_Data.h5'), 'a') as hf:
+            os.path.join(data_dir, 'OptimizationVoxels_Data.h5'), 'a') as hf:
         if 'ct_to_dose_voxel_map' in hf.keys():
             del hf['ct_to_dose_voxel_map']
         hf.create_dataset("ct_to_dose_voxel_map", data=ct_dose_map_zyx, chunks=True, compression='gzip',

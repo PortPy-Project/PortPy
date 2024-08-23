@@ -22,8 +22,8 @@ This example demonstrates the following main functionalities of portpy_photon:
 """
 import os
 import portpy.proton as pp
-from portpy.proton.utils.create_ct_dose_voxel_map import create_ct_dose_voxel_map
 import matplotlib.pyplot as plt
+
 
 def proton_tutorial():
     """
@@ -32,12 +32,10 @@ def proton_tutorial():
      PortPy provides researchers with a comprehensive benchmark patient dataset derived from an FDA-approved Eclipse commercial treatment planning system via its API.
      This dataset includes all the necessary components for optimizing various machine settings such as beam angles, aperture shapes, and leaf movements.
      In addition to the CT images and delineated contours, the dataset includes:
-     1. **Dose Influence Matrix:** The dose contribution of each beamlet to each voxel,
-     2. **Beamlets/Voxels Details:** Detailed information about the position and size of beamlets/voxels,
+     1. **Dose Influence Matrix:** The dose contribution of each spot/layer to each voxel,
+     2. **Spots/Voxels Details:** Detailed information about the position and size of spots/voxels,
      3. **Expert-Selected Benchmark Beams:** An expert clinical physicist has carefully selected benchmark beams,
      providing reference beams for comparison and benchmarking,
-     4. **Benchmark IMRT Plan:** A benchmark IMRT plan generated using MSK in-house automated treatment planning
-     system called [ECHO](https://youtu.be/895M6j5KjPs). This plan serves as a benchmark for evaluating new treatment planning algorithms.
 
      To start using this resource, users are required to download the latest version of the dataset, which can be found at (https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit). Then, the dataset can be accessed as demonstrated below.
 
@@ -85,10 +83,12 @@ def proton_tutorial():
                       'CTV38': 'CTV',
                       'Cord38': 'CORD',
                       'Patient Surfac38': 'BODY'}
-    # get num points from influence matrix rows
-    num_points = beams.beams_dict['influenceMatrixSparse'][0].shape[0]
-    # Create ct dose voxel map. It modify raw data to create data in PortPy format
-    create_ct_dose_voxel_map(os.path.join(data.data_dir, data.patient_id), num_points=num_points)
+
+    # uncomment these lines while using C# version of dose calc
+    # # get num points from influence matrix rows
+    # num_points = beams.beams_dict['influenceMatrixSparse'][0].shape[0]
+    # # Create ct dose voxel map. It modify raw data to create data in PortPy format
+    # pp.create_ct_dose_voxel_map(os.path.join(data.data_dir, data.patient_id))
     structs = pp.Structures(data)
 
     dicom_structure_names = map_structures.keys()
@@ -96,7 +96,7 @@ def proton_tutorial():
         if s in dicom_structure_names:
             structs.structures_dict['name'][ind] = map_structures[s]
 
-    # In order to create an IMRT plan, we first need to specify a protocol which includes the disease site,
+    # In order to create an IMPT plan, we first need to specify a protocol which includes the disease site,
     # the prescribed dose for the PTV, the number of fractions, and the radiation dose thresholds for OARs.
     # These information are stored in .json files which can be found in a directory named "config_files".
     # An example of such a file is 'Lung_2Gy_30Fx.json'. Here's how you can load these files:
@@ -112,7 +112,7 @@ def proton_tutorial():
 
     """
 
-    2) creating a simple IMRT plan using CVXPy (Plan class, Optimization class)
+    2) creating a simple IMPT plan using CVXPy (Plan class, Optimization class)
     Note: you can call different opensource / commercial optimization engines from CVXPy.
       For commercial engines (e.g., Mosek, Gorubi, CPLEX), you first need to obtain an appropriate license.
       Most commercial optimization engines give free academic license.
@@ -128,7 +128,7 @@ def proton_tutorial():
     opt = pp.Optimization(my_plan, opt_params=opt_params)
     opt.create_cvxpy_problem()
 
-    # run imrt fluence map optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
+    # run impt optimization using cvxpy and one of the supported solvers and save the optimal solution in sol
     # CVXPy supports several opensource (ECOS, OSQP, SCS) and commercial solvers (e.g., MOSEK, GUROBI, CPLEX)
     # For optimization problems with non-linear objective and/or constraints, MOSEK often performs well
     # For mixed integer programs, GUROBI/CPLEX are good choices
