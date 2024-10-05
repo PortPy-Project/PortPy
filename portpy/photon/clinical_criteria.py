@@ -322,12 +322,13 @@ class ClinicalCriteria:
         dvh_table = self.dvh_table
         for ind in dvh_table.index:
             structure_name, dose_gy = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind]
-            max_tol = 100
+            max_tol = self.get_prescription() * 1.5  # Hard code. Temporary highest value of dose
             for criterion in constraints_list:
                 if criterion['type'] == 'max_dose':
                     if criterion['parameters']['structure_name'] == structure_name:
-                        key = self.matching_keys(criterion['constraints'], 'limit')
-                        max_tol = self.dose_to_gy(key, criterion['constraints'][key])
+                        limit_key = self.matching_keys(criterion['constraints'], 'limit')
+                        if limit_key:
+                            max_tol = self.dose_to_gy(limit_key, criterion['constraints'][limit_key])
             dvh_table.at[ind, 'max_tol'] = max_tol
 
         return self.dvh_table
