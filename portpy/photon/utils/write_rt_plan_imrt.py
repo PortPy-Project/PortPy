@@ -17,11 +17,11 @@ def write_rt_plan_imrt(my_plan: Plan, leaf_sequencing: dict, out_rt_plan_file: s
     :param out_rt_plan_file: new rt plan which can be imported in TPS
 
     """
-    # get positions. PortPy have same jaw settings for all beams
-    top_left_x_mm = my_plan.beams.beams_dict['jaw_position'][0]['top_left_x_mm']
-    bottom_right_x_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_x_mm']
-    bottom_right_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_y_mm']
-    top_left_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['top_left_y_mm']
+    # # get positions. PortPy have same jaw settings for all beams
+    # top_left_x_mm = my_plan.beams.beams_dict['jaw_position'][0]['top_left_x_mm']
+    # bottom_right_x_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_x_mm']
+    # bottom_right_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_y_mm']
+    # top_left_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['top_left_y_mm']
 
     # read rt plan file using pydicom
     ds = dcmread(in_rt_plan_file)
@@ -30,6 +30,12 @@ def write_rt_plan_imrt(my_plan: Plan, leaf_sequencing: dict, out_rt_plan_file: s
         meterset_weight = 0
         if gantry_angle in leaf_sequencing:
             leaf_postions = leaf_sequencing[gantry_angle]['leaf_postions']
+            # get positions. PortPy have same jaw settings for all beams
+            idx = my_plan.beams.beams_dict['gantry_angle'].index(gantry_angle)
+            top_left_x_mm = my_plan.beams.beams_dict['jaw_position'][idx]['top_left_x_mm']
+            bottom_right_x_mm = my_plan.beams.beams_dict['jaw_position'][idx]['bottom_right_x_mm']
+            bottom_right_y_mm = my_plan.beams.beams_dict['jaw_position'][idx]['bottom_right_y_mm']
+            top_left_y_mm = my_plan.beams.beams_dict['jaw_position'][idx]['top_left_y_mm']
             del ds.BeamSequence[b].ControlPointSequence[1:]  # delete all the control point after 1st control point
             ds.BeamSequence[b].NumberOfControlPoints = len(leaf_postions) + 1
             for cp, shape in enumerate(leaf_postions):
