@@ -60,7 +60,10 @@ class Evaluation:
             clinical_criteria = my_plan.clinical_criteria
         # df = pd.DataFrame.from_dict(clinical_criteria.clinical_criteria_dict['criteria'])
         df = pd.json_normalize(clinical_criteria.clinical_criteria_dict['criteria'])
-        dose_volume_V_ind = df.index[df['type'] == 'dose_volume_V'].tolist()
+        if df.empty:
+            dose_volume_V_ind = []
+        else:
+            dose_volume_V_ind = df.index[df['type'] == 'dose_volume_V'].tolist()
         if dose_volume_V_ind:
             volumn_cols = [col for col in df.columns if 'volume' in col]
             if volumn_cols:
@@ -99,7 +102,10 @@ class Evaluation:
                 if 'goal' in col:
                     df = Evaluation.add_dvh_to_frame(my_plan, df, 'Goal', col, 'Gy')
 
-        dose_volume_D_ind = df.index[df['type'] == 'dose_volume_D'].tolist()
+        if df.empty:
+            dose_volume_D_ind = []
+        else:
+            dose_volume_D_ind = df.index[df['type'] == 'dose_volume_D'].tolist()
         if dose_volume_D_ind:
             vol_cols = [col for col in df.columns if 'parameters.volume' in col]
             if vol_cols:
@@ -114,8 +120,11 @@ class Evaluation:
         # df = df.drop(
         #     ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
         #      'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')
-        if 'Goal' not in df:
-            df['Goal'] = ''
+        for label in ['constraint', 'structure_name', 'Limit', 'Goal']:
+            if label not in df:
+                df[label] = ''
+        # if 'Goal' not in df:
+        #     df['Goal'] = ''
         df = df[['constraint', 'structure_name', 'Limit', 'Goal']]
 
         dose_1d_list = []
@@ -191,6 +200,9 @@ class Evaluation:
                         elif 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(dose, 2)
         df.round(2)
+        for sol_name in sol_names:
+            if sol_name not in df:
+                df[sol_name] = ''
         df = df[df[sol_names].notna().all(axis=1)]  # remove rows for which plan value is Nan
         df = df.fillna('')
         # df.dropna(axis=0, inplace=True)  # remove structures which are not present
