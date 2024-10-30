@@ -83,6 +83,7 @@ class Visualization:
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
         norm_volume = options['norm_volume'] if 'norm_volume' in options else 90
         norm_struct = options['norm_struct'] if 'norm_struct' in options else 'PTV'
+        show_rx = options['show_rx'] if 'show_rx' in options else True
 
         # plt.rcParams['font.size'] = font_size
         # plt.rc('font', family='serif')
@@ -106,15 +107,15 @@ class Visualization:
             norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d, struct=norm_struct, volume_per=norm_volume) / pres
             dose_1d = dose_1d / norm_factor
         count = 0
-        for i in range(np.size(all_orgs)):
-            if all_orgs[i] not in struct_names:
+        for i in range(np.size(struct_names)):
+            if struct_names[i] not in all_orgs:
                 continue
-            if my_plan.structures.get_fraction_of_vol_in_calc_box(all_orgs[i]) == 0:  # check if the structure is within calc box
-                print('Skipping Structure {} as it is not within calculation box.'.format(all_orgs[i]))
+            if my_plan.structures.get_fraction_of_vol_in_calc_box(struct_names[i]) == 0:  # check if the structure is within calc box
+                print('Skipping Structure {} as it is not within calculation box.'.format(struct_names[i]))
                 continue
             # for dose_1d in dose_list:
             #
-            x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
+            x, y = Evaluation.get_dvh(sol, struct=struct_names[i], dose_1d=dose_1d)
             if dose_scale == 'Absolute(Gy)':
                 max_dose = np.maximum(max_dose, x[-1])
                 ax.set_xlabel('Dose (Gy)', fontsize=fontsize)
@@ -129,10 +130,10 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Volume Fraction ($\%$)', fontsize=fontsize)
-            ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
+                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
+            ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count], label=struct_names[i])
             count = count + 1
-            legend.append(all_orgs[i])
+            # legend.append(struct_names[i])
 
         if show_criteria is not None:
             for s in range(len(show_criteria)):
@@ -146,23 +147,30 @@ class Visualization:
         final_xmax = max(current_xlim[1], max_dose * 1.1)
         ax.set_xlim(0, final_xmax)
         ax.set_ylim(0, max_vol)
-        ax.legend(legend, prop={'size': legend_font_size}, loc=legend_loc)
+        # ax.legend(legend, prop={'size': legend_font_size}, loc=legend_loc)
+        handles, labels = ax.get_legend_handles_labels()
+        # unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+        # Make all handles solid while ensuring unique legend entries
+        unique = [(Line2D([], [], color=h.get_color(), linestyle='-', lw=h.get_linewidth()) if isinstance(h, Line2D) else h, l)
+                  for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+        ax.legend(*zip(*unique), prop={'size': legend_font_size}, loc=legend_loc)
         ax.grid(visible=True, which='major', color='#666666', linestyle='-')
 
         # Show the minor grid lines with very faint and almost transparent grey lines
         # plt.minorticks_on()
         ax.minorticks_on()
-        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
-        y = np.arange(0, 101)
-        # if norm_flag:
-        #     x = pres * np.ones_like(y)
-        # else:
-        if dose_scale == "Absolute(Gy)":
-            x = pres * np.ones_like(y)
-        else:
-            x = 100 * np.ones_like(y)
+        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.5)
+        if show_rx:
+            y = np.arange(0, 101)
+            # if norm_flag:
+            #     x = pres * np.ones_like(y)
+            # else:
+            if dose_scale == "Absolute(Gy)":
+                x = pres * np.ones_like(y)
+            else:
+                x = 100 * np.ones_like(y)
 
-        ax.plot(x, y, color='black')
+            ax.plot(x, y, color='black')
         if title:
             ax.set_title(title)
         if show:
@@ -173,8 +181,8 @@ class Visualization:
 
     @staticmethod
     def plot_robust_dvh(my_plan: Plan, sol: dict = None, dose_1d_list: list = None, struct_names: List[str] = None,
-                 dose_scale: dose_type = "Absolute(Gy)",
-                 volume_scale: volume_type = "Relative(%)", plot_scenario=None, **options):
+                        dose_scale: dose_type = "Absolute(Gy)",
+                        volume_scale: volume_type = "Relative(%)", plot_scenario=None, **options):
         """
         Create dvh plot for the selected structures
 
@@ -278,7 +286,7 @@ class Visualization:
                 ax.set_xlabel('Dose (Gy)', fontsize=fontsize)
             elif dose_scale == 'Relative(%)':
                 max_dose = np.maximum(max_dose, d_max_mat[-1])
-                max_dose = max_dose/pres*100
+                max_dose = max_dose / pres * 100
                 ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
@@ -287,7 +295,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Volume Fraction ($\%$)', fontsize=fontsize)
+                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
             # ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
 
             # ax.plot(d_min_mat, 100 * y, linestyle='dotted', linewidth=width*0.5, color=colors[count])
@@ -452,6 +460,7 @@ class Visualization:
         """
 
         Plot 2d view of ct, dose_1d, isodose and struct_name contours
+
 
         :param my_plan: object of class Plan
         :param sol: Optional solution to optimization

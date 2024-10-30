@@ -264,6 +264,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
                     df.at[count, 'dvh_type'] = 'goal'
+                    df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     count = count + 1
             if 'dose_volume_D' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
@@ -279,6 +280,7 @@ class ClinicalCriteria:
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
                     df.at[count, 'dose_gy'] = self.dose_to_gy(goal_key, dvh_updated_list[i]['constraints'][goal_key])
                     df.at[count, 'dvh_type'] = 'goal'
+                    df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
@@ -301,7 +303,7 @@ class ClinicalCriteria:
             weights_sort = weights[sort_ind]
             weight_all_sum = np.sum(weights_sort)
             w_sum = 0
-            if dvh_type == 'constraint':
+            if dvh_type == 'constraint' or dvh_type == 'goal':
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum
@@ -320,12 +322,13 @@ class ClinicalCriteria:
         dvh_table = self.dvh_table
         for ind in dvh_table.index:
             structure_name, dose_gy = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind]
-            max_tol = 100
+            max_tol = self.get_prescription() * 1.5  # Hard code. Temporary highest value of dose
             for criterion in constraints_list:
                 if criterion['type'] == 'max_dose':
                     if criterion['parameters']['structure_name'] == structure_name:
-                        key = self.matching_keys(criterion['constraints'], 'limit')
-                        max_tol = self.dose_to_gy(key, criterion['constraints'][key])
+                        limit_key = self.matching_keys(criterion['constraints'], 'limit')
+                        if limit_key:
+                            max_tol = self.dose_to_gy(limit_key, criterion['constraints'][limit_key])
             dvh_table.at[ind, 'max_tol'] = max_tol
 
         return self.dvh_table
