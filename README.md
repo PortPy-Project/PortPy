@@ -169,6 +169,8 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
 1. Install using pip:
    
     * Run the command '**pip install portpy**'
+    * You can install optional packages using '**pip install portpy[mosek, pydicom]**'.
+   
 
 2. Install using conda:
 
