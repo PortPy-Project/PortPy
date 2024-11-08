@@ -50,7 +50,6 @@ setup(
         "cvxpy>=1.1.18",
         "ecos>=2.0.10",
         "h5py>=3.6.0",
-        "Mosek>=9.3.14",
         "natsort>=8.1.0",
         "numpy>=1.15",
         "osqp>=0.4.1",
@@ -70,7 +69,11 @@ setup(
         "typing-extensions>=3.10.0.0",
         "scikit-image>=0.17.2",
         "patchify>=0.2.3",
-        "pydicom>=2.2.0",
     ],
+    extras_require={
+        'mosek': ["Mosek>=9.3.14"],
+        'pydicom': ["pydicom>=2.2.0"],
+        'full': ["Mosek>=9.3.14", "pydicom>=2.2.0"]
+    }
 
 )

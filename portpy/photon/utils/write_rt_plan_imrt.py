@@ -2,8 +2,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from portpy.photon.plan import Plan
-from pydicom import dcmread
-from pydicom import Dataset, Sequence
+try:
+    from pydicom import dcmread
+    from pydicom import Dataset, Sequence
+    pydicom_installed = True
+except ImportError:
+    pydicom_installed = False
 
 
 def write_rt_plan_imrt(my_plan: Plan, leaf_sequencing: dict, out_rt_plan_file: str, in_rt_plan_file: str):
@@ -22,6 +26,11 @@ def write_rt_plan_imrt(my_plan: Plan, leaf_sequencing: dict, out_rt_plan_file: s
     # bottom_right_x_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_x_mm']
     # bottom_right_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['bottom_right_y_mm']
     # top_left_y_mm = my_plan.beams.beams_dict['jaw_position'][0]['top_left_y_mm']
+
+    if not pydicom_installed:
+        raise ImportError(
+            "Pydicom. To use this function, please install it with `pip install portpy[pydicom]`."
+        )
 
     # read rt plan file using pydicom
     ds = dcmread(in_rt_plan_file)

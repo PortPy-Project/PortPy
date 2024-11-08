@@ -343,7 +343,22 @@ class Optimization(object):
         problem = cp.Problem(cp.Minimize(cp.sum(self.obj)), constraints=self.constraints)
         print('Running Optimization..')
         t = time.time()
-        problem.solve(*args, **kwargs)
+        # Check if 'solver' is passed in args
+        solver = kwargs.get('solver', None)
+        if solver and solver.lower() == 'mosek':
+            try:
+                problem.solve(*args, **kwargs)  # Attempt to solve with mosek
+            except cp.error.SolverError as e:
+                # Raise a custom error if MOSEK is not installed or available
+                raise ImportError(
+                    "MOSEK solver is not installed. You can obtain the MOSEK license file by applying using an .edu account. \n"
+                    r"The license file should be placed in the directory C:\\Users\\username\\mosek."
+                    "\n To use MOSEK, install it using: pip install portpy[mosek].\n"
+                    "If a license is not available, you may try open-source or free solvers like SCS or ECOS. \n"
+                    "Please refer to the CVXPy documentation for more information about its various solvers.\n"
+                ) from e
+        else:
+            problem.solve(*args, **kwargs)  # Continue solving with other solvers
         elapsed = time.time() - t
         self.obj_value = problem.value
         print("Optimal value: %s" % problem.value)

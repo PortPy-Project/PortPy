@@ -3,7 +3,7 @@
   <img src="./images/PortPy_logo.png" width="40%" height="40%">
 </p>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.4.5&color=darkgreen)
+![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.4.6&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 # What is PortPy?

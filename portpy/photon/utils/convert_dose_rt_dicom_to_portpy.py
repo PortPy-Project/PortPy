@@ -2,7 +2,11 @@
 from __future__ import annotations
 import os
 import SimpleITK as sitk
-from pydicom import dcmread
+try:
+    from pydicom import dcmread
+    pydicom_installed = True
+except ImportError:
+    pydicom_installed = False
 import numpy as np
 from portpy.photon.ct import CT
 from typing import TYPE_CHECKING
@@ -74,6 +78,10 @@ def get_ct_image(ct: CT):
 
 
 def convert_dose_rt_dicom_to_portpy(my_plan: Plan = None, ct: CT = None, dir_name: str = None, dose_file_name: str = None):
+    if not pydicom_installed:
+        raise ImportError(
+            "Pydicom. To use this function, please install it with `pip install portpy[pydicom]`."
+        )
     dicom_dose_image = read_dicom_dose(dir_name=dir_name, dose_file_name=dose_file_name)
     if ct is None:
         ct = my_plan.ct

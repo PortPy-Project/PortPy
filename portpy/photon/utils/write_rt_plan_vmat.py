@@ -3,8 +3,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from portpy.photon.plan import Plan
     from portpy.photon.beam import Beams
-from pydicom import dcmread
-from pydicom import Dataset, Sequence
+try:
+    from pydicom import dcmread
+    from pydicom import Dataset, Sequence
+    pydicom_installed = True
+except ImportError:
+    pydicom_installed = False
 import numpy as np
 
 
@@ -173,7 +177,10 @@ def write_rt_plan_vmat(my_plan: Plan, out_rt_plan_file: str, in_rt_plan_file: st
     :param out_rt_plan_file: new rt plan which can be imported in TPS
 
     """
-
+    if not pydicom_installed:
+        raise ImportError(
+            "Pydicom. To use this function, please install it with `pip install portpy[pydicom]`."
+        )
     # read rt plan file using pydicom
     ds = dcmread(in_rt_plan_file)
     del ds.BeamSequence
