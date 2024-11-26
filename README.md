@@ -6,7 +6,7 @@
 <h2 align="center">
   <a href="#What">What is PortPy? </a> | 
     <a href="#RadOpt101">Radiotherapy Optimization 101 </a> |
-  <a href="https://www.iccr2024.org/papers/523895.pdf)">Short ICCR Paper</a>
+  <a href="https://www.iccr2024.org/papers/523895.pdf">Short ICCR Paper</a>
 
 </h2>
 
