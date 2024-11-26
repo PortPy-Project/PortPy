@@ -142,7 +142,7 @@ As illustrated in the above figure, PortPy organization includes "PortPy", which
 and PortPy extensions, which are the repositories developed using the PortPy as a platform. 
 To maintain the lightweight nature and user-friendliness of PortPy modules, our aim is to include only fundamental 
 functionalities, along with benchmark data and algorithms in the PortPy repo, and establish separate repositories 
-for other projects, similar to what we've done for projects like [LowDimRT](https://github.com/PortPy-Project/LowDimRT)
+for other projects, similar to what we've done for projects like [CompressRTP](https://github.com/PortPy-Project/LowDimRT)
 and [ECHO VMAT](https://github.com/PortPy-Project/ECHO-VMAT).
 
 If you're interested in contributing to existing PortPy modules or wish to create a new module, 
