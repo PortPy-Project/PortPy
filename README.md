@@ -3,18 +3,48 @@
   <img src="./images/PortPy_logo.png" width="40%" height="40%">
 </p>
 
+<h2 align="center">
+  <a href="#What">What is PortPy? </a> | 
+    <a href="#RadOpt101">Radiotherapy Optimization 101 </a> |
+  <a href="https://www.iccr2024.org/papers/523895.pdf)">Short ICCR Paper</a>
+
+</h2>
+
 ![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.4.6&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
-# What is PortPy?
+# What is PortPy? <a name="What"></a>
 
-PortPy, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, 
-is an initiative aimed at creating an open-source Python library for 
-cancer radiotherapy treatment planning optimization. 
-This project encompasses planning methodologies for Intensity Modulated Radiation Therapy (IMRT), 
-Volumetric Modulated Arc Therapy (VMAT), and other emerging modalities. 
-PortPy offers clinical-grade benchmark datasets and coding resources to promote *benchmarking*, 
-*reproducibility*, and *community development*.
+<p align="right">
+  <img src="./images/Linac.gif" >
+</p>
+
+**PortPy**, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, is an initiative aimed at creating an open-source Python library for cancer radiotherapy treatment planning optimization. Radiotherapy is a key treatment for over half of all cancer patients, either alone or alongside surgery, chemotherapy, and immunotherapy. It works by directing high-energy radiation beams at tumors to kill cancerous cells. Given that each patient has a unique anatomy, it is essential to customize the radiation beams' shape, angle, and intensity. The goal is to maximize damage to the tumor while minimizing exposure to healthy surrounding tissues. This process involves solving complex, large-scale mathematical optimization problems tailored to each individual patient. PortPy aims to accelerate research in this interdisciplinary field by offering tools, benchmark algorithms, and datasets. 
+
+
+
+**Contents**
+- [Radiotherapy Optimization 101](#RadOpt101)
+- [Quick start and examples](#QuickStart)
+- [Benchmark data, benchmark algorithms, and PortPy toolkit](#benchmark)
+- [High-Level Description of PortPy](#high-level)
+- [How to contribute?](#limitations)
+- [Data](#Data)
+- [Installation](#Installation)
+- [Team](#Team)
+
+
+# Radiotherapy Optimization 101? <a name="RadOpt101"></a>
+<p align="right">
+  <img src="./images/101.png"  width="40%" height="40%">
+</p>
+
+The key variables in treatment planning optimization are the parameters of the **radiation beams** (e.g., beams' shape, angle, and intensity). However, the quality of a treatment is primarily measured by the **radiation dose** delivered to the patient’s body. We can connect the beam parameters to the radiation dose using a straightforward linear relationship. First, we divide the patient’s body into small three-dimensional units called **voxels** and each radiation beam into small two-dimensional sections called **beamlets**. By calculating how much radiation each beamlet (j) delivers to each voxel (i), and representing this with a value **aij**, we create what is known as the **dose deposition matrix (A)**. This matrix links the intensities of the beamlets (x) to the total radiation dose delivered (d) using the equation: **d=Ax**. A general radiotherapy optimization problem can be formulated as:
+
+Minimize f(Ax,x)
+subject to g(Ax,x)<=0, x>=0
+
+where f and g are functions that evaluate the quality of radiation dose (Ax) and the beamlet intensities (x). These optimization problems are typically **large**, **non-convex**, and involve **multiple conflicting criteria** (i.e., tumor irradiation vs healthy tissues’ sparing). They must be solved quickly for each patient, often within minutes, seconds, or even milliseconds, depending on whether the planning is done offline, online, or in real-time.
 
 
 **Note:** If you are new to the field, we suggest reviewing relevant literature review papers
@@ -24,20 +54,11 @@ PortPy offers clinical-grade benchmark datasets and coding resources to promote 
 ([Edelman competition](https://www.youtube.com/watch?v=895M6j5KjPs&t=1025s), 
 [Varian IMRT](https://www.youtube.com/watch?v=eZS6DVGBx0k), 
 [Elekta VMAT](https://www.youtube.com/watch?v=AE1SxvnFT3s)). In the near future, 
-we plan to launch an educational YouTube channel to assist researchers new to this field. 
-  
+we plan to launch an educational YouTube channel to assist researchers new to this field. **Meanwhile, you can support this effort by starring this GitHub page, which will help us secure funding for further development.**
 
-**Contents**
-- [Quick start and examples](#QuickStart)
-- [Benchmark data, benchmark algorithms, and PortPy toolkit](#benchmark)
-- [What can you do with PortPy?](#WhatDo)
-- [How to contribute?](#limitations)
-- [Data](#Data)
-- [Installation](#Installation)
-- [Team](#Team)
 
 # Quick start and examples <a name="QuickStart"></a>
-The easiest way to start is through the PorPy following examples. 
+The easiest way to start is through the PorPy following Jupiter Notebook examples. 
 
 | Example File                          	                                                                                                        | Description                                                                                                                                                           	|
 |------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
@@ -59,28 +80,24 @@ The easiest way to start is through the PorPy following examples.
 # Benchmark data, benchmark algorithms, and PortPy toolkit <a name="benchmark"></a>
 
 <p align="center">
-  <img src="./images/AI_Pyramid.png" width="40%" height="40%">
+  <img src="./images/PortPy-Pyramid2.png" width="40%" height="40%">
 <p>
 
-The figure above illustrates the inspiration behind developing PortPy, drawing from successful 
-open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, 
-along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI 
-and data science. Our goal is to replicate this success by providing researchers with a benchmark 
-dataset (currently featuring 50 curated lung patients), benchmark algorithms for finding globally 
-optimal plans using Mixed Integer Programming, and the PortPy toolkit for 
-creating, evaluating, and visualizing treatment plans.
+This figure illustrates the inspiration behind developing PortPy, drawing from successful open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI and data science. Our goal is to replicate this successful model in the field of radiotherapy by equipping researchers with PortPy toolkit, benchmark algorithms, and datasets, as outlined below:
+1. **PortPy Toolkit**. PortPy allows researchers to develop, test, and validate novel treatment planning optimization algorithms.
+2. **Benchmark Datasets**. We have curated and made publicly available a dataset of 50 lung cancer patients, which includes all the necessary data for treatment plan optimization (e.g., beamlets, voxels, dose influence matrix). These data are extracted from the commercial FDA-approved Eclipse treatment planning system using its API. For more info about data, see [Data](#Data).
+3. **Benchmark Algorithms**. Many optimization problems in radiotherapy treatment planning suffer from “non-convexity”, a mathematical property that can cause optimization algorithms to become trapped in “local optima” rather than finding the global optimum. Several of these problems (e.g., VMAT planning) can be formulated using advanced optimization techniques like Mixed Integer Programming (MIP). Although MIP is computationally intensive, often taking days to solve for each patient, it can provide global optimal solutions that can serve as "ground truth" benchmarks, enabling researchers to develop and evaluate more computationally efficient algorithms. For more info, see our Jupyter Notebooks ([vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb), [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb), [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)). 
 
 
 
 
-# What can you do with PortPy? <a name="WhatDo"></a>
+
+# High-Level Description of PortPy <a name="high-level"></a>
 
 <p align="center">
-<img src="./images/PortPy-Workflow.png" width="90%" height="40%">
+<img src="./images/PortPy-main.png" width="90%" height="40%">
 <p>
 
-PortPy facilitates the **design**, **testing**, and **clinical validation** of new treatment planning algorithms. 
-This includes both cutting-edge AI-based models and traditional optimization techniques. 
 The above figure illustrates the PortPy design and its three main
 modules: “Data Management”, “Plan Generation”, and “Plan
 Evaluation”,  which are discussed below. We recommend reviewing our Jupyter Notebooks 
@@ -188,16 +205,7 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
 
 
 # Team <a name="Team"></a>
-PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/). It is currently developed and maintained by:
-
-| Name                                                                         | Expertise                                        | Institution                            |
-|------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------|
-| [Masoud Zarepisheh](https://masoudzp.github.io/)                             | Treatment Planning and Optimization              | Memorial Sloan Kettering Cancer Center |
-| [Saad Nadeem](https://nadeemlab.org/)                                        | Computer Vision and AI in Medical Imaging        | Memorial Sloan Kettering Cancer Center |
-| [Gourav Jhanwar](https://github.com/gourav3017)                              | Algorithm Design and Development                 | Memorial Sloan Kettering Cancer Center |
-| [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)                | Mathematical Modeling and Reinforcement Learning | University of Edinburgh, Scotland      |
-| [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) | Physics and Planning of Proton Therapy           | Aarhus University, Denmak              |
-| [Seppo Tuomaala](https://www.linkedin.com/in/seppo-tuomaala-5b57913/)        | Eclispe API Scripting                            | Varian Medical Systems                 |
+PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/) (MSK). It is currently developed and maintained by [Masoud Zarepisheh](https://masoudzp.github.io/) (Principal Investigator, zarepism@mskcc.org) and [Gourav Jhanwar](https://github.com/gourav3017) (Lead Developer, jhanwarg@mskcc.org). Other team members include: [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh) (Optimization/AI/ML expert from University of Edinburgh), [Linda Hong](https://www.mskcc.org/profile/linda-hong) (Medical Physicist from MSK), [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en) (Proton physicist from Aarhus University), and [Saad Nadeem](https://nadeemlab.org/) (AI/Imaging expert from MSK). 
 
 # License <a name="License"></a>
 PortPy code is distributed under **Apache 2.0 with Commons Clause** license, and is available for non-commercial academic purposes.
