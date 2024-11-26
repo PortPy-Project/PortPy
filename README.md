@@ -34,7 +34,7 @@
 - [Team](#Team)
 
 
-# Radiotherapy Optimization 101? <a name="RadOpt101"></a>
+# Radiotherapy Optimization 101 <a name="RadOpt101"></a>
 <p align="right">
   <img src="./images/101.png"  width="40%" height="40%">
 </p>
@@ -72,9 +72,7 @@ The easiest way to start is through the PorPy following Jupiter Notebook example
 | [vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb)           	               | Finds a globally optimal VMAT plan                                                                                                                                    	|
 | [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb) 	 | Finds globally optimal beam angles for IMRT                                                                                                                           	|
 | [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)  	    | Finds a globally optimal plan meeting Dose Volume Histogram (DVH) constraints                                                                                         	|
-| [structure_operations.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/structure_operations.ipynb)            	            | Creates new structures by expanding/shrinking the existing ones or using boolean operations                                                                           	|
-| [inf_matrix_down_sampling.pynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/inf_matrix_down_sampling.ipynb)         	        | Down-samples beamlets and/or voxels for computational efficiency                                                                                                      	|
-| [inf_matrix_sparsification.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/inf_matrix_sparsification.ipynb)       	       | Sparsifies (i.e., truncates) the influence matrix for computational efficiency                                                                                        	|
+
 
 
 # Benchmark data, benchmark algorithms, and PortPy toolkit <a name="benchmark"></a>
@@ -95,7 +93,7 @@ This figure illustrates the inspiration behind developing PortPy, drawing from s
 # High-Level Description of PortPy <a name="high-level"></a>
 
 <p align="center">
-<img src="./images/PortPy-main.png" width="90%" height="40%">
+<img src="./images/PortPy-main2.png" width="90%" height="40%">
 <p>
 
 The above figure illustrates the PortPy design and its three main
