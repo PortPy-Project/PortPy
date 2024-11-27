@@ -146,9 +146,9 @@ For those keen on creating a logo for their repository, we offer the option to c
 
 
 # Data <a name="Data"></a>
-<p align="center">
-<img src="./images/PortPy Data.png" width="60%" height="40%">
-<p>
+
+<img src="./images/PortPy Data.png" align="right" width="50%" height="40%">
+
 PortPy equips researchers with a robust benchmark patient dataset, sourced from the FDA-approved Eclipse commercial treatment planning system through its API. This dataset embodies all necessary elements for optimizing various machine configurations such as beam angles, aperture shapes, and leaf movements. It includes
 
 1. **Dose Influence Matrix (AKA dose deposition matrix, dij matrix):** The dose contribution of each beamlet to each voxel,
