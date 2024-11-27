@@ -15,45 +15,35 @@
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 # What is PortPy? <a name="What"></a>
 
-<div style="display: flex; align-items: center;">
-<div style="flex: 1; padding-right: 10px;">
-    **PortPy**, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, is an initiative aimed at creating an open-source Python library for cancer radiotherapy treatment planning optimization. Radiotherapy is a key treatment for over half of all cancer patients, either alone or alongside surgery, chemotherapy, and immunotherapy. It works by directing high-energy radiation beams at tumors to kill cancerous cells. Given that each patient has a unique anatomy, it is essential to customize the radiation beams' shape, angle, and intensity. The goal is to maximize damage to the tumor while minimizing exposure to healthy surrounding tissues. This process involves solving complex, large-scale mathematical optimization problems tailored to each individual patient. PortPy aims to accelerate research in this interdisciplinary field by offering tools, benchmark algorithms, and datasets.
-</div>
-<div style="flex: 1; text-align: right;">
-<img src="./images/Linac.gif" alt="Linac animation" style="max-width: 100%; height: auto;">
-</div>
-</div>
+<p align="right">
+<img src="./images/Linac.gif" alt="Linac animation" width="40%" height="30%">
+<p>
 
-
-
+**PortPy**, short for **P**lanning and **O**ptimization for **R**adiation **T**herapy, is an initiative aimed at creating an open-source Python library for cancer radiotherapy treatment planning optimization. Radiotherapy is a key treatment for over half of all cancer patients, either alone or alongside surgery, chemotherapy, and immunotherapy. It works by directing high-energy radiation beams at tumors to kill cancerous cells. Given that each patient has a unique anatomy, it is essential to customize the radiation beams' shape, angle, and intensity. The goal is to maximize damage to the tumor while minimizing exposure to healthy surrounding tissues. This process involves solving complex, large-scale mathematical optimization problems tailored to each individual patient. PortPy aims to accelerate research in this interdisciplinary field by offering tools, benchmark algorithms, and datasets.
 
 **Contents**
 - [Radiotherapy Optimization 101](#RadOpt101)
 - [Quick start and examples](#QuickStart)
 - [Benchmark data, benchmark algorithms, and PortPy toolkit](#benchmark)
 - [High-Level Description of PortPy](#high-level)
-- [How to contribute?](#limitations)
+- [How to contribute?](#HowContribute)
 - [Data](#Data)
 - [Installation](#Installation)
 - [Team](#Team)
 
 
 # Radiotherapy Optimization 101 <a name="RadOpt101"></a>
-<div style="display: flex; align-items: center;">
-<div style="flex: 1; padding-right: 10px;">
-    The key variables in treatment planning optimization are the parameters of the **radiation beams** (e.g., beams' shape, angle, and intensity). However, the quality of a treatment is primarily measured by the **radiation dose** delivered to the patient’s body. We can connect the beam parameters to the radiation dose using a straightforward linear relationship. First, we divide the patient’s body into small three-dimensional units called **voxels** and each radiation beam into small two-dimensional sections called **beamlets**. By calculating how much radiation each beamlet (j) delivers to each voxel (i), and representing this with a value **aij**, we create what is known as the **dose deposition matrix (A)**. This matrix links the intensities of the beamlets (x) to the total radiation dose delivered (d) using the equation: **d=Ax**. A general radiotherapy optimization problem can be formulated as:
+
+<p align="right">
+<img src="./images/101.png" alt="Radiotherapy 101" width="40%" height="30%">
+<p>
+  
+The key variables in treatment planning optimization are the parameters of the **radiation beams** (e.g., beams' shape, angle, and intensity). However, the quality of a treatment is primarily measured by the **radiation dose** delivered to the patient’s body. We can connect the beam parameters to the radiation dose using a straightforward linear relationship. First, we divide the patient’s body into small three-dimensional units called **voxels** and each radiation beam into small two-dimensional sections called **beamlets**. By calculating how much radiation each beamlet (j) delivers to each voxel (i), and representing this with a value **aij**, we create what is known as the **dose deposition matrix (A)**. This matrix links the intensities of the beamlets (x) to the total radiation dose delivered (d) using the equation: **d=Ax**. A general radiotherapy optimization problem can be formulated as:
 
 Minimize f(Ax,x)
 subject to g(Ax,x)<=0, x>=0
 
 where f and g are functions that evaluate the quality of radiation dose (Ax) and the beamlet intensities (x). These optimization problems are typically **large**, **non-convex**, and involve **multiple conflicting criteria** (i.e., tumor irradiation vs healthy tissues’ sparing). They must be solved quickly for each patient, often within minutes, seconds, or even milliseconds, depending on whether the planning is done offline, online, or in real-time.
-
-</div>
-<div style="flex: 1; text-align: right;">
-<img src="./images/101.png" alt="Radiotherapy 101" style="max-width: 100%; height: auto;">
-</div>
-</div>
-
 
 **Note:** If you are new to the field, we suggest reviewing relevant literature review papers
 ([Zarepisheh et al. 2021](https://pubsonline.informs.org/doi/abs/10.1287/inte.2021.1095), 
@@ -85,18 +75,15 @@ The easiest way to start is through the PorPy following Jupiter Notebook example
 
 # Benchmark data, benchmark algorithms, and PortPy toolkit <a name="benchmark"></a>
 
-<div style="display: flex; align-items: center;">
-<div style="flex: 1; padding-right: 10px;">
-    This figure illustrates the inspiration behind developing PortPy, drawing from successful open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI and data science. Our goal is to replicate this successful model in the field of radiotherapy by equipping researchers with PortPy toolkit, benchmark algorithms, and datasets, as outlined below:
+<p align="center">
+<img src="./images/AI_Pyramid_rev1.png" width="50%" height="40%">
+<p>
+  
+This figure illustrates the inspiration behind developing PortPy, drawing from successful open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI and data science. Our goal is to replicate this successful model in the field of radiotherapy by equipping researchers with PortPy toolkit, benchmark algorithms, and datasets, as outlined below:
 1. **PortPy Toolkit**. PortPy allows researchers to develop, test, and validate novel treatment planning optimization algorithms.
 2. **Benchmark Datasets**. We have curated and made publicly available a dataset of 50 lung cancer patients, which includes all the necessary data for treatment plan optimization (e.g., beamlets, voxels, dose influence matrix). These data are extracted from the commercial FDA-approved Eclipse treatment planning system using its API. For more info about data, see [Data](#Data).
 3. **Benchmark Algorithms**. Many optimization problems in radiotherapy treatment planning suffer from “non-convexity”, a mathematical property that can cause optimization algorithms to become trapped in “local optima” rather than finding the global optimum. Several of these problems (e.g., VMAT planning) can be formulated using advanced optimization techniques like Mixed Integer Programming (MIP). Although MIP is computationally intensive, often taking days to solve for each patient, it can provide global optimal solutions that can serve as "ground truth" benchmarks, enabling researchers to develop and evaluate more computationally efficient algorithms. For more info, see our Jupyter Notebooks ([vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb), [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb), [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)). 
 
-</div>
-<div style="flex: 1; text-align: right;">
-<img src="./images/AI_Pyramid_rev1.png" alt="AI Pyramid" style="max-width: 100%; height: auto;">
-</div>
-</div>
 
 # High-Level Description of PortPy <a name="high-level"></a>
 
