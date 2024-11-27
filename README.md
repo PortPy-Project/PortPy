@@ -151,7 +151,7 @@ For those keen on creating a logo for their repository, we offer the option to c
 
 # Data <a name="Data"></a>
 <p align="center">
-<img src="./images/PortPy Data.png" width="90%" height="40%">
+<img src="./images/PortPy Data.png" width="60%" height="40%">
 <p>
 PortPy equips researchers with a robust benchmark patient dataset, sourced from the FDA-approved Eclipse commercial treatment planning system through its API. This dataset embodies all necessary elements for optimizing various machine configurations such as beam angles, aperture shapes, and leaf movements. It includes
 
@@ -178,23 +178,46 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
 
 1. Install using pip:
    
-    * Run the command '**pip install portpy**'
-    * You can install optional packages using '**pip install portpy[mosek, pydicom]**'.
+    * Run the command
+      ```
+      pip install portpy
+      ```
+    * You can install optional packages using
+      ```
+      pip install portpy[mosek, pydicom]
+      ```
    
 
 2. Install using conda:
 
-    * Run the command '**conda install -c conda-forge portpy**'
+    ```
+    conda install -c conda-forge portpy
+    ```
 
 3. Install from source:
    
-    * Clone this repository using '**git clone https://github.com/PortPy-Project/PortPy.git**'
-    * Navigate to the repository with '**cd portpy**'
+    * Clone this repository using
+      ```
+      git clone https://github.com/PortPy-Project/PortPy.git
+      ```
+    * Navigate to the repository with
+      ```
+      cd portpy
+      ```
 
     * Install the dependencies within a Python virtual environment or Anaconda environment. To set up in a Python virtual environment, install all the dependencies specified in requirements.txt as follows:
-        * Create the virtual environment with '**python3 -m venv venv**'
-        * Activate the environment with '**source venv/bin/activate**'
-        * Install the requirements using '**(venv) pip install -r requirements.txt**'
+        * Create the virtual environment with
+          ```
+          python3 -m venv venv
+          ```
+        * Activate the environment with 
+          ```
+          source venv/bin/activate
+          ```
+        * Install the requirements using
+          ```
+          pip install -r requirements.txt
+          ```
 
 
 # Team <a name="Team"></a>
