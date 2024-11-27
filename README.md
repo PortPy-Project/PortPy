@@ -15,7 +15,7 @@
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 # What is PortPy? <a name="What"></a>
 
-<p align="right">
+<p align="center">
 <img src="./images/Linac.gif" alt="Linac animation" width="40%" height="30%">
 <p>
 
@@ -34,7 +34,7 @@
 
 # Radiotherapy Optimization 101 <a name="RadOpt101"></a>
 
-<p align="right">
+<p align="center">
 <img src="./images/101.png" alt="Radiotherapy 101" width="40%" height="30%">
 <p>
   
