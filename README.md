@@ -105,6 +105,15 @@ ECHO ([YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.online
 More information about data can be found in [Data](#Data) section.
      * In the current version, you can only work with the benchmark dataset provided in this PortPy repo and 
    cannot use your own dataset for now. We will address this problem in the near future
+      ```python
+      # Use PortPy DataExplorer class to explore PortPy data
+      data = pp.DataExplorer(data_dir=''../data)
+      # Load ct, structure set, beams for the above patient using CT, Structures, and Beams classes
+      ct = pp.CT(data)
+      structs = pp.Structures(data)
+      beams = pp.Beams(data)
+      # By default, PortPy uses the beams selected by an expert planner, which are included as part of the dataset.
+      ```
 
 2. **Plan Generation**
      * This module facilitates the generation of treatment plans using either classical optimization methods or 
@@ -117,12 +126,38 @@ purposes) (see [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/b
 data pre-processing, model training and testing, and patient-specific 3D dose prediction 
 (see [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb) notebook)
 
+      ```python
+      # Load optimization parameters and clinical criteria
+      clinical_criteria = pp.ClinicalCriteria(data, protocol_name='Lung_2Gy_30Fx')
+      opt_params = data.load_config_opt_params(protocol_name='Lung_2Gy_30Fx')
+      
+      # Load influence matrix
+      inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+      # create a plan object
+      my_plan = pp.Plan(ct = ct, structs = structs, beams = beams, inf_matrix = inf_matrix, clinical_criteria=clinical_criteria)
+      
+      # create cvxpy problem using the clinical criteria and optimization parameters and solve it
+      opt = pp.Optimization(my_plan, opt_params=opt_params, clinical_criteria=clinical_criteria)
+      opt.create_cvxpy_problem()
+      sol = opt.solve(solver='MOSEK', verbose=False)
+      ```
+
 3. **Plan Visualization and Evaluation**
      * Basic built-in visualization tools (e.g., DVH, dose distribution) are integrated into PortPy 
      * Enhanced visualizations are available through the integration with the popular open-source [3DSlicer](https://www.slicer.org/) package (see [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb) notebook)
      * Plans can be quantitatively evaluated using well-established clinical protocols (e.g., Lung 2Gyx30, see  [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb))
      * Plans can be imported into any TPS for final clinical evaluations  (see [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb))  
 
+      ```python
+      # plot fluence in 3d for the 1st beam
+      pp.Visualization.plot_fluence_3d(sol=sol, beam_id=my_plan.beams.get_all_beam_ids()[0])
+      # plot dvh for the structures
+      pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=['PTV', 'CORD'], title=data.patient_id)
+      # plot 2d axial slice for the given solution and display the structures contours on the slice
+      pp.Visualization.plot_2d_slice(my_plan=my_plan, sol=sol, slice_num=60, struct_names=['PTV'])
+      # visualize plan metrics and compare them against the clinical criteria
+      pp.Evaluation.display_clinical_criteria(my_plan, sol=sol, clinical_criteria=clinical_criteria)
+      ```
 
 # How to contribute? <a name="HowContribute"></a>
 <p align="center">
