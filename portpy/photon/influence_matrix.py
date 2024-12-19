@@ -189,7 +189,7 @@ class InfluenceMatrix:
         """
         dose_vox_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
         inds = np.unique(dose_vox_map[dose_vox_map >= 0])
-        dose_1d = np.zeros_like(inds, dtype=float)
+        dose_1d = np.zeros_like(np.arange(0, self.A.shape[0]), dtype=np.float32)
         a = np.where(np.isin(dose_vox_map, inds))
         dose_1d[dose_vox_map[a]] = dose_3d[a]
         return dose_1d
@@ -575,7 +575,8 @@ class InfluenceMatrix:
                 self.beamlets_dict[ind]['position_y_mm'][0] = beamlets['position_y_mm'][0][opt_beamlets]
                 self.beamlets_dict[ind]['width_mm'][0] = beamlets['width_mm'][0][opt_beamlets]
                 self.beamlets_dict[ind]['height_mm'][0] = beamlets['height_mm'][0][opt_beamlets]
-                self.beamlets_dict[ind]['MLC_leaf_idx'][0] = beamlets['MLC_leaf_idx'][0][opt_beamlets]
+                if 'MLC_leaf_idx' in beamlets:
+                    self.beamlets_dict[ind]['MLC_leaf_idx'][0] = beamlets['MLC_leaf_idx'][0][opt_beamlets]
             del self.beamlets_dict[ind]['id']
             # my_plan.beams_dict.setdefault('opt_beamlets_ids', []).append(standInd[1:])
 

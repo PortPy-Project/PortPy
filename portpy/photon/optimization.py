@@ -44,7 +44,7 @@ class Optimization(object):
             clinical_criteria = my_plan.clinical_criteria
         self.clinical_criteria = clinical_criteria
         self.opt_params = opt_params
-        self.prescription_gy = opt_params['prescription_gy']
+        # self.prescription_gy = opt_params['prescription_gy']
         self.obj = []
         self.constraints = []
         self.obj_value = None
@@ -629,7 +629,7 @@ class Optimization(object):
 
     def get_num(self, string: Union[str, float]):
         if "prescription_gy" in str(string):
-            prescription_gy = self.prescription_gy
+            prescription_gy = self.clinical_criteria.get_prescription()
             return eval(string)
         elif isinstance(string, float) or isinstance(string, int):
             return string

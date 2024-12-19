@@ -104,18 +104,20 @@ class Arcs:
         all_cp_ids = inf_matrix.get_all_beam_ids()
 
         for i, arc in enumerate((arcs_dict['arcs'])):
-            cp_ids = arc["control_point_ids"]
+            cp_ids = arc["beam_ids"]
             ind_access = [all_cp_ids.index(cp_id) for cp_id in cp_ids]
             beams_list = [deepcopy(inf_matrix.beamlets_dict[ind]) for ind in ind_access]
             arc['vmat_opt'] = beams_list
 
     def get_initial_leaf_pos(self, initial_leaf_pos='BEV'):
+
         """
             Initialize leaf positions for the scp.
             :param initial_leaf_pos: initial leaf position. Default is BEV
             :return: None
         """
         arcs_dict = self.arcs_dict
+        np.random.seed(0)
         for i, arc in enumerate((arcs_dict['arcs'])):
             beams_list = arc['vmat_opt']
             for j, beam in enumerate(beams_list):
@@ -123,7 +125,10 @@ class Arcs:
                 reduced_2d_grid = reduced_2d_grid[~np.all(reduced_2d_grid == -1, axis=1), :]  # remove rows which are not in BEV
                 beam['reduced_2d_grid'] = reduced_2d_grid
                 beam['num_rows'] = reduced_2d_grid.shape[0]
-                beam['start_leaf_pair'] = np.amax(beam['MLC_leaf_idx'][0])
+                # beam_id_ind = self._inf_matrix._beams.get_all_beam_ids().index(beam['beam_id'])
+                # beam['start_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.max(beam['position_y_mm']))[0][0]
+                # beam['end_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.min(beam['position_y_mm']))[0][0]
+                beam['start_leaf_pair'] = np.amax(beam['MLC_leaf_idx'][0])  # commented temporary. Hai to add it to metadata
                 beam['end_leaf_pair'] = np.amin(beam['MLC_leaf_idx'][0])
                 beam['num_cols'] = beam['reduced_2d_grid'].shape[1]
                 beam['start_beamlet_idx'] = np.unique(np.sort(reduced_2d_grid[reduced_2d_grid >= 0]))[0]
@@ -135,14 +140,25 @@ class Arcs:
                 beam['leaf_pos_b'] = []
                 for _, row in enumerate(beam['reduced_2d_grid']):
                     if len(row) > 0:
-                        if initial_leaf_pos == 'BEV':
-                            left_pos, right_pos = np.argwhere(row >= 0)[0][0] - 1, np.argwhere(row >= 0)[-1][0] + 1
+                        left_pos_bev, right_pos_bev = np.argwhere(row >= 0)[0][0] - 1, np.argwhere(row >= 0)[-1][0] + 1
 
-                            beam['leaf_pos_bev'].append([left_pos, right_pos])
-                            beam['leaf_pos_left'].append(left_pos)
-                            beam['leaf_pos_right'].append(right_pos)
-                            beam['leaf_pos_f'].append([left_pos, right_pos])
-                            beam['leaf_pos_b'].append([left_pos, right_pos])
+                        beam['leaf_pos_bev'].append([left_pos_bev, right_pos_bev])
+                        if initial_leaf_pos.upper() == 'BEV':
+                            left_pos, right_pos = left_pos_bev, right_pos_bev
+                        elif initial_leaf_pos.upper() == 'RANDOM':
+                            # get random leaf positions between left and right leaf
+                            # set seed
+                            # np.random.seed(0)
+                            left_pos = np.random.randint(left_pos_bev, right_pos_bev-1)  # matlab strategy for choosing random leaf position. It is half open[low, high)
+                            # np.random.seed(0)
+                            right_pos = np.random.randint(left_pos + 2, right_pos_bev+1)
+                        else:
+                            raise ValueError("Invalid initial leaf position. Choose between BEV or random")
+                        beam['leaf_pos_left'].append(left_pos)
+                        beam['leaf_pos_right'].append(right_pos)
+                        beam['leaf_pos_f'].append([left_pos, right_pos])
+                        beam['leaf_pos_b'].append([left_pos, right_pos])
+
             arc['num_beams'] = len(arc['vmat_opt'])
             arc['start_beamlet_idx'] = arc['vmat_opt'][0]['start_beamlet_idx']
             arc['end_beamlet_idx'] = arc['vmat_opt'][-1]['end_beamlet_idx']
@@ -469,7 +485,7 @@ class Arcs:
                             if col[0] + count + 1 <= col[-1]:
                                 act_solution[r, col[0] + count + 1: col[-1]+1] = 0
                     for c in range(num_cols):
-                        if reduced_2d_grid[r, c] > 0:
+                        if reduced_2d_grid[r, c] >= 0:
                             w_beamlet_act[reduced_2d_grid[r, c] - beamlet_so_far] = act_solution[r, c] * beam['int_v']
 
                 beam['actual_sol'] = act_solution

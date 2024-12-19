@@ -77,8 +77,9 @@ class Visualization:
         # create_fig = options['create_fig'] if 'create_fig' in options else False
         show_criteria = options['show_criteria'] if 'show_criteria' in options else None
         ax = options['ax'] if 'ax' in options else None
-        fontsize = options['fontsize'] if 'fontsize' in options else 12
-        legend_loc = options["legend_loc"] if "legend_loc" in options else "upper right"
+        fontsize = options['fontsize'] if 'fontsize' in options else 16
+        tick_labelsize = options['tick_labelsize'] if 'tick_labelsize' in options else 14
+        legend_loc = options["legend_loc"] if "legend_loc" in options else "upper left"
         # getting norm options
         norm_flag = options['norm_flag'] if 'norm_flag' in options else False
         norm_volume = options['norm_volume'] if 'norm_volume' in options else 90
@@ -144,7 +145,7 @@ class Visualization:
         # plt.xlabel('Dose (Gy)')
         # plt.ylabel('Volume Fraction (%)')
         current_xlim = ax.get_xlim()
-        final_xmax = max(current_xlim[1], max_dose * 1.1)
+        final_xmax = max(current_xlim[1], max_dose * 1.05)
         ax.set_xlim(0, final_xmax)
         ax.set_ylim(0, max_vol)
         # ax.legend(legend, prop={'size': legend_font_size}, loc=legend_loc)
@@ -159,7 +160,8 @@ class Visualization:
         # Show the minor grid lines with very faint and almost transparent grey lines
         # plt.minorticks_on()
         ax.minorticks_on()
-        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.5)
+        ax.tick_params(axis='both', which='major', labelsize=tick_labelsize)
+        ax.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.5)
         if show_rx:
             y = np.arange(0, 101)
             # if norm_flag:
@@ -342,7 +344,7 @@ class Visualization:
         # Show the minor grid lines with very faint and almost transparent grey lines
         # plt.minorticks_on()
         ax.minorticks_on()
-        plt.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
+        ax.grid(visible=True, which='minor', color='#999999', linestyle='--', alpha=0.2)
         y = np.arange(0, 101)
         # if norm_flag:
         #     x = pres * np.ones_like(y)
