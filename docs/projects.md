@@ -11,14 +11,14 @@ Working on AI/ML involves many different tools from data visualizations, model/a
 ### Website Development
 5. [Creating a Simple Website for PortPy](#creating-a-simple-website-for-portpy)
 
-### AI/ML applications
+### AI/ML advanced modelling
 6. [Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net)](#implementing-top-performing-dose-prediction-model-cascade-3d-u-net)
 7. [Building Dose Prediction using Advanced U-Net Architecture (Dilated U-Net)](#building-dose-prediction-using-advanced-u-net-architecture-dilated-u-net)
 8. [Feature-Based Dose Prediction with Enhanced Accuracy](#feature-based-dose-prediction-with-enhanced-accuracy)
 
-### Optimization Techniques
+### Optimization Algorithms
 10. [Gradient-Based Optimization for Radiotherapy](#gradient-based-optimization-for-radiotherapy)
-11. [Multi-GPU-Based ADMM for Large-Scale Radiotherapy Optimization](#Multi-GPU-Based-ADMM:-Implement-Scalable-and-Fast-ADMM-Algorithms-for-Large-Scale-Radiotherapy-Optimization)
+11. [Multi-GPU-Based ADMM for Large-Scale Radiotherapy Optimization](#multi-gpu-based-admm)
 
 ---
 
