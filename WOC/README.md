@@ -12,6 +12,7 @@ Working on AI/ML involves many different tools from data visualizations, model/a
   2.1 [Creating a Simple Website for PortPy](#website)
 
 ### 3. AI/ML advanced modelling
+
   3.1 [Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net)](#openkbp1)  
   3.2 [Building Dose Prediction using Advanced U-Net Architecture (Dilated U-Net)](#openkbp2)  
   3.3 [Feature-Based Dose Prediction with Enhanced Accuracy](#openkbp3)  
@@ -144,8 +145,10 @@ Design and build a simple website for PortPy using modern web technologies.
 
 ## 3. AI/ML advanced modelling
 
+Implement top 3 performing models of OpenKBP: The open-access knowledge-based planning grand challenge into PortPy
 
-<h3 id="openkbp1"> 3.1 Project Title: Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net) from the Open-Access Grand Challenge </h3>
+
+<h3 id="openkbp1"> 3.1 Project Title: Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net) </h3>
 
 **Requirements:** Proficiency in PyTorch, GPU-based training  
 **Good to Know:** TensorFlow, Keras, medical imaging concepts  
