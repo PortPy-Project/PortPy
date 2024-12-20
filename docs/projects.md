@@ -182,9 +182,11 @@ This project focuses on integrating the runner model based on feature-based loss
 - Implement and evaluate feature-based dose prediction models.
 - Enhance accuracy in radiotherapy dose predictions.
 
----
 
 <br/>
+
+---
+
 
 <h2 id="gradient"> Project Title: Gradient-Based Optimization: Use JAX Auto-Diff for Radiotherapy Optimization with Gradient Descent </h2>
 
