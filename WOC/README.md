@@ -123,10 +123,10 @@ Current Status: PortPy currently uses static Pandas DataFrames (see figure below
 
 ---
 
-## 3. Neural Network Model Development
+## 2. Neural Network Model Development
 
 
-<h3 id="openkbp"> 3.1 Implementing the Top 3 Neural Network Models of the 2020-OpenKBP Challenge in PortPy </h3>
+<h3 id="openkbp"> 2.1 Implementing the Top 3 Neural Network Models of the 2020-OpenKBP Challenge in PortPy </h3>
 
 **Requirements:** Proficiency in PyTorch, GPU-based training  
 **Good to Know:** Keras, medical imaging concepts  
