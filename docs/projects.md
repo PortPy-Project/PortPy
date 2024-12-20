@@ -3,26 +3,26 @@
 Working on AI/ML involves many different tools from data visualizations, model/algorithm development, evaluation and testing. Below is the list of projects that can help you to gain hands on experience with these tools.
 ## Index
 ### Visualization Tools
-1. [Interactive and User-Friendly Visualization for Dose-Volume Histograms (DVH)](#interactive-and-user-friendly-visualization-for-dose-volume-histograms-dvh)
-2. [Enhancing Dose Distribution Analysis through User-Friendly Visualization Tools](#enhancing-dose-distribution-analysis-through-user-friendly-visualization-tools)
-3. [User-Friendly Interactive Dashboard for PortPy Data Visualization with Dynamic Tables](#user-friendly-interactive-dashboard-for-portpy-data-visualization-with-dynamic-tables)
-4. [Interactive Visualization of Multi-Leaf Collimator (MLC) Movements for Treatment Plans](#interactive-visualization-of-multi-leaf-collimator-mlc-movements-for-treatment-plans)
+1. [Interactive and User-Friendly Visualization for Dose-Volume Histograms (DVH)](#dvh)
+2. [Enhancing Dose Distribution Analysis through User-Friendly Visualization Tools](#dose)
+3. [User-Friendly Interactive Dashboard for PortPy Data Visualization with Dynamic Tables](#dashboard)
+4. [Interactive Visualization of Multi-Leaf Collimator (MLC) Movements for Treatment Plans](#mlc)
 
 ### Website Development
-5. [Creating a Simple Website for PortPy](#creating-a-simple-website-for-portpy)
+5. [Creating a Simple Website for PortPy](#website)
 
 ### AI/ML advanced modelling
-6. [Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net)](#implementing-top-performing-dose-prediction-model-cascade-3d-u-net)
-7. [Building Dose Prediction using Advanced U-Net Architecture (Dilated U-Net)](#building-dose-prediction-using-advanced-u-net-architecture-dilated-u-net)
-8. [Feature-Based Dose Prediction with Enhanced Accuracy](#feature-based-dose-prediction-with-enhanced-accuracy)
+6. [Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net)](#openkbp1)
+7. [Building Dose Prediction using Advanced U-Net Architecture (Dilated U-Net)](#openkbp2)
+8. [Feature-Based Dose Prediction with Enhanced Accuracy](#openkbp3)
 
 ### Optimization Algorithms
-10. [Gradient-Based Optimization for Radiotherapy](#gradient-based-optimization-for-radiotherapy)
-11. [Multi-GPU-Based ADMM for Large-Scale Radiotherapy Optimization](#multi-gpu-based-admm)
+10. [Gradient-Based Optimization for Radiotherapy](#gradient)
+11. [Multi-GPU-Based ADMM for Large-Scale Radiotherapy Optimization](#admm)
 
 ---
 
-## Interactive and User-Friendly Visualization for Dose-Volume Histograms (DVH)
+<h2 id="dvh"> Project Title: Interactive and User-Friendly Visualization for Dose-Volume Histograms (DVH) </h2>
 
 **Requirements:** Matplotlib, Plotly (or alternative)  
 **Good to Know:** Dash, Panel (or alternative)  
@@ -34,7 +34,8 @@ A DVH is a convenient two-dimensional (2D) plot for plan evaluation and can be e
 
 PortPy currently does visualization using Matplotlib. We would like to create an interactive visualization using Plotly (or an alternative). We would also like the visualization to work in both Jupyter Notebook and  Desktop versions
 
-![Dose-Volume Histogram Example](../images/dvh-example.png)
+<img src="../images/dvh-example.png" alt="DVH plot" width="60%" height="40%">
+
 ### Project Outcome
 - Interactive DVH line plots.
 - Ability to select structures through an interactive checkbox.
@@ -42,7 +43,9 @@ PortPy currently does visualization using Matplotlib. We would like to create an
 
 ---
 
-## Enhancing Dose Distribution Analysis through User-Friendly Visualization Tools
+<br/>
+
+<h2 id="dose"> Project Title: Enhancing Dose Distribution Analysis through User-Friendly Visualization Tools </h2>
 
 **Requirements:** Matplotlib, Plotly (or alternative)  
 **Good to Know:** Dash (or alternative)  
@@ -54,16 +57,19 @@ A spatial map that shows how radiation dose is spread across the patient body an
 
 PortPy currently does visualization using Matplotlib. We would like to create an interactive visualization using Plotly (or an alternative). We would also like the visualization to work in both Jupyter Notebook and  Desktop versions
 
-![Dose-Distribution Example](../images/dose_distribution.png)
+<img src="../images/dose_distribution.png" alt="Dose distribution" width="60%" height="40%">
 
 ### Project Outcome
 - View and explore dose maps interactively.
 - Overlay structure contours on dose maps.
 - Gain hands-on experience with medical imaging visualization.
 
+
+<br/>
+
 ---
 
-## User-Friendly Interactive Dashboard for PortPy Data Visualization with Dynamic Tables
+<h2 id="dashboard"> Project Title: User-Friendly Interactive Dashboard for PortPy Data Visualization with Dynamic Tables </h2>
 
 **Requirements:** Matplotlib, Plotly (or alternative)  
 **Good to Know:** Dash (or alternative)  
@@ -80,9 +86,12 @@ PortPy consist of two types of data i.e. **metadata** which are small size json 
 - Transform static metadata tables into dynamic, interactive dashboards.
 - Enable search, filter, and expand capabilities for metadata exploration.
 
+
+<br/>
+
 ---
 
-## Interactive Visualization of Multi-Leaf Collimator (MLC) Movements for Treatment Plans
+<h2 id="MLC"> Project Title: Interactive Visualization of Multi-Leaf Collimator (MLC) Movements for Treatment Plans </h2>
 
 **Requirements:** Matplotlib, Plotly (or alternative)  
 **Good to Know:** Dash (or alternative)  
@@ -93,15 +102,17 @@ _What is MLC?_
 An **MLC** is a key component in radiotherapy machines used to shape radiation beams. It consists of movable metal leaves that block parts of the beam, ensuring the dose conforms to the tumor shape while sparing healthy tissue.
 
 Current state: MLC movements are displayed as static visualizations, which limit interactivity and analysis. We would like to create an interactive visualization using Plotly (or an alternative). We would also like the visualization to work in both Jupyter Notebook and  Desktop versions
-![MLC Example](../images/MLC.png)
+<img src="../images/MLC.png" alt="MLC" width="60%" height="40%">
 
 ### Project Outcome
 - Animate MLC movements across beam angles.
 - Overlay targets and structures for better analysis.
 
+<br/>
+
 ---
 
-## Creating a Simple Website for PortPy
+<h2 id="website"> Project Title: Creating a Simple Website for PortPy </h2>
 
 **Requirements:** Markdown, reStructuredText, Sphinx  
 **Good to Know:** HTML, CSS, JavaScript  
@@ -118,9 +129,14 @@ Design and build a simple website for PortPy using modern web technologies.
 ### Project Outcome
 - Create a visually appealing and user-friendly website.
 - Gain hands-on experience with web development.
+
+<br/>
+
 ---
 
-## Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net) from the Open-Access Grand Challenge
+
+
+<h2 id="openkbp1"> Project Title: Implementing Top-Performing Dose Prediction Model (Cascade 3D U-Net) from the Open-Access Grand Challenge </h2>
 
 **Requirements:** Proficiency in PyTorch, GPU-based training  
 **Good to Know:** TensorFlow, Keras, medical imaging concepts  
@@ -132,9 +148,12 @@ This project focuses on integrating the winning Cascade 3D U-Net model from the 
 - Train and implement a state-of-the-art dose prediction model.
 - Enhance workflows for radiotherapy dose prediction.
 
+
+<br/>
+
 ---
 
-## Build dose prediction using advanced U-Net architecture Dilated U-Net (Runner-Up Model for Open-Access Grand Challenge)
+<h2 id="openkbp2"> Project Title: Build dose prediction using advanced U-Net architecture Dilated U-Net (Runner-Up Model for Open-Access Grand Challenge) </h2>
 
 **Requirements:** Proficiency in PyTorch, GPU-based training  
 **Good to Know:** TensorFlow, Keras, medical imaging concepts  
@@ -146,9 +165,11 @@ This project focuses on integrating the runner up Dilated U-Net model from the o
 - Develop an advanced dose prediction model.
 - Gain experience in radiotherapy and AI techniques.
 
+<br/>
+
 ---
 
-## Implement Feature-Based Dose Prediction (Runner-Up Model): Use feature-based losses and One Cycle Learning for enhanced accuracy
+<h2 id="openkbp3"> Project Title: Implement Feature-Based Dose Prediction (Runner-Up Model): Use feature-based losses and One Cycle Learning for enhanced accuracy </h2>
 
 
 **Requirements:** Proficiency in PyTorch, GPU-based training  
@@ -163,7 +184,9 @@ This project focuses on integrating the runner model based on feature-based loss
 
 ---
 
-## Gradient-Based Optimization: Use JAX Auto-Diff for Radiotherapy Optimization with Gradient Descent
+<br/>
+
+<h2 id="gradient"> Project Title: Gradient-Based Optimization: Use JAX Auto-Diff for Radiotherapy Optimization with Gradient Descent </h2>
 
 **Requirements:** Proficiency in Python, familiarity with JAX  
 **Good to Know:** Optimization techniques, NumPy, SciPy  
@@ -178,10 +201,11 @@ This project aims to leverage JAX's automatic differentiation capabilities to im
 - Provide insights into the impact of gradient-based methods on clinical treatment planning workflows.
 - Deliver a reproducible Python-based implementation integrated into the PortPy framework.
 
+<br/>
 
 ---
 
-## Multi-GPU-Based ADMM: Implement Scalable and Fast ADMM Algorithms for Large-Scale Radiotherapy Optimization
+<h2 id="admm"> Project Title: Implement Scalable and Fast ADMM Algorithms for Large-Scale Radiotherapy Optimization </h2>
 
 **Requirements:** Proficiency in Python, multi-GPU programming  
 **Good to Know:** JAX, CUDA, PyTorch, optimization techniques  
@@ -194,3 +218,5 @@ This project focuses on developing scalable and efficient ADMM (Alternating Dire
 - Benchmark the ADMM implementation against existing optimization methods.
 - Deliver a Python-based implementation compatible with existing radiotherapy frameworks, such as PortPy.
 - Gain insights into the role of parallelized ADMM in solving real-world optimization challenges in radiotherapy
+
+<br/>
