@@ -17,9 +17,9 @@ Working on AI/ML involves working with a wide range of specialized tools—rangi
   3.3 [Python Implementation of Gradient Descent Algorithm for Solving PortPy Optimization Problems](#PyGrad)  
   3.4 [Python Implementation of the ADMM Algorithm for  PortPy Optimization Problems](#PyADMM)    
 
-### 4. CI/CD package dissemination (website documentation and unit testing) (2 projects)
-  4.1 [Creating a Documentation Website with CI/CD Features for PortPy](#website)  
-  4.2 [Creating Unit Tests with CI/CD Features for PortPy](#unittest)
+### 4. Creating a Documentation Website and Automated Unit Testing using GitOps CI/CD Features (2 projects)
+  4.1 [Creating a Documentation Website with GitOps CI/CD Features for PortPy](#website)  
+  4.2 [Creating Unit Tests with GitOps CI/CD Features for PortPy](#unittest)
 
 <br/>
 
@@ -77,6 +77,7 @@ Current State: MLC movements are currently displayed as a series of static Matpl
 <h3 id="dose"> 1.3 Interactive Image Slice Navigation of CT Scan and Radiation Dose Map </h3>
 
 **Requirements:** Matplotlib, Plotly or PyVista
+
 **Good to Know:** PyQt 
 
 **Short description:**
@@ -150,6 +151,7 @@ Current Status: The PortPy.AI module currently implements a dose prediction pipe
 <h3 id="JaxOpt"> 3.1 Using Google's Jax.Opt to Solve PortPy Optimization Problems </h3>
 
 **Requirements:** Proficiency in Python/NumPy, familiarity with optimization algorithms
+
 **Good to Know:** Jax.Opt, SciPy  
 
 **Short description:**
@@ -167,6 +169,7 @@ Current Status: PortPy currently uses the open-source library [CVXPy](https://ww
 <h3 id="SciPy"> 3.2 Using SciPy.Optimize to Solve PortPy Optimization Problems </h3>
 
 **Requirements:** Proficiency in Python, NumPy, SciPy
+
 **Good to Know:** optimization algorithms  
 
 **Short description:**
@@ -180,6 +183,7 @@ This project is similar to the previous one, however, instead of Jax.Opt, we wou
 <h3 id="PyGrad"> 3.3 Python Implementation of Gradient Descent Algorithm for Solving PortPy Optimization Problems </h3>
 
 **Requirements:** Proficiency in Python, Gradient Descent Algorithm, NumPy 
+
 **Good to Know:** JAX
 
 **Short description:**
@@ -194,6 +198,7 @@ This project is similar to the previous ones; however, instead of relying on exi
 <h3 id="PyADMM"> 3.4 Python Implementation of the ADMM Algorithm for  PortPy Optimization Problems </h3>
 
 **Requirements:** Proficiency in Python, ADMM 
+
 **Good to Know:** JAX, CUDA, PyTorch, optimization techniques  
 
 **Short description:**
@@ -206,14 +211,15 @@ This project is similar to the previous one; however, instead of using gradient 
 <br/>
 
 
-## 4. CI/CD package dissemination (website documentation and unit testing) 
+## 4. Creating documentation website and unit testing using GitOps CI/CD featurs
 <h3 id="website"> 4.1 Creating a Documentation Website with CI/CD Features for PortPy </h3>
 
 **Requirements:** Markdown 
+
 **Good to Know:** reStructuredText, Sphinx, CI/CD
 
 **Short description:**
-Design and build a documentation website for PortPy using the Sphinx tool (see [YouTube-Sphinx-Crash-Course](https://www.youtube.com/watch?v=UourHBDZuR0) for a brief introduction). The website will resemble the [CVXPy-Website](https://www.cvxpy.org/) website but will feature different content (see the figures below for our initial website sketch). Ideally, we aim to incorporate modern CI/CD technology to enable easy and automated website updates in the future.
+Design and build a documentation website for PortPy using the Sphinx tool (see [YouTube-Sphinx-Crash-Course](https://www.youtube.com/watch?v=UourHBDZuR0) for a brief introduction). The website will resemble the [CVXPy-Website](https://www.cvxpy.org/) website but will feature different content (see the figures below for our initial website sketch). Ideally, we aim to incorporate modern GitOps CI/CD technology to enable easy and automated website updates in the future.
 
 ![Website Example](../images/web_1.png)
 ![Website Example](../images/web_2.png)
@@ -228,16 +234,17 @@ Design and build a documentation website for PortPy using the Sphinx tool (see [
 <br/>
 
 
-<h3 id="unittest"> 4.2 Creating Unit Tests with CI/CD Features for PortPy </h3>
+<h3 id="unittest"> 4.2 Creating Unit Tests with GitOps CI/CD Features for PortPy </h3>
 
 **Requirements:** Python
+
 **Good to Know:** PyTest, CI/CD
 
 **Short description:**
-Develop automated unit tests using the PyTest framework and few patients from the PortPy dataset. Additionally, integrate CI/CD technology to enable automatic testing for new releases, ensuring continuous quality and reliability of the PortPy project.
+Develop automated unit tests using the PyTest framework and few patients from the PortPy dataset. Additionally, integrate GitOps CI/CD technology to enable automatic testing for new releases, ensuring continuous quality and reliability of the PortPy project.
 
 **Project Outcome:**  
-- Implementation of unit tests integrated with CI/CD technology to ensure continuous quality checks for new releases.
+- Implementation of unit tests integrated with GitOps CI/CD technology to ensure continuous quality checks for new releases.
 
 <br/>
 
