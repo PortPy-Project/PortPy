@@ -1,6 +1,9 @@
 # Google Winter Of Code 2025 Projects for PortPy
 
 Working on AI/ML involves working with a wide range of specialized tools—ranging from **data visualization** and **neural network model development** to **optimization algorithm** and **CI/CD package dissemination** (including website documentation and unit testing). The following project proposals provide hands-on experience in these critical areas.
+
+**You can support this project by starring this GitHub page, which will help us secure funding for further development.**
+
 ## Index
 ### 1. Data Visualization (4 projects)
   1.1 [Interactive Plot for Dose-Volume Histograms (DVH) Data](#dvh)  
