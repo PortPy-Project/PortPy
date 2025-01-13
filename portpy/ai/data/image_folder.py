@@ -23,6 +23,9 @@ def is_image_file(filename):
 
 def make_dataset(dir, max_dataset_size=float("inf")):
     images = []
+    if not os.path.isabs(dir):
+        base_dir = os.getcwd()  # make it portpy.ai as base directory in case if relative directory is passed
+        dir = os.path.join(base_dir, dir)
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
 
     for root, _, fnames in sorted(os.walk(dir)):

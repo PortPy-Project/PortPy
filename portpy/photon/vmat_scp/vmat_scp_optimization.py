@@ -186,6 +186,18 @@ class VmatScpOptimization(Optimization):
                     cp.sum_squares(apt_sim_m @ leaf_pos_mu_r))]
                 print('Objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'similar_mu_linear':
+                similar_mu_obj = []
+                index_stop = 0
+                index_start = 0
+
+                for arc in self.arcs.arcs_dict['arcs']:
+                    index_stop += arc['num_beams']
+                    for j in range(index_start, index_stop - 1):
+                        similar_mu_obj += [obj_funcs[i]['weight'] * cp.abs(int_v[j] - int_v[j + 1])]
+                    index_start += arc['num_beams']
+                obj += [cp.sum(similar_mu_obj)]
+                print('Objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'], obj_funcs[i]['weight']))
         # Create convex leaf positions
         constraints += [
             leaf_pos_mu_l == cp.multiply(cp.multiply(1 - not_empty_bound_l, current_leaf_pos_l), int_v[map_int_v]) +
@@ -200,6 +212,11 @@ class VmatScpOptimization(Optimization):
         constraints += [int_v >= self.vmat_params['mu_min']]
         constraints += [bound_v_l <= int_v[map_int_v]]
         constraints += [bound_v_r <= int_v[map_int_v]]
+
+        # minimum dyanmic leaf gap constraint
+        if 'minimum_dynamic_leaf_gap_mm' in self.vmat_params:
+            min_leaf_gap_beamlet = self.vmat_params['minimum_dynamic_leaf_gap_mm'] / my_plan.beams.get_beamlet_width() * 1.01
+            constraints += [leaf_pos_mu_r - leaf_pos_mu_l >= int_v[map_int_v] * min_leaf_gap_beamlet]
 
         constraint_def = deepcopy(clinical_criteria.get_criteria())  # get all constraints definition using clinical criteria
         # add/modify constraints definition if present in opt params
@@ -404,7 +421,19 @@ class VmatScpOptimization(Optimization):
                     cp.sum_squares(apt_sim_m @ cp.multiply(fixed_leaf_pos_r, beam_mu[map_int_v])))]
                 print('Actual objective function type: {}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                 obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'similar_mu_linear':
+                similar_mu_obj = []
+                index_stop = 0
+                index_start = 0
+                print('Objective for similar MU between consecutive control points added..')
+                for arc in self.arcs.arcs_dict['arcs']:
+                    index_stop += arc['num_beams']
+                    for j in range(index_start, index_stop - 1):
+                        similar_mu_obj += [obj_funcs[i]['weight'] * cp.abs(beam_mu[j] - beam_mu[j + 1])]
+                    index_start += arc['num_beams']
+                obj_actual += [cp.sum(similar_mu_obj)]
 
+        constraints_actual += [beam_mu >= self.vmat_params['mu_min']]
 
         # Adding max/mean constraints
         constraint_def = self.constraint_def
@@ -633,6 +662,7 @@ class VmatScpOptimization(Optimization):
         sol['underdose_obj_norm'] = 0
         sol['aperture_regularity_actual_obj_value'] = 0
         sol['aperture_similarity_actual_obj_value'] = 0
+        sol['similar_mu_obj_value'] = 0
         obj_ind = 0
         # check if we have smooth objective
         for i in range(len(obj_funcs)):
@@ -686,10 +716,17 @@ class VmatScpOptimization(Optimization):
                 else:
                     sol['aperture_similarity_actual_obj_value'] += self.obj[obj_ind].value
                 obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'similar_mu_linear':
+                if actual_sol_correction:
+                    sol['similar_mu_obj_value'] += self.obj_actual[obj_ind].value
+                else:
+                    sol['similar_mu_obj_value'] += self.obj[obj_ind].value
+                obj_ind = obj_ind + 1
+
 
         sol['actual_obj_value'] = np.round((sol['overdose_obj'] + sol['underdose_obj'] + sol['quadratic_obj'] +
                                             sol['aperture_regularity_actual_obj_value'] +
-                                            sol['aperture_similarity_actual_obj_value']), 4)
+                                            sol['aperture_similarity_actual_obj_value']) + sol['similar_mu_obj_value'], 4)
         return sol
 
     def run_sequential_cvx_algo(self, *args, **kwargs):
@@ -773,7 +810,7 @@ class VmatScpOptimization(Optimization):
         sol['inf_matrix'] = self.inf_matrix # point to influence matrix object
         return sol, sol_convergence
 
-    def create_cvxpy_intermediate_problem_prediction(self, pred_dose_1d):
+    def create_cvxpy_intermediate_problem_prediction(self, pred_dose_1d, final_dose_1d=None, opt_dose_1d=None):
         """
 
         Creates intermediate cvxpy problem for optimizing interior and boundary beamlets
@@ -825,17 +862,26 @@ class VmatScpOptimization(Optimization):
         self.vars['bound_v_l'] = bound_v_l
         self.vars['bound_v_r'] = bound_v_r
         ptv_vox = inf_matrix.get_opt_voxels_idx('PTV')
+        if final_dose_1d is None:
+            final_dose_1d = np.zeros(inf_matrix.A.shape[0])
+        if opt_dose_1d is None:
+            opt_dose_1d = np.zeros(inf_matrix.A.shape[0])
         # voxel weights for oar objectives
         all_vox = np.arange(m)
         oar_voxels = all_vox[~np.isin(np.arange(m), ptv_vox)]
         obj += [
             100*(1 / len(ptv_vox)) * cp.sum_squares((inf_int[ptv_vox, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[ptv_vox, :] @ cp.multiply(bound_v_l, map_adj_bound)
-                                    + inf_bound_r[ptv_vox, :] @ cp.multiply(bound_v_r, map_adj_bound)) - (pred_dose_1d[ptv_vox] / num_fractions))]
+                                                     + inf_bound_r[ptv_vox, :] @ cp.multiply(bound_v_r, map_adj_bound) + final_dose_1d[ptv_vox] - opt_dose_1d[ptv_vox]) - (pred_dose_1d[ptv_vox] / num_fractions))]
+        obj += [
+            0.1 * (1 / len(ptv_vox)) * cp.sum_squares((inf_int[ptv_vox, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[ptv_vox, :] @ cp.multiply(bound_v_l, map_adj_bound)
+                                                       + inf_bound_r[ptv_vox, :] @ cp.multiply(bound_v_r, map_adj_bound) + final_dose_1d[ptv_vox] - opt_dose_1d[ptv_vox]) - (my_plan.get_prescription() / my_plan.get_num_of_fractions()))]
 
         dO = cp.Variable(oar_voxels.shape[0], pos=True)
         constraints += [(inf_int[oar_voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[oar_voxels, :] @ cp.multiply(bound_v_l, map_adj_bound)
-                                    + inf_bound_r[oar_voxels, :] @ cp.multiply(bound_v_r, map_adj_bound)) <= pred_dose_1d[oar_voxels] / num_fractions + dO]
+                         + inf_bound_r[oar_voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + final_dose_1d[oar_voxels] - opt_dose_1d[oar_voxels]) <= pred_dose_1d[oar_voxels] / num_fractions + dO]
         obj += [(1 / dO.shape[0]) * cp.sum_squares(dO)]
+        obj += [0.0001 * (1 / dO.shape[0]) * cp.sum_squares(inf_int[oar_voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[oar_voxels, :] @ cp.multiply(bound_v_l, map_adj_bound)
+                                                            + inf_bound_r[oar_voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + final_dose_1d[oar_voxels] - opt_dose_1d[oar_voxels])]
 
         apt_reg_m = self.cvxpy_params['apt_reg_m']
         card_ar = self.cvxpy_params['card_ar']
@@ -848,6 +894,17 @@ class VmatScpOptimization(Optimization):
         weight = 1 * (my_plan.get_prescription() / my_plan.get_num_of_fractions())
         obj += [weight / card_as * (cp.sum(cp.sum_squares(apt_sim_m @ leaf_pos_mu_l)) + cp.sum(
             cp.sum_squares(apt_sim_m @ leaf_pos_mu_r)))]
+
+        similar_mu_obj = []
+        index_stop = 0
+        index_start = 0
+        print('Objective for similar MU between consecutive control points added..')
+        for arc in self.arcs.arcs_dict['arcs']:
+            index_stop += arc['num_beams']
+            for j in range(index_start, index_stop - 1):
+                similar_mu_obj += [1 * cp.abs(int_v[j] - int_v[j + 1])]
+            index_start += arc['num_beams']
+        obj += [cp.sum(similar_mu_obj)]
 
         # Create convex leaf positions
         constraints += [
@@ -863,6 +920,9 @@ class VmatScpOptimization(Optimization):
         constraints += [int_v >= self.vmat_params['mu_min']]
         constraints += [bound_v_l <= int_v[map_int_v]]
         constraints += [bound_v_r <= int_v[map_int_v]]
+        if 'minimum_dynamic_leaf_gap_mm' in self.vmat_params:
+            min_leaf_gap_beamlet = self.vmat_params['minimum_dynamic_leaf_gap_mm'] / my_plan.beams.get_beamlet_width() * 1.01
+            constraints += [leaf_pos_mu_r - leaf_pos_mu_l >= int_v[map_int_v] * min_leaf_gap_beamlet]
 
     def calc_actual_objective_value_prediction(self, sol: dict, pred_dose_1d):
         """
@@ -879,11 +939,13 @@ class VmatScpOptimization(Optimization):
         oar_voxels = all_vox[~np.isin(np.arange(m), ptv_vox)]
 
         ptv_obj = 100*(1 / len(ptv_vox)) * np.sum((sol['act_dose_v'][ptv_vox] - (pred_dose_1d[ptv_vox] / num_fractions)) ** 2)
+        ptv_obj1 = 0.1 * (1 / len(ptv_vox)) * np.sum((sol['act_dose_v'][ptv_vox] - (self.my_plan.get_prescription() / num_fractions)) ** 2)
         oar_obj = (1 / len(oar_voxels)) * np.sum(np.maximum(sol['act_dose_v'][oar_voxels] - (pred_dose_1d[oar_voxels] / num_fractions), 0)** 2)
-        apt_reg_obj = self.obj[2].value
-        apt_sim_obj  = self.obj[3].value
-
-        sol['actual_obj_value'] = np.round((ptv_obj + oar_obj + apt_reg_obj + apt_sim_obj), 4)
+        oar_obj1 = 0.0001*(1 / len(oar_voxels)) * np.sum(np.maximum(sol['act_dose_v'][oar_voxels] - (pred_dose_1d[oar_voxels] / num_fractions), 0) ** 2)
+        apt_reg_obj = self.obj[4].value
+        apt_sim_obj = self.obj[5].value
+        similar_mu_obj = self.obj[6].value
+        sol['actual_obj_value'] = np.round((ptv_obj + ptv_obj1 + oar_obj1 + oar_obj + apt_reg_obj + apt_sim_obj + similar_mu_obj), 4) #+ apt_reg_obj + apt_sim_obj + similar_mu_obj), 4)
         return sol
 
     def run_sequential_cvx_algo_prediction(self, pred_dose_1d, *args, **kwargs):
@@ -967,6 +1029,96 @@ class VmatScpOptimization(Optimization):
         sol['inf_matrix'] = self.inf_matrix # point to influence matrix object
         return sol, sol_convergence
 
+    def run_sequential_cvx_algo_prediction_correction(self, pred_dose_1d, final_dose_1d, opt_dose_1d, cvxpy_params, vmat_params, *args, **kwargs):
+        """
+        :param pred_dose_1d: predicted dose 1d array
+        Returns sol and convergence of the sequential convex algorithm for optimizing the plan.
+        Solver parameters can be passed in args.
+
+        """
+        # running scp algorithm:
+        inner_iteration = int(0)
+        best_obj_value = 0
+        self.vmat_params = vmat_params
+        self.vmat_params['step_size_f'] = 1
+        self.vmat_params['step_size_b'] = 1
+        self.vmat_params['initial_step_size'] = 1
+        self.vmat_params['step_size_increment'] = 0
+        self.vmat_params['termination_gap'] = 0.5
+        self.cvxpy_params = cvxpy_params
+
+        # self.arcs.get_initial_leaf_pos(initial_leaf_pos=vmat_params['initial_leaf_pos'])
+        sol_convergence = []
+        self.outer_iteration = 1
+        while True:
+            if self.outer_iteration > 1:
+                self.arcs.gen_interior_and_boundary_beamlets(forward_backward=vmat_params['forward_backward'], step_size_f=vmat_params['step_size_f'], step_size_b=vmat_params['step_size_b'])
+            # Optimize using the predicted plan
+            self.create_cvxpy_intermediate_problem_prediction(pred_dose_1d=pred_dose_1d, final_dose_1d=final_dose_1d, opt_dose_1d=opt_dose_1d)
+            sol = self.solve(*args, **kwargs)
+            sol_convergence.append(sol)
+
+            # post processing
+            self.arcs.calc_actual_from_intermediate_sol(sol)
+            sol = self.arcs.calculate_dose(inf_matrix=self.inf_matrix, sol=sol, vmat_params=vmat_params, best_plan=False)
+            sol['act_dose_v'] = sol['act_dose_v'] + final_dose_1d - opt_dose_1d
+            sol['int_dose_v'] = sol['int_dose_v'] + final_dose_1d - opt_dose_1d
+            sol = self.calc_actual_objective_value_prediction(sol, pred_dose_1d=pred_dose_1d)
+
+            if inner_iteration == 0:
+
+                self.arcs.update_leaf_pos(forward_backward=vmat_params['forward_backward'])
+                best_obj_value = sol['actual_obj_value']
+                self.arcs.update_best_solution()
+                sol['inner_iteration'] = inner_iteration
+                inner_iteration = inner_iteration + 1
+                sol['accept'] = True
+
+            else:
+                if sol['actual_obj_value'] < best_obj_value:
+                    sol['accept'] = True
+                    print('solution accepted')
+                    sol['inner_iteration'] = inner_iteration
+                    self.arcs.update_best_solution()
+                    self.best_iteration = self.outer_iteration
+                    sol = self.arcs.calculate_dose(inf_matrix=self.inf_matrix, sol=sol, vmat_params=vmat_params, best_plan=True)
+                    sol['best_act_dose_v'] = sol['best_act_dose_v'] + final_dose_1d - opt_dose_1d
+                    inner_iteration = inner_iteration + 1
+
+                    relative_error = (best_obj_value - sol['actual_obj_value']) / best_obj_value * 100
+                    if self.outer_iteration > 15:
+                        self.outer_iteration = self.outer_iteration + 1
+                        break
+                    if vmat_params['step_size_f'] == 1 and relative_error < vmat_params['termination_gap']:
+                        self.outer_iteration = self.outer_iteration + 1
+                        break
+                    best_obj_value = sol['actual_obj_value']  # update best objective value
+
+                    # change forward backward
+                    vmat_params['forward_backward'] = (vmat_params['forward_backward'] + 1) % 2
+                    self.arcs.update_leaf_pos(forward_backward=vmat_params['forward_backward'])
+                    vmat_params['step_size_f'] = vmat_params['step_size_f'] + vmat_params['step_size_increment']
+                    vmat_params['step_size_b'] = vmat_params['step_size_b'] + vmat_params['step_size_increment']
+
+                else:
+                    sol['accept'] = False
+                    print('solution rejected..')
+                    sol['inner_iteration'] = inner_iteration
+                    if vmat_params['step_size_f'] > 1:
+                        vmat_params['step_size_f'] = int(np.ceil(vmat_params['step_size_f'] / 2))
+                        vmat_params['step_size_b'] = int(np.ceil(vmat_params['step_size_b'] / 2))
+                    else:
+                        if (not sol_convergence[-2]['accept']) and (sol_convergence[-2]['forward_backward'] == ((vmat_params['forward_backward'] + 1) % 2)) and \
+                                vmat_params['step_size_f'] == 1:
+                            sol['accept'] = True
+                            break
+                        else:
+                            vmat_params['forward_backward'] = (vmat_params['forward_backward'] + 1) % 2
+                            self.arcs.update_leaf_pos(forward_backward=vmat_params['forward_backward'], update_reference_leaf_pos=False)
+
+            self.outer_iteration = self.outer_iteration + 1
+        # sol['inf_matrix'] = self.inf_matrix # point to influence matrix object
+        return sol, sol_convergence
     def solve(self, actual_sol_correction=False, return_cvxpy_prob=False, sol: dict = None, *args, **kwargs):
         """
                 Return optimal solution and influence matrix associated with it in the form of dictionary

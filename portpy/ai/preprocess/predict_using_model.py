@@ -224,11 +224,13 @@ def process_case(ct_portpy, meta_data, ct, oar, ptv, beamlet, out_dir, case, dos
     np.savez(filename, CT=ct, DOSE=dose, OAR=oar, PTV=ptv, BEAM=beamlet)
 
 
-def predict_using_model(patient_id, in_dir, model_name='portpy_test_1', out_dir=r'./dataset/test'):
+def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/test', model_name='portpy_test_1', checkpoints_dir='../checkpoints', results_dir=r'../results'):
 
-    gt_dir = r'./results/{}/test_latest/npz_images'.format(model_name)  # directory to save predicted results
+    gt_dir = os.path.join(results_dir, model_name, "test_latest", "npz_images")  # directory to save predicted results
     # directory to save preprocessed data
 
+    # create test directory in out_dir
+    out_dir = os.path.join(out_dir, 'test')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -288,8 +290,11 @@ def predict_using_model(patient_id, in_dir, model_name='portpy_test_1', out_dir=
     start, end = get_crop_settings_calc_box(ct, meta_data=meta_data)
 
     # create prediction
+    test_file_path = os.path.join(os.path.dirname(__file__), "..")
+    # print('Testing script is located at {}'.format(test_file_path))
+    test_file_path = os.path.join(test_file_path, 'test.py')
     os.system(
-        'python test.py --dataroot ./dataset --netG unet_128 --name {} --phase test --model test --eval --input_nc 8 --output_nc 1 --direction AtoB --dataset_mode single --norm batch'.format(model_name))
+        'python {} --dataroot {} --netG unet_128 --name {} --checkpoints_dir {} --phase test --model test --eval --input_nc 8 --output_nc 1 --results_dir {} --direction AtoB --dataset_mode single --norm batch'.format(test_file_path, out_dir, model_name, checkpoints_dir, results_dir))
 
     # read predicted dose in down sampled resolution
     filename = os.path.join(gt_dir, patient_id + '_CT2DOSE.nrrd')

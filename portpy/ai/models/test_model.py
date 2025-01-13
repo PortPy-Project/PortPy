@@ -1,5 +1,5 @@
-from .base_model import BaseModel
-from . import networks3d as networks
+from portpy.ai.models.base_model import BaseModel
+from portpy.ai.models import networks3d as networks
 import torch
 
 

@@ -70,10 +70,17 @@ setup(
         "scikit-image>=0.17.2",
         "patchify>=0.2.3",
     ],
+    entry_points={
+        "console_scripts": [
+            "portpy-train=portpy.ai.training.train:train",
+            "portpy-test=portpy.ai.training.test:test",
+        ]
+    },
     extras_require={
         'mosek': ["Mosek>=9.3.14"],
         'pydicom': ["pydicom>=2.2.0"],
-        'full': ["Mosek>=9.3.14", "pydicom>=2.2.0"]
+        'full': ["Mosek>=9.3.14", "pydicom>=2.2.0"],
+        'ai': ["websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.2.0", "torchfile==0.1.0", "torchvision==0.9.1"]
     }
 
 )

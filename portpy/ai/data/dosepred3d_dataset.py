@@ -7,8 +7,8 @@ Created on Tue Aug 11 13:16:11 2020
 """
 
 import os.path
-from data.base_dataset import BaseDataset, get_params, get_transform, transform_3d_data
-from data.image_folder import make_dataset
+from portpy.ai.data.base_dataset import BaseDataset, get_params, get_transform, transform_3d_data
+from portpy.ai.data.image_folder import make_dataset
 import numpy as np
 import torch
 
@@ -51,7 +51,7 @@ class DosePred3DDataset(BaseDataset):
       """
         # read a image given a random integer index
         AB_path = self.AB_paths[index]
-        AB = np.load(AB_path)  ##Added (Gourav)
+        AB = np.load(AB_path, allow_pickle=True)  ##Added (Gourav)
 
         # Get AB image into A and B
         A = AB['CT']

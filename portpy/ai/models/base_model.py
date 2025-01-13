@@ -33,6 +33,9 @@ class BaseModel(ABC):
         self.gpu_ids = opt.gpu_ids
         self.isTrain = opt.isTrain
         self.device = torch.device('cuda:{}'.format(self.gpu_ids[0])) if self.gpu_ids else torch.device('cpu')  # get device name: CPU or GPU
+        if not os.path.isabs(opt.checkpoints_dir):
+            base_dir = os.getcwd()  # make it portpy.ai as base directory in case if relative directory is passed
+            opt.checkpoints_dir = os.path.join(base_dir, opt.checkpoints_dir)
         self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)  # save all the checkpoints to save_dir
         if opt.preprocess != 'scale_width':  # with [scale_width], input images might have different sizes, which hurts the performance of cudnn.benchmark.
             torch.backends.cudnn.benchmark = True
@@ -165,6 +168,7 @@ class BaseModel(ABC):
             if isinstance(name, str):
                 save_filename = '%s_net_%s.pth' % (epoch, name)
                 save_path = os.path.join(self.save_dir, save_filename)
+
                 net = getattr(self, 'net' + name)
 
                 if len(self.gpu_ids) > 0 and torch.cuda.is_available():
@@ -196,6 +200,9 @@ class BaseModel(ABC):
         for name in self.model_names:
             if isinstance(name, str):
                 load_filename = '%s_net_%s.pth' % (epoch, name)
+                if not os.path.isabs(self.save_dir):
+                    base_dir = os.getcwd()  # make it portpy.ai as base directory in case if relative directory is passed
+                    self.save_dir = os.path.join(base_dir, self.save_dir)
                 load_path = os.path.join(self.save_dir, load_filename)
                 net = getattr(self, 'net' + name)
                 if isinstance(net, torch.nn.DataParallel):

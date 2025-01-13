@@ -66,8 +66,8 @@ inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
 # Assign discrete beam/control_point_ids to arcs and create arcs dictionary.
 # Below is an example of creating 2 arcs. Users can create single or multiple arcs.
-arcs_dict = {'arcs': [{'arc_id': "01", "control_point_ids": beam_ids[0:int(len(beam_ids) / 2)]},
-                      {'arc_id': "02", "control_point_ids": beam_ids[int(len(beam_ids) / 2):]}]}
+arcs_dict = {'arcs': [{'arc_id': "01", "beam_ids": beam_ids[0:int(len(beam_ids) / 2)]},
+                      {'arc_id': "02", "beam_ids": beam_ids[int(len(beam_ids) / 2):]}]}
 # Create an object of Arcs class
 arcs = pp.Arcs(arcs_dict=arcs_dict, inf_matrix=inf_matrix)
 

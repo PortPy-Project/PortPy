@@ -27,20 +27,28 @@ See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-p
 See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
 """
 import os
-from options.test_options import TestOptions
-from data import create_dataset
-from models import create_model
-from util.visualizer import save_images
+import sys
+
+# used when running from CLI script to find project root and append it to path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from portpy.ai.options.test_options import TestOptions
+from portpy.ai.data import create_dataset
+from portpy.ai.models import create_model
+from portpy.ai.util.visualizer import save_images
 #from util.visualizer import save_ct_volumes
-from util import html
+from portpy.ai.util import html
 
 # Select the variable names of the npz images
 # Total number / order should match the output of the generator
 #npy_out_fnames = ['CBCT2CT', 'DOSE', 'GTV', 'ESO']
 npy_out_fnames = ['CT2DOSE']# Only CBCT/CT pairs
 
-if __name__ == '__main__':
-    opt = TestOptions().parse()  # get test options
+
+def main(opt):
+    # opt = TestOptions().parse()  # get test options
     # hard-code some parameters for test
     opt.num_threads = 0   # test code only supports num_threads = 1
     opt.batch_size = 1    # test code only supports batch_size = 1
@@ -73,3 +81,20 @@ if __name__ == '__main__':
         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, npy_out_fnames=npy_out_fnames)
     webpage.save()  # save the HTML
     #save_ct_volumes(webpage.get_npz_image_dir(), npy_out_fnames=npy_out_fnames)
+
+def test(args=None):
+    if args is None:
+        # Parse command-line arguments normally
+        opt = TestOptions().parse()
+    else:
+        # Convert dictionary to Namespace while keeping default values
+        default_opt = TestOptions().parse()  # Get argparse parser
+
+        # Update only the provided keys
+        vars(default_opt).update(args)
+        opt = default_opt  # Now opt contains updated values
+    main(opt)
+
+
+if __name__ == '__main__':
+    test()
