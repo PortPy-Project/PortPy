@@ -1,0 +1,28 @@
+{
+  "ct_origin_xyz_mm": [
+    -250.11,
+    -250.11,
+    -194.9
+  ],
+  "ct_voxel_resolution_xyz_mm": [
+    0.98,
+    0.98,
+    3
+  ],
+  "dose_voxel_resolution_xyz_mm": [
+    2.93,
+    2.93,
+    3
+  ],
+  "ct_to_dose_voxel_map_File": "OptimizationVoxels_Data.h5/ct_to_dose_voxel_map",
+  "cal_box_xyz_start": [
+    -215.43,
+    -154.85,
+    -88.4
+  ],
+  "cal_box_xyz_end": [
+    223.68,
+    140.92,
+    63.1
+  ]
+}

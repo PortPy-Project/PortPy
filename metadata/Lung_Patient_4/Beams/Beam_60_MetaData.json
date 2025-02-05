@@ -1,0 +1,36 @@
+{
+  "ID": 60,
+  "gantry_angle": 300,
+  "collimator_angle": 0,
+  "couch_angle": 0,
+  "iso_center": {
+    "x_mm": -59.32016,
+    "y_mm": 4.785892,
+    "z_mm": -16.91606
+  },
+  "beamlets": {
+    "id_File": "Beam_60_Data.h5/beamlets/id",
+    "width_mm_File": "Beam_60_Data.h5/beamlets/width_mm",
+    "height_mm_File": "Beam_60_Data.h5/beamlets/height_mm",
+    "position_x_mm_File": "Beam_60_Data.h5/beamlets/position_x_mm",
+    "position_y_mm_File": "Beam_60_Data.h5/beamlets/position_y_mm",
+    "MLC_leaf_idx_File": "Beam_60_Data.h5/beamlets/MLC_leaf_idx"
+  },
+  "jaw_position": {
+    "top_left_x_mm": -60,
+    "top_left_y_mm": 55,
+    "bottom_right_x_mm": 57.5,
+    "bottom_right_y_mm": -50
+  },
+  "BEV_structure_contour_points_File": "Beam_60_Data.h5/BEV_structure_contour_points",
+  "MLC_name": "VARIAN MILLENIUM 120",
+  "beam_modality": "Photon",
+  "energy_MV": "6",
+  "SSD_mm": 866.06,
+  "SAD_mm": 1000,
+  "influenceMatrixSparse_File": "Beam_60_Data.h5/inf_matrix_sparse",
+  "influenceMatrixSparse_tol": 0.0078384554386138911,
+  "influenceMatrixFull_File": "Beam_60_Data.h5/inf_matrix_full",
+  "MLC_leaves_pos_y_mm_File": "Beam_60_Data.h5/MLC_leaves_pos_y_mm",
+  "machine_name": "VARIAN TRUE BEAM"
+}
