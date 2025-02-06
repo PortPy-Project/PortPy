@@ -123,7 +123,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose ($\%$)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -131,7 +131,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume ($\%$)', fontsize=fontsize)
             ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count], label=struct_names[i])
             count = count + 1
             # legend.append(struct_names[i])
@@ -275,6 +275,7 @@ class Visualization:
                 print('Skipping Structure {} as it is not within calculation box.'.format(all_orgs[i]))
                 continue
             dose_sort_list = []
+            y = []
             for dose_1d in dose_1d_list:
                 x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
                 dose_sort_list.append(x)
@@ -289,7 +290,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 max_dose = np.maximum(max_dose, d_max_mat[-1])
                 max_dose = max_dose / pres * 100
-                ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose ($\%$)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -297,7 +298,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume ($\%$)', fontsize=fontsize)
             # ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
 
             # ax.plot(d_min_mat, 100 * y, linestyle='dotted', linewidth=width*0.5, color=colors[count])

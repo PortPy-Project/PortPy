@@ -64,7 +64,6 @@ setup(
         "Shapely>=1.8.4",
         "SimpleITK>=2.0.2",
         "tabulate>=0.9.0",
-        "typing>=3.7.4.3",
         "jinja2>=3.0.1",
         "typing-extensions>=3.10.0.0",
         "scikit-image>=0.17.2",
@@ -79,7 +78,7 @@ setup(
     extras_require={
         'mosek': ["Mosek>=9.3.14"],
         'pydicom': ["pydicom>=2.2.0"],
-        'full': ["Mosek>=9.3.14", "pydicom>=2.2.0"],
+        'full': ["Mosek>=9.3.14", "pydicom>=2.2.0", "websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.2.0", "torchfile==0.1.0", "torchvision==0.9.1"],
         'ai': ["websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.2.0", "torchfile==0.1.0", "torchvision==0.9.1"]
     }
 

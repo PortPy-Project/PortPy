@@ -188,14 +188,14 @@ class ClinicalCriteria:
         criteria = deepcopy(old_criteria)
         struct_name = criteria['parameters']['structure_name']
         if criteria['type'] == 'dose_volume_D':
-            constraint_keys = criteria['constraints'].keys()
+            constraint_keys = list(criteria['constraints'].keys())
             for key in constraint_keys:
                 if 'perc' in key:
                     value = criteria['constraints'][key]
                     new_key = key.replace('perc', 'gy')
                     criteria['constraints'][new_key] = criteria['constraints'].pop(key)
                     criteria['constraints'][new_key] = value / 100 * my_plan.get_prescription()
-            param_keys = criteria['parameters'].keys()
+            param_keys = list(criteria['parameters'].keys())
             for key in param_keys:
                 if 'volume_cc' in key:
                     value = criteria['parameters'][key]
@@ -204,7 +204,7 @@ class ClinicalCriteria:
                     criteria['parameters'][new_key] = value / my_plan.structures.get_volume_cc(
                         struct_name.upper()) * 100
         if criteria['type'] == 'dose_volume_V':
-            constraint_keys = criteria['constraints'].keys()
+            constraint_keys = list(criteria['constraints'].keys())
             for key in constraint_keys:
                 if 'volume_cc' in key:
                     value = criteria['constraints'][key]
@@ -212,7 +212,7 @@ class ClinicalCriteria:
                     criteria['constraints'][new_key] = criteria['constraints'].pop(key)
                     criteria['constraints'][new_key] = value / my_plan.structures.get_volume_cc(
                         struct_name.upper()) * 100
-            param_keys = criteria['parameters'].keys()
+            param_keys = list(criteria['parameters'].keys())
             for key in param_keys:
                 if 'dose_perc' in key:
                     value = criteria['parameters'][key]

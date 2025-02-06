@@ -333,7 +333,10 @@ class Structures:
                 frac_of_mask_in_calc_box = mask_3d & dose_mask
                 counts = np.count_nonzero(frac_of_mask_in_calc_box)
                 volume_cc_in_calc_box = counts * np.prod(self._ct_voxel_resolution_xyz_mm) / 1000
-                self.structures_dict['fraction_of_vol_in_calc_box'].append(volume_cc_in_calc_box/volume_cc)
+                if volume_cc == 0:
+                    self.structures_dict['fraction_of_vol_in_calc_box'].append(0)
+                else:
+                    self.structures_dict['fraction_of_vol_in_calc_box'].append(volume_cc_in_calc_box/volume_cc) # avoid divide by zero error
             else:
                 self.structures_dict[key].append(None)
 
