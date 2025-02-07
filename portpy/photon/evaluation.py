@@ -221,14 +221,14 @@ class Evaluation:
                 if 'Limit' in row:
                     if not row['Limit'] == '':
                         limit = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Limit'])[0])
-                        if row[i] > limit + 0.0001:  # added epsilon to avoid minor differences
+                        if row.iloc[i] > limit + 0.0001:  # added epsilon to avoid minor differences
                             row_color[i] = highlight_red  # make plan value in red
                         else:
                             row_color[i] = highlight_green  # make plan value in red
                 if 'Goal' in row:
                     if not row['Goal'] == '':
                         goal = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Goal'])[0])
-                        if row[i] > goal + 0.0001:
+                        if row.iloc[i] > goal + 0.0001:
                             row_color[i] = highlight_orange  # make plan value in red
                         else:
                             row_color[i] = highlight_green  # make plan value in red
@@ -244,7 +244,7 @@ class Evaluation:
         if return_df:
             return styled_df
         if in_browser:
-            html = styled_df.render()  # render to html
+            html = styled_df.to_html()  # render to html
             html_string = '''
                                                     <html>
                                                       <head><title>Portpy Clinical Criteria Evaluation</title></head>
