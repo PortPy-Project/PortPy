@@ -284,6 +284,7 @@ class ClinicalCriteria:
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
+        self.filter_dvh(my_plan=my_plan)
         return self.dvh_table
 
 
@@ -331,4 +332,17 @@ class ClinicalCriteria:
                             max_tol = self.dose_to_gy(limit_key, criterion['constraints'][limit_key])
             dvh_table.at[ind, 'max_tol'] = max_tol
 
+        return self.dvh_table
+
+    def filter_dvh(self, my_plan: Plan):
+        dvh_table = deepcopy(self.dvh_table)
+        drop_indices = []
+        for ind in dvh_table.index:
+            structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
+                dvh_table['volume_perc'][ind]
+            vol_perc = vol_perc / my_plan.inf_matrix.get_fraction_of_vol_in_calc_box(structure_name)
+            if vol_perc >= 100 or vol_perc <= 0: # remove unnecessary constraints or goals
+                drop_indices.append(ind)
+        dvh_table = dvh_table.drop(index=drop_indices).reset_index(drop=True)
+        self.dvh_table = dvh_table
         return self.dvh_table
