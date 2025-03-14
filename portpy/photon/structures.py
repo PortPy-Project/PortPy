@@ -44,6 +44,7 @@ class Structures:
         self.opt_voxels_dict['name'] = structures_dict['name']
         self._ct_voxel_resolution_xyz_mm = deepcopy(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm'])
         self.preprocess_structures()
+        self.patient_id = data.patient_id
 
     def get_structures(self) -> list:
         """
@@ -445,8 +446,9 @@ class Structures:
                 continue
             elif expression[i].isalpha() or expression[i].isdigit():
                 j = i
-                while j < len(expression) and (expression[j].isalpha() or expression[j] in '_.$^' or expression[j].isdigit()):
-                    j += 1
+                while j < len(expression) and (expression[j].isalpha() or expression[j] in '-_.$^' or expression[j].isdigit()):
+                    if not ((j > 0 and expression[j - 1].isspace()) and (j + 1 < len(expression) and expression[j + 1].isspace())):
+                        j += 1
                 struct = expression[i:j]
                 values_stack.append(struct)
                 i = j - 1

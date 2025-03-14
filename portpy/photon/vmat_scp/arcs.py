@@ -5,6 +5,7 @@ import json
 from copy import deepcopy
 from typing import Union, List
 
+
 class Arcs:
     """
     A class representing beams_dict.
@@ -88,7 +89,10 @@ class Arcs:
         for a in ind:
             arc = self.arcs_dict['arcs'][a]
             arcs.append(arc)
-        return arcs
+        if isinstance(arc_id, int) or isinstance(arc_id, str):
+            return  arcs[0]
+        else:
+            return arcs
 
     def get_max_cols(self):
         max_cols = 0
@@ -103,11 +107,67 @@ class Arcs:
         inf_matrix = self._inf_matrix
         all_cp_ids = inf_matrix.get_all_beam_ids()
 
+        # get beams for each arc
         for i, arc in enumerate((arcs_dict['arcs'])):
             cp_ids = arc["beam_ids"]
             ind_access = [all_cp_ids.index(cp_id) for cp_id in cp_ids]
             beams_list = [deepcopy(inf_matrix.beamlets_dict[ind]) for ind in ind_access]
             arc['vmat_opt'] = beams_list
+
+        # Precompute values for all arcs
+        for arc in arcs_dict['arcs']:
+            beams_list = arc['vmat_opt']
+
+            # Precompute values for all beams in the arc
+            start_beamlet_idxs = []
+            end_beamlet_idxs = []
+            num_rows_list = []
+            num_cols_list = []
+            start_leaf_pairs = []
+            end_leaf_pairs = []
+            min_positions_x = []
+            max_positions_x = []
+
+            for beam in beams_list:
+                reduced_2d_grid = self._inf_matrix.get_bev_2d_grid(beam_id=beam['beam_id'])
+                reduced_2d_grid = reduced_2d_grid[~np.all(reduced_2d_grid == -1, axis=1), :]  # Remove rows not in BEV
+
+                beam['reduced_2d_grid'] = reduced_2d_grid
+                beam['num_rows'] = reduced_2d_grid.shape[0]
+                beam['num_cols'] = reduced_2d_grid.shape[1]
+                beam['start_leaf_pair'] = np.max(beam['MLC_leaf_idx'][0])
+                beam['end_leaf_pair'] = np.min(beam['MLC_leaf_idx'][0])
+                beam['start_beamlet_idx'] = np.min(reduced_2d_grid[reduced_2d_grid >= 0])
+                beam['end_beamlet_idx'] = np.max(reduced_2d_grid)
+                beam['min_position_x_mm'] = np.min(beam['position_x_mm'][0])
+                beam['max_position_x_mm'] = np.max(beam['position_x_mm'][0])
+
+                # Store values for arc-level aggregation
+                start_beamlet_idxs.append(beam['start_beamlet_idx'])
+                end_beamlet_idxs.append(beam['end_beamlet_idx'])
+                num_rows_list.append(beam['num_rows'])
+                num_cols_list.append(beam['num_cols'])
+                start_leaf_pairs.append(beam['start_leaf_pair'])
+                end_leaf_pairs.append(beam['end_leaf_pair'])
+                min_positions_x.append(beam['min_position_x_mm'])
+                max_positions_x.append(beam['max_position_x_mm'])
+
+            # Compute arc-level values in a single step
+            arc['num_beams'] = len(beams_list)
+            arc['start_beamlet_idx'] = start_beamlet_idxs[0]  # First beam
+            arc['end_beamlet_idx'] = end_beamlet_idxs[-1]  # Last beam
+            arc['total_rows'] = np.sum(num_rows_list)
+            arc['max_rows'] = np.max(num_rows_list)
+            arc['max_cols'] = np.max(num_cols_list)
+            arc['start_leaf_pair'] = np.max(start_leaf_pairs)
+            arc['end_leaf_pair'] = np.min(end_leaf_pairs)
+            arc['min_position_x_mm'] = np.min(min_positions_x)
+            arc['max_position_x_mm'] = np.max(max_positions_x)
+
+        # align beams if beams are off in x direction
+        for i, arc in enumerate((arcs_dict['arcs'])):
+            for j, beam in enumerate(arc['vmat_opt']):
+                beam['offset_x'] = (beam['min_position_x_mm'] - arc['min_position_x_mm']) / self._inf_matrix.beamlet_width_mm
 
     def get_initial_leaf_pos(self, initial_leaf_pos='BEV'):
 
@@ -121,18 +181,7 @@ class Arcs:
         for i, arc in enumerate((arcs_dict['arcs'])):
             beams_list = arc['vmat_opt']
             for j, beam in enumerate(beams_list):
-                reduced_2d_grid = self._inf_matrix.get_bev_2d_grid(beam_id=beam['beam_id'])
-                reduced_2d_grid = reduced_2d_grid[~np.all(reduced_2d_grid == -1, axis=1), :]  # remove rows which are not in BEV
-                beam['reduced_2d_grid'] = reduced_2d_grid
-                beam['num_rows'] = reduced_2d_grid.shape[0]
-                # beam_id_ind = self._inf_matrix._beams.get_all_beam_ids().index(beam['beam_id'])
-                # beam['start_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.max(beam['position_y_mm']))[0][0]
-                # beam['end_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.min(beam['position_y_mm']))[0][0]
-                beam['start_leaf_pair'] = np.amax(beam['MLC_leaf_idx'][0])  # commented temporary. Hai to add it to metadata
-                beam['end_leaf_pair'] = np.amin(beam['MLC_leaf_idx'][0])
-                beam['num_cols'] = beam['reduced_2d_grid'].shape[1]
-                beam['start_beamlet_idx'] = np.unique(np.sort(reduced_2d_grid[reduced_2d_grid >= 0]))[0]
-                beam['end_beamlet_idx'] = np.amax(reduced_2d_grid)
+
                 beam['leaf_pos_bev'] = []
                 beam['leaf_pos_left'] = []
                 beam['leaf_pos_right'] = []
@@ -159,15 +208,6 @@ class Arcs:
                         beam['leaf_pos_f'].append([left_pos, right_pos])
                         beam['leaf_pos_b'].append([left_pos, right_pos])
 
-            arc['num_beams'] = len(arc['vmat_opt'])
-            arc['start_beamlet_idx'] = arc['vmat_opt'][0]['start_beamlet_idx']
-            arc['end_beamlet_idx'] = arc['vmat_opt'][-1]['end_beamlet_idx']
-            arc['total_rows'] = np.sum([arc['vmat_opt'][i]['num_rows'] for i in range(len(arc['vmat_opt']))])
-            arc['max_rows'] = np.amax([arc['vmat_opt'][i]['num_rows'] for i in range(len(arc['vmat_opt']))])
-            arc['max_cols'] = np.amax([arc['vmat_opt'][i]['num_cols'] for i in range(len(arc['vmat_opt']))])
-            arc['start_leaf_pair'] = np.amax(
-                [arc['vmat_opt'][i]['start_leaf_pair'] for i in range(len(arc['vmat_opt']))])
-            arc['end_leaf_pair'] = np.amin([arc['vmat_opt'][i]['end_leaf_pair'] for i in range(len(arc['vmat_opt']))])
 
     def gen_interior_and_boundary_beamlets(self, forward_backward: int = 1, step_size_f: int = 8, step_size_b: int = 8):
         """
@@ -246,24 +286,36 @@ class Arcs:
                     # ind = ~np.isin(map_[r, :][map_[r, :] >= 0], np.union1d(bound_ind_l[r], bound_ind_r[r]))
                     # if any(ind):
                     #     int_ind.extend(map_[r, :][map_[r, :] >= 0][ind])
-                    if bound_ind_l[r] and bound_ind_r[r]:
-                        if not bound_ind_l[r][-1] + 1 == bound_ind_r[r][0]:
-                            min_col = np.where(row == bound_ind_l[r][-1])[0][0] + 1
-                            max_col = np.where(row == bound_ind_r[r][0])[0][0]
-                            int_ind.extend(map_[r, min_col:max_col])
-                    elif bound_ind_l[r]:
-                        if not bound_ind_l[r][-1] + 1 == leaf_pos_r[r]:
-                            min_col = np.where(row == bound_ind_l[r][-1])[0][0] + 1
-                            int_ind.extend(map_[r, min_col:leaf_pos_r[r]])
-                    elif bound_ind_r[r]:
-                        if not leaf_pos_l[r] + 1 == bound_ind_r[r][0]:
-                            max_col = np.where(row == bound_ind_r[r][0])[0][0]
-                            int_ind.extend(map_[r, leaf_pos_l[r] + 1: max_col])
-                    else:
-                        if not leaf_pos_l[r] + 1 == leaf_pos_r[r]:
-                            int_ind.extend(map_[r, leaf_pos_l[r] + 1: leaf_pos_r[r]])
-                    # if not int_ind:
-                    #     int_ind = []
+                    # using matlab version
+                    if bound_ind_l[r] and bound_ind_r[r]:  # Both are non-empty
+                        if not int_ind:
+                            int_ind = list(range(max(bound_ind_l[r]) + 1, min(bound_ind_r[r])))
+                        else:
+                            int_ind.extend(range(max(bound_ind_l[r]) + 1, min(bound_ind_r[r])))
+
+                    elif not bound_ind_l[r] and not bound_ind_r[r]:  # Both are empty
+                        if not int_ind:
+                            if leaf_pos_l[r] + 1 == leaf_pos_r[r]:
+                                int_ind = []
+                            else:
+                                int_ind = list(map_[r, leaf_pos_l[r] + 1:leaf_pos_r[r]])
+                        else:
+                            if leaf_pos_l[r] + 1 == leaf_pos_r[r]:
+                                continue
+                            else:
+                                int_ind.extend(map_[r, leaf_pos_l[r] + 1:leaf_pos_r[r]])
+
+                    elif not bound_ind_l[r] and bound_ind_r[r]:  # Only left boundary is empty
+                        if not int_ind:
+                            int_ind = list(range(map_[r, leaf_pos_l[r] + 1], min(bound_ind_r[r])))
+                        else:
+                            int_ind.extend(range(map_[r, leaf_pos_l[r] + 1], min(bound_ind_r[r])))
+
+                    elif bound_ind_l[r] and not bound_ind_r[r]:  # Only right boundary is empty
+                        if not int_ind:
+                            int_ind = list(range(max(bound_ind_l[r]) + 1, map_[r, leaf_pos_r[r] - 1] + 1))
+                        else:
+                            int_ind.extend(range(max(bound_ind_l[r]) + 1, map_[r, leaf_pos_r[r] - 1] + 1))
                 vmat[b]['bound_ind_left'] = bound_ind_l
                 vmat[b]['bound_ind_right'] = bound_ind_r
                 vmat[b]['int_ind'] = int_ind
@@ -338,7 +390,7 @@ class Arcs:
         for a, arc in enumerate(arcs):
             for b, beam in enumerate(arc['vmat_opt']):
                 beam['best_beam_weight'] = beam['int_v']
-                beam['best_leaf_position_in_cm'] = beam['cont_leaf_pos_in_beamlet']*self._inf_matrix.beamlet_width_mm/10
+                beam['best_leaf_position_in_cm'] = beam['cont_leaf_pos_in_beamlet'] * self._inf_matrix.beamlet_width_mm / 10
             arc['best_w_beamlet_act'] = arc['w_beamlet_act']
 
     def calculate_beamlet_value(self):
@@ -386,6 +438,14 @@ class Arcs:
         adj0 = vmat_params['first_beam_adj']
         # adj2 = vmat_params['last_beam_adj']
 
+        if 'alpha' in vmat_params:
+            alpha = vmat_params['alpha']
+        else:
+            alpha = 0
+        if 'delta' in self._inf_matrix.opt_voxels_dict:
+            delta = self._inf_matrix.opt_voxels_dict['delta'][0]
+        else:
+            delta = np.zeros(A.shape[0])
         if best_plan:
             sol['best_act_dose_v'] = np.zeros(A.shape[0])
         else:
@@ -394,6 +454,9 @@ class Arcs:
             sol['optimal_intensity'] = np.zeros(A.shape[1])
 
         beamlet_so_far = 0
+        sum_beamlets_act = 0
+        sum_beamlets_best_act = 0
+        sum_beamlets_int = 0
         for arc in arcs:
             from_ = arc['start_beamlet_idx']
             to_ = arc['end_beamlet_idx']
@@ -401,24 +464,34 @@ class Arcs:
             num_beamlets = to_ - from_ + 1
             adjust_beamlets_weight = np.ones(num_beamlets)
 
-            # adjust 1st beam
-            from_0 = arc['vmat_opt'][0]['start_beamlet_idx']
-            to_0 = arc['vmat_opt'][0]['end_beamlet_idx']
-            adjust_beamlets_weight[from_0 - beamlet_so_far: to_0 - beamlet_so_far + 1] = adj0
+            # adjust all beams weight based on gantry angle
+            for b, beam in enumerate(arc['vmat_opt']):
+                beam_start_idx = beam['start_beamlet_idx']
+                beam_end_idx = beam['end_beamlet_idx']
+                adjust_beamlets_weight[beam_start_idx - beamlet_so_far: beam_end_idx - beamlet_so_far + 1] = arc['map_adj_int'][b]
 
-            # adjust beamlets weight of 2nd beam
-            from_1 = arc['vmat_opt'][1]['start_beamlet_idx']
-            to_1 = arc['vmat_opt'][1]['end_beamlet_idx']
-
-            adjust_beamlets_weight[from_1-beamlet_so_far: to_1-beamlet_so_far + 1] = adj1
             if best_plan:
                 sol['best_act_dose_v'] += A[:, from_:to_ + 1] @ (arc['best_w_beamlet_act'] * adjust_beamlets_weight)
             else:
-                sol['act_dose_v'] += A[:, from_:to_ + 1] @ (arc['w_beamlet_act']*adjust_beamlets_weight)
-                sol['int_dose_v'] += A[:, from_:to_ + 1] @ (arc['w_beamlet']*adjust_beamlets_weight)
-                sol['optimal_intensity'][from_:to_+1] = arc['w_beamlet_act']*adjust_beamlets_weight
-            beamlet_so_far = beamlet_so_far + num_beamlets
+                sol['act_dose_v'] += A[:, from_:to_ + 1] @ (arc['w_beamlet_act'] * adjust_beamlets_weight)
+                # sum_beamlets_act += np.sum(arc['w_beamlet_act'] * adjust_beamlets_weight)
 
+                sol['int_dose_v'] += A[:, from_:to_ + 1] @ (arc['w_beamlet'] * adjust_beamlets_weight)
+                # sum_beamlets_int += np.sum(arc['w_beamlet'] * adjust_beamlets_weight)
+
+                sol['optimal_intensity'][from_:to_ + 1] = arc['w_beamlet_act'] * adjust_beamlets_weight
+            sum_beamlets_act += np.sum(arc['w_beamlet_act'])
+            sum_beamlets_int += np.sum(arc['w_beamlet'])
+            if best_plan:
+                sum_beamlets_best_act += np.sum(arc['best_w_beamlet_act'])
+            beamlet_so_far = beamlet_so_far + num_beamlets
+        if alpha:
+            if best_plan:
+                sol['best_act_dose_v'] += (sum_beamlets_best_act / A.shape[1]) * alpha * delta
+            else:
+                sol['act_dose_v'] += (sum_beamlets_act / A.shape[1]) * alpha * delta
+                sol['int_dose_v'] += (sum_beamlets_int / A.shape[1]) * alpha * delta
+        sol['beamlet_mean_act'] = (sum_beamlets_act / A.shape[1])  # save for future use
         return sol
 
     def intermediate_to_actual(self):
@@ -483,7 +556,7 @@ class Arcs:
                             if sum_boundary > 0:
                                 act_solution[r, col[0] + count] = sum_boundary
                             if col[0] + count + 1 <= col[-1]:
-                                act_solution[r, col[0] + count + 1: col[-1]+1] = 0
+                                act_solution[r, col[0] + count + 1: col[-1] + 1] = 0
                     for c in range(num_cols):
                         if reduced_2d_grid[r, c] >= 0:
                             w_beamlet_act[reduced_2d_grid[r, c] - beamlet_so_far] = act_solution[r, c] * beam['int_v']
@@ -545,7 +618,7 @@ class Arcs:
                 beam_mu = sol['int_v'][beam_so_far + b]
                 beam['cont_leaf_pos_in_beamlet'] = np.zeros((num_rows, 2))
                 for r in range(num_rows):
-                    beam['cont_leaf_pos_in_beamlet'][r, 0] = leaf_pos_mu_l[count] / (beam_mu + 0.000000000001)
-                    beam['cont_leaf_pos_in_beamlet'][r, 1] = leaf_pos_mu_r[count] / (beam_mu + 0.000000000001)
+                    beam['cont_leaf_pos_in_beamlet'][r, 0] = np.round(leaf_pos_mu_l[count] / (beam_mu + 0.000000000001), 4)
+                    beam['cont_leaf_pos_in_beamlet'][r, 1] = np.round(leaf_pos_mu_r[count] / (beam_mu + 0.000000000001), 4)
                     count = count + 1
             beam_so_far += arc['num_beams']

@@ -14,8 +14,7 @@
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
-**WOC Participants:** To explore project details, please visit the WOC subfolder using this link: ([WOC Projects](https://github.com/PortPy-Project/PortPy/tree/master/WOC))
-
+**Note**: If you have any questions about PortPy, please create an [Issue](https://github.com/PortPy-Project/PortPy/issues) on Github. If you are unable to do so for any reason, you may contact Gourav Jhanwar (jhanwarg@mskcc.org)
 
 # What is PortPy? <a name="What"></a>
 

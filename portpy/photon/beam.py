@@ -38,6 +38,7 @@ class Beams:
         beams_dict = data.load_data(meta_data=metadata['beams'], load_inf_matrix_full=load_inf_matrix_full)
         self.beams_dict = beams_dict
         self.preprocess_beams()
+        self.patient_id = data.patient_id
 
     def get_beamlet_idx_2d_finest_grid(self, beam_id: Union[int, str]) -> np.ndarray:
         """

@@ -123,7 +123,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel(r'Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose (%)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -131,7 +131,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel(r'Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume (%)', fontsize=fontsize)
             ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count], label=struct_names[i])
             count = count + 1
             # legend.append(struct_names[i])
@@ -290,7 +290,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 max_dose = np.maximum(max_dose, d_max_mat[-1])
                 max_dose = max_dose / pres * 100
-                ax.set_xlabel(r'Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose (%)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -298,7 +298,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel(r'Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume (%)', fontsize=fontsize)
             # ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
 
             # ax.plot(d_min_mat, 100 * y, linestyle='dotted', linewidth=width*0.5, color=colors[count])
@@ -501,7 +501,7 @@ class Visualization:
         # adjust the main plot to make room for the legends
         plt.subplots_adjust(left=0.2)
         dose_3d = []
-        if sol is not None:
+        if sol is not None or dose_1d is not None:
             show_dose = True
         if show_dose:
             if sol is not None:
@@ -656,12 +656,13 @@ class Visualization:
         return colors
 
     @staticmethod
-    def surface_plot(matrix: np.ndarray, **kwargs):
+    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
         surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
         return ax, surf
 
@@ -706,14 +707,3 @@ class Visualization:
             return False  # Probably standard Python interpreter
         except:
             return False  # Probably standard Python interpreter
-
-    @staticmethod
-    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
-        # acquire the cartesian coordinate matrices from the matrix
-        # x is cols, y is rows
-        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-
-        if ax is None:
-            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
-        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
-        return ax, surf

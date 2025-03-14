@@ -8,12 +8,6 @@
 		"dose_perc": 100
     },
     {
-		"type": "linear-overdose",
-		"structure_name": "CORD",
-		"weight": 100,
-		"dose_gy": 50
-    },
-    {
 		"type": "quadratic-underdose",
 		"structure_name": "PTV",
         "weight": 100000,
@@ -81,9 +75,13 @@
         "weight": 3
     },
 	{
-		"type": "smoothness-quadratic",    
-        "weight": 100
-    }
+	  "type": "aperture_regularity_quadratic",
+	  "weight": 1000
+	},
+	{
+	  "type": "aperture_similarity_quadratic",
+	  "weight": 1000
+	}
 	],
 	"constraints":[
 	{
@@ -139,7 +137,7 @@
 ],
 	"opt_parameters":{
 	"minimum_dynamic_leaf_gap_mm": 0.5,
-    "initial_leaf_pos": "BEV",
+    "initial_leaf_pos": "CG",
     "initial_step_size": 0,
     "step_size_increment": 1,
     "ss_termination": 1,
@@ -149,8 +147,8 @@
     "termination_gap": 2,
     "min_iteration_threshold": 10,
     "dose_threshold": 0.0001,
-    "mu_max": 0.167,
-    "mu_min": 0.001,
+    "mu_max": 55,
+    "mu_min": 0.5,
     "epsilon_mu": 1e-06,
     "forward_backward": 1,
     "total_iter_step1": 0,
@@ -159,8 +157,11 @@
 	"first_beam_adj": 0,
     "second_beam_adj": 0.5,
     "last_beam_adj": 1,
-    "w_ai_obj": 10,
-    "w_as_obj": 20
+	"smooth_delta": 0.008,
+    "update_balanced_arc_score": 1,
+    "inf_matrix_scale_factor": 0.6,
+	"flag_full_matrix": 1,
+	"sparsification": "rmr"
 	}
 
 }

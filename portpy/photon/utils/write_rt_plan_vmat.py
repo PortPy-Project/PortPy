@@ -203,7 +203,7 @@ def write_rt_plan_vmat(my_plan: Plan, out_rt_plan_file: str, in_rt_plan_file: st
     for a, arc in enumerate(arcs.arcs_dict['arcs']):
         arc_id = arc['arc_id']
         beam_dataset = create_beam(my_plan=my_plan, arc_id=arc_id, beam_number=a+1)
-        mu = [arc['vmat_opt'][i]['best_beam_weight'] for i in range(len(arc['vmat_opt']))]
+        mu = [arc['vmat_opt'][i]['best_beam_weight']*100 for i in range(len(arc['vmat_opt']))] # multiply it by 100 to match eclipse mu/deg
         mu[0] = 0  # make first beam 0 mu
         total_mu = sum(mu)
         meterset_weight = 0

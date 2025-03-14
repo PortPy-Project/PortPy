@@ -27,7 +27,7 @@ def vmat_scp_tutorial():
     data = pp.DataExplorer(data_dir=data_dir)
 
     # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
-    data.patient_id = 'Lung_Patient_3'
+    data.patient_id = 'Lung_Phantom_Patient_1'
 
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
@@ -57,6 +57,10 @@ def vmat_scp_tutorial():
     # Loading influence matrix
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
 
+    # scale influence matrix to get correct MU/deg for TPS import
+    inf_matrix_scale_factor = vmat_opt_params['opt_parameters'].get('inf_matrix_scale_factor', 1)
+    inf_matrix.A = inf_matrix.A * np.float32(inf_matrix_scale_factor)
+
     """
      2) Creating Arc (Arcs class)
 
@@ -75,12 +79,33 @@ def vmat_scp_tutorial():
      3) Optimize VMAT plan using sequential convex programming
 
     """
+    # If column generation flag is turned in opt_params. Generate initial feasible leaf positions for SCP based optimization
+    if vmat_opt_params['opt_parameters']['initial_leaf_pos'].lower() == 'cg':
+        vmat_opt = pp.VmatOptimizationColGen(my_plan=my_plan,
+                                              opt_params=vmat_opt_params)
+
+        sol_col_gen = vmat_opt.run_col_gen_algo(solver='MOSEK', verbose=True, accept_unknown=True)
+        dose_1d = inf_matrix.A @ sol_col_gen['optimal_intensity'] * my_plan.get_num_of_fractions()
+        # # plot dvh for the above structures
+        fig, ax = plt.subplots(figsize=(12, 8))
+        struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'RIND_0', 'RIND_1', 'LUNGS_NOT_GTV', 'RECT_WALL', 'BLAD_WALL',
+                        'URETHRA']
+        ax = pp.Visualization.plot_dvh(my_plan, dose_1d=dose_1d,
+                                       struct_names=struct_names, ax=ax)
+        ax.set_title('Initial Col gen dvh')
+        plt.show(block=False)
+        plt.close('all')
+        # pp.save_optimal_sol(sol=sol_col_gen, sol_name='sol_col_gen', path=r'C:\Temp')
+
+
     # Initialize Optimization
     vmat_opt = pp.VmatScpOptimization(my_plan=my_plan,
                                       opt_params=vmat_opt_params)
     # Run Sequential convex algorithm for optimising the plan.
     # The final result will be stored in sol and convergence will store the convergence history (i.e., results of each iteration)
-    sol, convergence = vmat_opt.run_sequential_cvx_algo(solver='MOSEK', verbose=True)
+    convergence = vmat_opt.run_sequential_cvx_algo(solver='MOSEK', verbose=True)
+    sol = convergence[vmat_opt.best_iteration]
+    sol['inf_matrix'] = inf_matrix
 
     # Visualize convergence. The convergence dataframe contains the following columns:
     df = pd.DataFrame(convergence, columns=['outer_iteration', 'inner_iteration', 'step_size_f_b', 'forward_backward', 'intermediate_obj_value', 'actual_obj_value', 'accept'])
@@ -96,7 +121,7 @@ def vmat_scp_tutorial():
     # plot dvh for the above structures
     fig, ax = plt.subplots(figsize=(12, 8))
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD', 'LUNGS_NOT_GTV']
-    pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=struct_names, style='dashed', ax=ax)
+    pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=struct_names, style='solid', ax=ax)
     plt.show()
     print('Done')
 
