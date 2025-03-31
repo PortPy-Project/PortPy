@@ -7,7 +7,7 @@ name = "portpy"
 dynamic = ["version"]
 description = "First open-source radiation treatment planning system in Python"
 readme = "README.md"
-license = { text = "Apache License, Version 2.0" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "Gourav Jhanwar", email = "jhanwarg@mskcc.org" },
     { name = "Mojtaba Tefagh", email = "mtefagh@sharif.edu" },
@@ -47,8 +47,9 @@ dependencies = [
     "patchify>=0.2.3"
 ]
 
-[tool.setuptools]
-packages = ["portpy"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["portpy.*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "portpy.__version__" }
