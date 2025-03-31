@@ -9,12 +9,12 @@ description = "First open-source radiation treatment planning system in Python"
 readme = "README.md"
 license = { text = "Apache License, Version 2.0" }
 authors = [
-    { name = "Gourav Jhanwar", email = "jhanwarg@mskcc.struct" },
-    { name = "Mojtaba Tefagh", email = "mtefagh@acm.struct" },
+    { name = "Gourav Jhanwar", email = "jhanwarg@mskcc.org" },
+    { name = "Mojtaba Tefagh", email = "mtefagh@sharif.edu" },
     { name = "Vicki Taasti", email = "vicki.taasti@maastro.nl" },
-    { name = "Seppo Tuomaala", email = "tuomaals@mskcc.struct" },
-    { name = "Saad Nadeem", email = "nadeems@mskcc.struct" },
-    { name = "Masoud Zarepisheh", email = "zarepism@mskcc.struct" }
+    { name = "Seppo Tuomaala", email = "tuomaals@mskcc.org" },
+    { name = "Saad Nadeem", email = "nadeems@mskcc.org" },
+    { name = "Masoud Zarepisheh", email = "zarepism@mskcc.org" }
 ]
 requires-python = ">=3.8"
 classifiers = [

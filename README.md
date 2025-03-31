@@ -10,7 +10,7 @@
 
 </h2>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.6&color=darkgreen)
+![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.7&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
@@ -57,18 +57,19 @@ we plan to launch an educational YouTube channel to assist researchers new to th
 # Quick start and examples <a name="QuickStart"></a>
 The easiest way to start is through the PorPy following Jupiter Notebook examples. 
 
-| Example File                          	                                                                                                        | Description                                                                                                                                                           	|
-|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
-| [1_basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb)                	                | Demonstrates the main functionalities of PortPy (e.g., Access data, create an IMRT plan, visualize)                                                                   	|
-| [vmat_scp_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb)               	               | Creates a VMAT plan using sequential convex programming                                                                                                               	|
-| [vmat_scp_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_dose_prediction.ipynb)                 | Predicts 3D dose distribution using deep learning and converts it into a deliverable VMAT plan                                                                        	|
-| [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb)           	           | Creates an IMRT plan and visualizes it in 3D-Slicer                                                                                                                   	|
-| [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb)                	                  | 1. Outputs IMRT plan in DICOM RT format and imports it into TPS. <br>2. Outputs IMRT plan optimal fluence in an Eclipse-compatable format and imports it into Eclipse 	|
-| [vmat_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_tps_import.ipynb)                 	                 | Outputs VMAT plan in DICOM RT format and imports it into TPS                                                                                                          	|
-| [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb)            	            | Predicts 3D dose distribution using deep learning and converts it into a deliverable IMRT plan                                                                        	|
-| [vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb)           	               | Finds a globally optimal VMAT plan                                                                                                                                    	|
-| [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb) 	 | Finds globally optimal beam angles for IMRT                                                                                                                           	|
-| [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)  	    | Finds a globally optimal plan meeting Dose Volume Histogram (DVH) constraints                                                                                         	|
+| Example File                          	                                                                                                                          | Description                                                                                                                                                           	                                                                          |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [1_basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb)                	                                  | Demonstrates the main functionalities of PortPy (e.g., Access data, create an IMRT plan, visualize)                                                                   	                                                                          |
+| [eclipse_photon_dose_calculation.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_photon_dose_calculation.ipynb)                	 | Demonstrates the capability of running dose calculation for patients outside PortPy dataset using Varian's photon dose calculation module and perform optimization in PortPy                                                                   	 |
+| [vmat_scp_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb)               	                                 | Creates a VMAT plan using sequential convex programming                                                                                                               	                                                                          |
+| [vmat_scp_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_dose_prediction.ipynb)                                   | Predicts 3D dose distribution using deep learning and converts it into a deliverable VMAT plan                                                                        	                                                                          |
+| [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb)           	                             | Creates an IMRT plan and visualizes it in 3D-Slicer                                                                                                                   	                                                                          |
+| [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb)                	                                    | 1. Outputs IMRT plan in DICOM RT format and imports it into TPS. <br>2. Outputs IMRT plan optimal fluence in an Eclipse-compatable format and imports it into Eclipse 	                                                                          |
+| [vmat_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_tps_import.ipynb)                 	                                   | Outputs VMAT plan in DICOM RT format and imports it into TPS                                                                                                          	                                                                          |
+| [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb)            	                              | Predicts 3D dose distribution using deep learning and converts it into a deliverable IMRT plan                                                                        	                                                                          |
+| [vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb)           	                                 | Finds a globally optimal VMAT plan                                                                                                                                    	                                                                          |
+| [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb) 	                   | Finds globally optimal beam angles for IMRT                                                                                                                           	                                                                          |
+| [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)  	                      | Finds a globally optimal plan meeting Dose Volume Histogram (DVH) constraints                                                                                         	                                                                          |
 
 
 
@@ -108,7 +109,7 @@ More information about data can be found in [Data](#Data) section.
    cannot use your own dataset for now. We will address this problem in the near future
       ```python
       # Use PortPy DataExplorer class to explore PortPy data
-      data = pp.DataExplorer(data_dir=''../data)
+      data = pp.DataExplorer(data_dir='../data')
       # Load ct, structure set, beams for the above patient using CT, Structures, and Beams classes
       ct = pp.CT(data)
       structs = pp.Structures(data)
@@ -218,7 +219,10 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
       ```
       pip install portpy[mosek, pydicom]
       ```
-   
+    * For installing all the additional packages
+     ```
+      pip install portpy[full]   
+     ```
 
 2. Install using conda:
 
