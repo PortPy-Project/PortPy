@@ -84,7 +84,6 @@ class Optimization(object):
         # Construct optimization problem
 
         # Generating objective functions
-        print('Objective Start')
         for i in range(len(obj_funcs)):
             if obj_funcs[i]['type'] == 'quadratic-overdose':
                 if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
@@ -119,10 +118,7 @@ class Optimization(object):
                 obj += [obj_funcs[i]['weight'] * (smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) +
                                                   smoothness_Y_weight * (1 / num_rows) * cp.sum_squares(Qy @ x))]
 
-        print('Objective done')
-
-        print('Constraints Start')
-
+        # Generating constraints
         constraint_def = deepcopy(clinical_criteria.get_criteria())  # get all constraints definition using clinical criteria
 
         # add/modify constraints definition if present in opt params
@@ -164,8 +160,7 @@ class Optimization(object):
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
                                         <= limit / num_fractions]
 
-
-        print('Constraints done')
+        print('Problem created')
 
     def add_max(self, struct: str, dose_gy: float):
         """

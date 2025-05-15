@@ -306,7 +306,20 @@ class VmatOptimizationColGen(Optimization):
 
         return scores_list
 
-    def select_best_aperture_smooth_greedy(self, remaining_beam_ids, scores, smooth_delta=0.1, smooth_beta=5, apt_reg_type_cg='row-by-row'):
+    def select_best_aperture_smooth_greedy(self, remaining_beam_ids: list, scores, smooth_delta: float = 0.1, smooth_beta: float = 5, apt_reg_type_cg: str = 'row-by-row'):
+        """
+        This function helps to find the aperture with best score.
+        It solves pricing problem to find the best configuration of leaf positions for given scores
+
+        :param remaining_beam_ids: List of Remaining beams ids for which score needs to be calculated
+        :param scores: score vector for all the beamlets
+        :param smooth_delta: parameter to regularize the aperture leaf
+        :param smooth_beta: parameter for exponential smoothing between leafs. it is not used during row-by-row
+        :param apt_reg_type_cg: either 'row-by-row' or 'greedy'. row by row smooth leaf sequentially.
+                But greedy choose the next best leaf for smoothness
+        :return: aperture with best score(s)
+        """
+
         aperture_score = {}
         selected_beamlets = {}
         selected_leafs = {}
@@ -505,6 +518,13 @@ class VmatOptimizationColGen(Optimization):
         return top_beam_ids, [selected_beamlets[b_id] for b_id in top_beam_ids]
 
     def solve_rmp(self, *args, **kwargs):
+        """
+            Solve restricted master problem to get optimal aperture intensity
+
+        :param args: arguments for cvxpy problem
+        :param kwargs: keywords for cvxpy problem
+        :return: solution for the restricted master problem
+        """
         my_plan = self.my_plan
         inf_matrix = self.inf_matrix
         opt_params = self.opt_params
@@ -603,39 +623,92 @@ class VmatOptimizationColGen(Optimization):
         return sol
 
     def run_col_gen_algo(self, *args, **kwargs):
-        # running col gen algorithm:
-        selected_apertures = []
-        # Initial parameters
-        A_indices = []  # Indices of selected beamlets in A
+        """
+            VMAT Optimization using Column Generation.
+
+            This module implements the column generation approach for directly optimizing
+            MLC (multi-leaf collimator) leaf positions in Volumetric Modulated Arc Therapy (VMAT).
+
+            Column generation is a powerful greedy-type algorithm used in operations research and
+            has been successfully adapted for radiotherapy optimization. Instead of optimizing
+            beamlet intensities first and then performing leaf sequencing, this approach
+            iteratively selects the most promising apertures (beam shapes) and adds them to a
+            pool of candidate apertures.
+
+            The algorithm proceeds as follows:
+
+            1. Start with an initial set of apertures indexed by k = 1, ..., K.
+            2. Construct the dose-influence matrix B using columns B_k corresponding to each aperture.
+            3. Solve the optimization problem:
+
+                   minimize     f(d = By)
+                   subject to   g(d) <= 0
+
+               where `y` is the aperture intensity vector, `f` is the objective function, and
+               `g` represents constraints (e.g., dose limits).
+
+            4. Using the optimal dual variables λ (from CVXPY), construct the Lagrangian:
+
+                   L(d, λ) = f(d) + λᵀ g(d)
+
+            5. Compute the gradient of the Lagrangian w.r.t. beamlet intensities x:
+
+                   ∂L/∂x = Aᵀ ∂L/∂d
+
+               where A is the original beamlet-based dose-influence matrix.
+
+            6. Each beamlet receives a score representing the estimated improvement to the
+               objective if activated. Using this, identify the best aperture per beam by
+               minimizing the cumulative score of open beamlets.
+
+            7. Append the selected aperture to the set and repeat until convergence or stopping criteria.
+
+            Note:
+            - This approach is greedy and does not guarantee global optimality.
+            - However, it yields high-quality solutions that can serve as warm starts
+              for more sophisticated methods such as Sequential Convex Programming (SCP).
+
+            References:
+            - Preciado-Walters et al., 2004
+            - Romeijn et al., 2005
+
+        :param args: arguments for cvxpy problem
+        :param kwargs: keywords for cvxpy problem
+
+        Returns:
+            sol (dict): Solution dictionary including final beamlet intensities,
+                        aperture selection, and smoothness metrics.
+        """
+
+        A_indices = []  # List of selected beamlet index sets for B columns
         self.arcs.get_initial_leaf_pos(initial_leaf_pos='BEV')
+
+        # Evaluate initial aperture regularization metric
         apt_reg_obj = get_apt_reg_metric(my_plan=self.my_plan)
-        print('####apr_reg_obj BEV: {} ####'.format(apt_reg_obj))
+        print(f'#### Initial apt_reg_obj (BEV): {apt_reg_obj} ####')
+
         arcs = self.arcs.arcs_dict['arcs']
-        # total_beams = sum([arc['num_beams'] for arc in arcs])
-        self.B = np.empty((self.inf_matrix.A.shape[0], 0))  # Start with an empty B matrix
         A = self.inf_matrix.A
-        # control_points = np.sum([arc['num_beams'] for arc in self.arcs.arcs_dict['arcs']])
-        # get all beam ids from all arcs
-        remaining_beam_ids = [beam['beam_id'] for arc in self.arcs.arcs_dict['arcs'] for beam in arc['vmat_opt']]
+        self.B = np.empty((A.shape[0], 0))  # Start with empty B matrix (no selected apertures)
+
+        # Flatten all beam IDs across arcs
+        remaining_beam_ids = [beam['beam_id'] for arc in arcs for beam in arc['vmat_opt']]
         map_beam_id_to_index = {
             beam_id: index
             for index, beam_id in enumerate(
                 beam_id for arc in arcs for beam_id in arc['beam_ids']
             )
         }
-        B_indices = []
-        sol = {'y': np.zeros(0)}
-        # ptv_vox = self.inf_matrix.get_opt_voxels_idx('PTV')
-        # weights = np.ones(A.shape[0])
-        # weights[ptv_vox] = 100
-        # weights[~ptv_vox] = 5
-        # self.weights = weights
-        obj_funcs = self.opt_params['objective_functions'] if 'objective_functions' in self.opt_params else []
-        opt_params_constraints = self.opt_params['constraints'] if 'constraints' in self.opt_params else []
-        self.obj_funcs = obj_funcs
-        constraint_def = deepcopy(self.clinical_criteria.get_criteria())  # get all constraints definition using clinical criteria
 
-        # add/modify constraints definition if present in opt params
+        B_indices = []
+        sol = {'y': np.zeros(0)}  # Initial RMP solution
+
+        # Objective functions and constraints setup
+        self.obj_funcs = self.opt_params.get('objective_functions', [])
+        opt_params_constraints = self.opt_params.get('constraints', [])
+        constraint_def = deepcopy(self.clinical_criteria.get_criteria())
+
+        # Update clinical criteria with optimization-specific constraints
         for opt_constraint in opt_params_constraints:
             # add constraint
             param = opt_constraint['parameters']
@@ -646,40 +719,30 @@ class VmatOptimizationColGen(Optimization):
                 else:
                     constraint_def += [opt_constraint]
         self.constraint_def = constraint_def
-        # Turn off constraints
-        # self.constraint_def = []
-        convergence = []
-        if 'smooth_delta' in self.vmat_params:
-            smooth_delta = self.vmat_params['smooth_delta']
-        else:
-            smooth_delta = 0
-        print('smooth delta: {}'.format(smooth_delta))
-        if 'smooth_beta' in self.vmat_params:
-            smooth_beta = self.vmat_params['smooth_beta']
-        else:
-            smooth_beta = 1
-        if 'apt_reg_type_cg' in self.vmat_params:
-            apt_reg_type_cg = self.vmat_params['apt_reg_type_cg']
-        else:
-            apt_reg_type_cg = 'row-by-row'
-        if 'normalize_oar_weights' not in self.vmat_params:
-            self.vmat_params['normalize_oar_weights'] = 1
-        # run col generation
-        while len(remaining_beam_ids) > 0:
 
-            # Calculate scores for unselected beamlets
-            # scores = self.calculate_scores_fast(A, A_indices, sol, delta=delta)
+        # Smoothing and regularization parameters
+        smooth_delta = self.vmat_params.get('smooth_delta', 0)
+        smooth_beta = self.vmat_params.get('smooth_beta', 1)
+        apt_reg_type_cg = self.vmat_params.get('apt_reg_type_cg', 'row-by-row')
+        self.vmat_params.setdefault('normalize_oar_weights', 1)
+
+        convergence = []
+
+        # Main column generation loop
+        while remaining_beam_ids:
+            # Compute gradient-based scores for selecting promising apertures
             scores = self.calculate_scores_grad_new(A, A_indices, sol)
 
-            # top_beam_ids, beam_beamlets_list = self.select_best_aperture_smooth(remaining_beam_ids, scores, smooth_delta=smooth_delta)
-            # top_beam_ids, beam_beamlets_list = self.select_best_aperture_smooth_heuristic_2(remaining_beam_ids, scores, smooth_delta=smooth_delta)
-            # top_beam_ids, beam_beamlets_list = self.select_best_aperture_new_smooth_heuristic(remaining_beam_ids, scores, smooth_delta=smooth_delta)
-            top_beam_ids, beam_beamlets_list = self.select_best_aperture_smooth_greedy(remaining_beam_ids, scores, smooth_delta=smooth_delta, smooth_beta=smooth_beta, apt_reg_type_cg=apt_reg_type_cg)
-            # # Update B matrix with new aperture
-            # A_indices.append(open_beamlet_indices)
-            # B_indices.append(map_beam_id_to_index[best_beam_id])
-            # self.B = np.column_stack([self.B, A[:, open_beamlet_indices].sum(axis=1).A1])
-            # Update B matrix with each new aperture
+            # Select top aperture candidates based on scores
+            top_beam_ids, beam_beamlets_list = self.select_best_aperture_smooth_greedy(
+                remaining_beam_ids,
+                scores,
+                smooth_delta=smooth_delta,
+                smooth_beta=smooth_beta,
+                apt_reg_type_cg=apt_reg_type_cg
+            )
+
+            # Add selected apertures to B matrix
             for beam_id, open_beamlet_indices in zip(top_beam_ids, beam_beamlets_list):
                 A_indices.append(open_beamlet_indices)
                 B_indices.append(map_beam_id_to_index[beam_id])
@@ -695,8 +758,7 @@ class VmatOptimizationColGen(Optimization):
             # remaining_beam_ids.remove(best_beam_id)
             remaining_beam_ids = list(set(remaining_beam_ids) - set(top_beam_ids))
 
-
-        # calculate beamlet intensity for all the control points as 1d vector
+        # Recover full beamlet intensity vector from RMP solution
         x = np.zeros(A.shape[1])
         for b in range(len(B_indices)):
             x[A_indices[b]] = sol['y'][b]
@@ -714,7 +776,6 @@ class VmatOptimizationColGen(Optimization):
         sol['apt_reg_obj'] = apt_reg_obj
 
         return sol
-
 
     def get_dfo_interior(self, struct_name: str = 'GTV', min_dose: float = None, max_dose: float = None, pres: float = None):
 

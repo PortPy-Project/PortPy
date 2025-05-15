@@ -235,14 +235,264 @@
       "subject_id": "LUNG1-260",
       "collection_id": "NSCLC-Radiomics"
     },
-	{
+    {
       "portpy_patient_id": "Lung_Patient_49",
       "subject_id": "LUNG1-278",
       "collection_id": "NSCLC-Radiomics"
     },
-	{
+    {
       "portpy_patient_id": "Lung_Patient_50",
       "subject_id": "LUNG1-298",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_51",
+      "subject_id": "LUNG1-311",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_52",
+      "subject_id": "LUNG1-315",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_53",
+      "subject_id": "LUNG1-321",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_54",
+      "subject_id": "LUNG1-322",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_55",
+      "subject_id": "LUNG1-329",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_56",
+      "subject_id": "LUNG1-332",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_57",
+      "subject_id": "LUNG1-334",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_58",
+      "subject_id": "LUNG1-341",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_59",
+      "subject_id": "LUNG1-346",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_60",
+      "subject_id": "LUNG1-355",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_61",
+      "subject_id": "LUNG1-356",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_62",
+      "subject_id": "LUNG1-358",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_63",
+      "subject_id": "LUNG1-359",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_64",
+      "subject_id": "LUNG1-361",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_65",
+      "subject_id": "LUNG1-363",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_66",
+      "subject_id": "LUNG1-364",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_67",
+      "subject_id": "LUNG1-365",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_68",
+      "subject_id": "LUNG1-366",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_69",
+      "subject_id": "LUNG1-368",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_70",
+      "subject_id": "LUNG1-369",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_71",
+      "subject_id": "LUNG1-370",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_72",
+      "subject_id": "LUNG1-371",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_73",
+      "subject_id": "LUNG1-373",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_74",
+      "subject_id": "LUNG1-374",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_75",
+      "subject_id": "LUNG1-376",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_76",
+      "subject_id": "LUNG1-377",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_77",
+      "subject_id": "LUNG1-378",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_78",
+      "subject_id": "LUNG1-379",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_79",
+      "subject_id": "LUNG1-380",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_80",
+      "subject_id": "LUNG1-381",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_81",
+      "subject_id": "LUNG1-382",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_82",
+      "subject_id": "LUNG1-385",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_83",
+      "subject_id": "LUNG1-387",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_84",
+      "subject_id": "LUNG1-388",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_85",
+      "subject_id": "LUNG1-389",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_86",
+      "subject_id": "LUNG1-390",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_87",
+      "subject_id": "LUNG1-391",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_88",
+      "subject_id": "LUNG1-392",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_89",
+      "subject_id": "LUNG1-393",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_90",
+      "subject_id": "LUNG1-394",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_91",
+      "subject_id": "LUNG1-395",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_92",
+      "subject_id": "LUNG1-396",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_93",
+      "subject_id": "LUNG1-398",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_94",
+      "subject_id": "LUNG1-399",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_95",
+      "subject_id": "LUNG1-400",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_96",
+      "subject_id": "LUNG1-372",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_97",
+      "subject_id": "LUNG1-375",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_98",
+      "subject_id": "LUNG1-383",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_99",
+      "subject_id": "LUNG1-386",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_100",
+      "subject_id": "LUNG1-397",
       "collection_id": "NSCLC-Radiomics"
     }
   ]

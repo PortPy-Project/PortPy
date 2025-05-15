@@ -94,7 +94,6 @@ def load_json(file_name):
 
 
 def create_ct_dose_voxel_map(data_dir: str):
-    # output_folder = r'\\pisiz3echo\ECHO\Prostate\Test\outputs\ECHO_PROST_1$ECHO_20200009\HP_PyTest_GJ_IMRT'
     print('starting python code..')
 
     opt_metadata = load_json(os.path.join(data_dir, 'OptimizationVoxels_MetaData.json'))

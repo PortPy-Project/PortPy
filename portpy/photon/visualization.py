@@ -442,10 +442,10 @@ class Visualization:
             optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)
         (ax, surf) = Visualization.surface_plot(optimal_fluence_2d[ind[0]], ax=ax, figsize=figsize,
                                                 cmap='viridis', edgecolor='black')
-        plt.colorbar(surf, ax=ax, pad=0.2)
-        ax.set_zlabel('Fluence Intensity')
-        ax.set_xlabel('x-axis (beamlets column)')
-        ax.set_ylabel('y-axis (beamlets row)')
+        plt.colorbar(surf, ax=ax, pad=0.1, shrink=0.7)
+        ax.set_zlabel('Fluence Intensity', fontsize=8)
+        ax.set_xlabel('x-axis (beamlets column)', fontsize=8)
+        ax.set_ylabel('y-axis (beamlets row)', fontsize=8)
 
         if title is not None:
             ax.set_title('{}'.format(title))
@@ -515,9 +515,19 @@ class Visualization:
             else:
                 masked = np.ma.masked_where(dose_3d[slice_num, :, :] < 0, dose_3d[slice_num, :, :])
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
-                           cmap='rainbow')
+                           cmap='jet', vmin=0.1, vmax=np.max(dose_3d))
 
-            plt.colorbar(im, ax=ax, pad=0.1)
+            # plt.colorbar(im, ax=ax, pad=0.1)
+            # use make_axes_locatable to attach a properly-sized colorbar
+            from mpl_toolkits.axes_grid1 import make_axes_locatable
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.2)
+
+            # create colorbar in the new axis
+            cbar = plt.colorbar(im, cax=cax)
+            cbar.set_label("Dose [Gy]")
+            cbar.ax.yaxis.set_tick_params()
+            ax.set_facecolor('black')
 
         if show_isodose:
             if not show_dose:
@@ -559,7 +569,7 @@ class Visualization:
             import matplotlib.patches as mpatches
             patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
             # rax.labels = labels
-            ax.legend(handles=patches, bbox_to_anchor=(0.1, 0.8), loc=2, borderaxespad=0.)
+            ax.legend(handles=patches, bbox_to_anchor=(0.05, 0.95), loc=2, borderaxespad=0.)
             # bbox_transform=fig.transFigure)
         if show:
             plt.show()

@@ -182,7 +182,10 @@ def train(args=None):
 
         # Update only the provided keys
         vars(default_opt).update(args)
+
         opt = default_opt  # Now opt contains updated values
+        for k, v in vars(opt).items():
+            print(f"{k}: {v}")
     main(opt)
 
 

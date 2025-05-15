@@ -36,6 +36,11 @@ class DosePred3DDataset(BaseDataset):
         self.input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc
         self.output_nc = self.opt.input_nc if self.opt.direction == 'BtoA' else self.opt.output_nc
         self.phase = self.opt.phase
+        if hasattr(self.opt, 'augment'):
+            self.augment = self.opt.augment
+        else:
+            self.augment = False  # default to False even transform is not present
+
 
     def __getitem__(self, index):
         """Return a data point and its metadata information.
@@ -65,7 +70,8 @@ class DosePred3DDataset(BaseDataset):
         # apply the same transform to both A and B
         if self.phase == 'train':
             # A, B, OAR, beam, hist, bins = transform_3d_data(A, B, OAR, PTV, beam, hist, bins, transform=False)
-            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, transform=False)
+
+            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, augment=self.transform)
             A = torch.unsqueeze(A, dim=0)  # Add channel dimensions as data is 3D
             B = torch.unsqueeze(B, dim=0)
             beam = torch.unsqueeze(beam, dim=0)
@@ -75,7 +81,7 @@ class DosePred3DDataset(BaseDataset):
             # print(OAR.shape, hist.shape, bins.shape)
         else:
             # A, B, OAR, beam, hist, bins = transform_3d_data(A, B, OAR, PTV, beam, hist, bins, transform=False)
-            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, transform=False)
+            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, augment=False)
             A = torch.unsqueeze(A, dim=0)  # Add channel dimensions as data is 3D
             B = torch.unsqueeze(B, dim=0)
             beam = torch.unsqueeze(beam, dim=0)

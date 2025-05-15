@@ -37,12 +37,12 @@ from portpy.ai.test import test
 
 
 
-in_dir = r'../data' # directory where portpy raw data is located
-out_dir = r'../ai_data' # directory where processed data to be stored for training and testing model
+in_dir = r'../../data' # directory where portpy raw data is located
+out_dir = r'../../ai_data' # directory where processed data to be stored for training and testing model
 
 
 # preprocess portpy data
-data_preprocess(in_dir, out_dir)
+# data_preprocess(in_dir, out_dir)
 
 # **Note** split the data in train and test folder in the output directory before running further code
 # e.g. out_dir\train\Lung_Patient_2 out_dir\test\Lung_Patient_9
@@ -56,7 +56,7 @@ train_options = {
     "dataroot": "../../ai_data",
     "checkpoints_dir": "../../checkpoints",
     "netG": "unet_128",
-    "name": "portpy_test_3",
+    "name": "portpy_test_4",
     "model": "doseprediction3d",
     "direction": "AtoB",
     "lambda_L1": 1,
@@ -70,6 +70,7 @@ train_options = {
     "output_nc": 1,
     "display_freq": 10,
     "print_freq": 1,
+    "augment": False,  # transform images for data augmentation
     "gpu_ids": [0]  # Converted to a list since multiple GPUs may be supported
 }
 
@@ -81,7 +82,7 @@ train(train_options)  # Run training directly in Jupyter Notebook
 
 # Test the model
 test_options = {
-    "dataroot": "../ai_data",
+    "dataroot": "../../ai_data",
     "netG": "unet_128",
     "checkpoints_dir": "../../checkpoints",
     "results_dir": "../../results",

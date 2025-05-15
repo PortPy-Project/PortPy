@@ -66,5 +66,5 @@ Homepage = "https://github.com/PortPy-Project/PortPy"
 [project.optional-dependencies]
 mosek = ["Mosek>=9.3.14"]
 pydicom = ["pydicom>=2.2.0"]
-full = ["Mosek>=9.3.14", "pydicom>=2.2.0", "websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.2.0", "torchfile==0.1.0", "torchvision==0.9.1"]
-ai = ["websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.2.0", "torchfile==0.1.0", "torchvision==0.9.1"]
+all = ["Mosek>=9.3.14", "pydicom>=2.2.0", "websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.7.0", "torchfile>=0.1.0", "torchvision>=0.9.1"]
+ai = ["websocket-client>=1.8.0", "visdom>=0.2.4", "dominate>=2.6.0", "torch>=2.7.0", "torchfile>=0.1.0", "torchvision>=0.9.1"]

@@ -5,12 +5,11 @@
 
 <h2 align="center">
   <a href="#What">What is PortPy? </a> | 
-    <a href="#RadOpt101">Radiotherapy Optimization 101 </a> |
-  <a href="https://www.iccr2024.org/papers/523895.pdf">ICCR Extended Abstract</a>
+    <a href="#RadOpt101">Radiotherapy Optimization 101 </a>
 
 </h2>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.8&color=darkgreen)
+![Version](https://img.shields.io/static/v1?label=latest&message=v1.1.0&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
@@ -196,7 +195,8 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 Currently, this set encompasses only the Lung 2Gy×30 protocol but will be expanded in the future to more protocols as well as TCP/NTCP evaluation functions.  
 
 To access these resources, users are advised to download the latest version of the dataset, 
-which can be found [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing). 
+which can be found on hugging face dataset [PortPy_Dataset](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset). 
+You can also browse and download patient data manually using our interactive [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization).
 Subsequently, create a directory titled './data' in the current project directory and transfer the downloaded 
 file into it. For example, ./data/Lung_Phantom_Patient_1. 
 We have adopted the widely-used JSON and HDF5 formats for data storage.
@@ -219,9 +219,13 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
       ```
       pip install portpy[mosek, pydicom]
       ```
-    * For installing all the additional packages
+   * For installing AI related packages
      ```
-      pip install portpy[full]   
+      pip install portpy[ai]   
+     ```
+   * For installing all the additional packages
+     ```
+      pip install portpy[all]   
      ```
 
 2. Install using conda:

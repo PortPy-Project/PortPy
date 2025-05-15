@@ -42,15 +42,34 @@ def basic_tutorial():
 
     """
 
-    # specify the patient data location.
-    data_dir = r'../../data'
+
     # Use PortPy DataExplorer class to explore PortPy data
+    # You can initialize `DataExplorer` in one of two ways:
+    #
+    # - Using a Hugging Face repo ID (`hf_repo_id`) — data is downloaded if not already present.
+    # - Using a local directory (`data_dir`) — useful if you've already downloaded the dataset.
+    #    You can also browse and download patient data manually using our interactive
+    #    https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization:
+    #     This web app allows you to:
+    #     - Visually explore patients and their metadata
+    #     - Download selected patient datasets
+    #
+    #     Once downloaded, you can load the data locally
+    # If you have already downloaded data, you can specify the patient data location and create data explorer.
+    data_dir = r'../../data'
     data = pp.DataExplorer(data_dir=data_dir)
+    # OR
+    # data = pp.DataExplorer(hf_repo_id="PortPy-Project/PortPy_Dataset")
+
     # display the existing patients in console or browser.
     data.display_list_of_patients()
 
     # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
     data.patient_id = 'Lung_Phantom_Patient_1'
+
+    # download patient data with planner beams from hugging face
+    # data.filter_and_download_hf_dataset()
+
     # display the data of the patient in console or browser.
     data.display_patient_metadata()
     # display in browser rather than console. Set in_browser to True

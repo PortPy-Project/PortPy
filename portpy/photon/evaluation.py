@@ -116,16 +116,16 @@ class Evaluation:
                         df = Evaluation.add_dvh_to_frame(my_plan, df, 'type', col, 'cc', 'dose_volume_D')
 
         # refine df
-        df = df.rename(columns={'parameters.structure_name': 'structure_name', 'type': 'constraint'})
+        df = df.rename(columns={'parameters.structure_name': 'Structure Name', 'type': 'Constraint'})
         # df = df.drop(
         #     ['parameters.dose_gy', 'constraints.limit_dose_gy', 'constraints.limit_volume_perc',
         #      'constraints.goal_dose_gy', 'constraints.goal_volume_perc','parameters.structure_def'], axis=1, errors='ignore')
-        for label in ['constraint', 'structure_name', 'Limit', 'Goal']:
+        for label in ['Constraint', 'Structure Name', 'Limit', 'Goal']:
             if label not in df:
                 df[label] = ''
         # if 'Goal' not in df:
         #     df['Goal'] = ''
-        df = df[['constraint', 'structure_name', 'Limit', 'Goal']]
+        df = df[['Constraint', 'Structure Name', 'Limit', 'Goal']]
 
         dose_1d_list = []
         dummy_sol = {}
@@ -148,8 +148,8 @@ class Evaluation:
             dummy_sol['inf_matrix'] = my_plan.inf_matrix
             dummy_sol['dose_1d'] = dose_1d
             for ind in range(len(df)):  # Loop through the clinical criteria
-                if df.constraint[ind] == 'max_dose':
-                    struct = df.structure_name[ind]
+                if df.Constraint[ind] == 'max_dose':
+                    struct = df.at[ind, 'Structure Name']
                     if struct in my_plan.structures.get_structures():
 
                         max_dose = Evaluation.get_max_dose(dummy_sol, dose_1d=dose_1d, struct=struct)  # get max dose_1d
@@ -157,23 +157,23 @@ class Evaluation:
                             df.at[ind, sol_names[p]] = np.round(max_dose,2)
                         elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(max_dose / my_plan.get_prescription() * 100, 2)
-                elif df.constraint[ind] == 'mean_dose':
-                    struct = df.structure_name[ind]
+                elif df.Constraint[ind] == 'mean_dose':
+                    struct = df.at[ind, 'Structure Name']
                     if struct in my_plan.structures.get_structures():
                         mean_dose = Evaluation.get_mean_dose(dummy_sol, dose_1d=dose_1d, struct=struct)
                         if 'Gy' in str(df.Limit[ind]) or 'Gy' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(mean_dose, 2)
                         elif '%' in str(df.Limit[ind]) or '%' in str(df.Goal[ind]):
                             df.at[ind, sol_names[p]] = np.round(mean_dose / my_plan.get_prescription() * 100, 2)
-                elif "V(" in df.constraint[ind]:
-                    struct = df.structure_name[ind]
+                elif "V(" in df.Constraint[ind]:
+                    struct = df.at[ind, 'Structure Name']
                     if struct in my_plan.structures.get_structures():
-                        dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                        dose = re.findall(r"[-+]?(?:\d*\.*\d+)", df.Constraint[ind])[0]
                         # convert dose to Gy
-                        if '%' in df.constraint[ind]:
+                        if '%' in df.Constraint[ind]:
                             dose = float(dose)
                             dose = dose * my_plan.get_prescription() / 100
-                        elif 'Gy' in df.constraint[ind]:
+                        elif 'Gy' in df.Constraint[ind]:
                             dose = float(dose)
                         # get volume in perc
                         volume = Evaluation.get_volume(dummy_sol, dose_1d=dose_1d, struct=struct, dose_value_gy=dose)
@@ -182,14 +182,14 @@ class Evaluation:
                         elif 'cc' in str(df.Limit[ind]) or 'cc' in str(df.Goal[ind]):
                             vol_cc = my_plan.structures.get_volume_cc(structure_name=struct) * volume / 100
                             df.at[ind, sol_names[p]] = np.round(vol_cc, 2)
-                elif "D(" in df.constraint[ind]:
-                    struct = df.structure_name[ind]
+                elif "D(" in df.Constraint[ind]:
+                    struct = df.at[ind, 'Structure Name']
                     if struct in my_plan.structures.get_structures():
-                        volume = re.findall(r"[-+]?(?:\d*\.*\d+)", df.constraint[ind])[0]
+                        volume = re.findall(r"[-+]?(?:\d*\.*\d+)", df.Constraint[ind])[0]
                         # convert volume to perc
-                        if '%' in df.constraint[ind]:
+                        if '%' in df.Constraint[ind]:
                             volume = float(volume)
-                        elif 'cc' in df.constraint[ind]:
+                        elif 'cc' in df.Constraint[ind]:
                             volume = float(volume)
                             volume = volume / my_plan.structures.get_volume_cc(structure_name=struct) * 100
 
@@ -205,67 +205,124 @@ class Evaluation:
                 df[sol_name] = ''
         df = df[df[sol_names].notna().all(axis=1)]  # remove rows for which plan value is Nan
         df = df.fillna('')
+        df['Constraint'] = df['Constraint'].replace({
+            'max_dose': 'Max Dose',
+            'mean_dose': 'Mean Dose'
+        })
         # df.dropna(axis=0, inplace=True)  # remove structures which are not present
         # df.reset_index(drop=True, inplace=True)  # reset the index
 
-        def color_plan_value(row):
+        def generate_criteria_bar(limit: float = None, goal: float = None, val: float=None) -> str:
+            vals = [v for v in [limit, goal, val] if v is not None]
+            min_val = min(vals) * 0.9
+            max_val = max(vals) * 1.1
+            range_val = max_val - min_val or 1e-5
 
-            highlight_red = 'background-color: red;'   # red
-            highlight_green = 'background-color: #90ee90'  # green
-            highlight_orange = 'background-color: #ffb38a'  # orange
-            default = ''
+            def get_pos(x):
+                return ((x - min_val) / range_val) * 100
 
-            row_color = len(row) * [default]  # default color for all rows initially
-            # must return one string per cell in this row
-            for i in range(len(row) - 2):
-                if 'Limit' in row:
-                    if not row['Limit'] == '':
-                        limit = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Limit'])[0])
-                        if row.iloc[i] > limit + 0.0001:  # added epsilon to avoid minor differences
-                            row_color[i] = highlight_red  # make plan value in red
-                        else:
-                            row_color[i] = highlight_green  # make plan value in red
-                if 'Goal' in row:
-                    if not row['Goal'] == '':
-                        goal = float(re.findall(r"[-+]?(?:\d*\.*\d+)", row['Goal'])[0])
-                        if row.iloc[i] > goal + 0.0001:
-                            row_color[i] = highlight_orange  # make plan value in red
-                        else:
-                            row_color[i] = highlight_green  # make plan value in red
-            return row_color
+            # Colored background
+            colored_regions = ""
+            green = "#8DC820"
+            orange = "#FC8D0A"
+            red = "#FB3D00"
+
+            if limit is not None and goal is not None:
+                if limit < goal:
+                    # Red → Orange → Green
+                    red_pos = get_pos(limit)
+                    orange_pos = get_pos(goal)
+                    colored_regions = (
+                        f'<div style="position:absolute; left:0%; width:{red_pos}%; height:100%; background-color:{red};"></div>'
+                        f'<div style="position:absolute; left:{red_pos}%; width:{orange_pos - red_pos}%; height:100%; background-color:{orange};"></div>'
+                        f'<div style="position:absolute; left:{orange_pos}%; width:{100 - orange_pos}%; height:100%; background-color:{green};"></div>'
+                    )
+                else:
+                    # Green → Orange → Red
+                    green_pos = get_pos(goal)
+                    orange_pos = get_pos(limit)
+                    colored_regions = (
+                        f'<div style="position:absolute; left:0%; width:{green_pos}%; height:100%; background-color:{green};"></div>'
+                        f'<div style="position:absolute; left:{green_pos}%; width:{orange_pos - green_pos}%; height:100%; background-color:{orange};"></div>'
+                        f'<div style="position:absolute; left:{orange_pos}%; width:{100 - orange_pos}%; height:100%; background-color:{red};"></div>'
+                    )
+            elif goal is not None:
+                goal_pos = get_pos(goal)
+                colored_regions = (
+                    f'<div style="position:absolute; left:0%; width:{goal_pos}%; height:100%; background-color:{green};"></div>'
+                    f'<div style="position:absolute; left:{goal_pos}%; width:{100 - goal_pos}%; height:100%; background-color:{orange};"></div>'
+                )
+            elif limit is not None:
+                limit_pos = get_pos(limit)
+                colored_regions = (
+                    f'<div style="position:absolute; left:0%; width:{limit_pos}%; height:100%; background-color:{green};"></div>'
+                    f'<div style="position:absolute; left:{limit_pos}%; width:{100 - limit_pos}%; height:100%; background-color:{red};"></div>'
+                )
+            else:
+                colored_regions = '<div style="position:absolute; left:0%; width:100%; height:100%; background-color:lightgray;"></div>'
+
+            # Pointer + label above
+            val_pos = get_pos(val)
+            pointer = (
+                f'<div style="position:absolute; left:{val_pos}%; top:-16px; transform:translateX(-50%); font-size:13px;">{val:.2f}</div>'
+                f'<div style="position:absolute; left:{val_pos}%; top:0px; transform:translateX(-50%);">'
+                f'<div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:10px solid black;"></div>'
+                f'</div>'
+            )
+
+            bar = (
+                f'<div style="position:relative; width:250px; height:30px; border:1px solid #ccc; border-radius:4px; margin:4px 0;">'
+                f'{colored_regions}{pointer}</div>'
+            )
+            return bar
+
+        # Convert all relevant columns (plan values) to 'object' before the loop starts
+        df_no_format = df.copy()
+        for sol_name in sol_names:
+            df[sol_name] = df[sol_name].astype(object)
+
+        for ind in df.index:
+            for sol_name in sol_names:
+                try:
+                    limit = float(re.findall(r"[-+]?(?:\d*\.*\d+)", str(df.loc[ind, 'Limit']))[0]) if df.loc[
+                        ind, 'Limit'] else None
+                    goal = float(re.findall(r"[-+]?(?:\d*\.*\d+)", str(df.loc[ind, 'Goal']))[0]) if df.loc[
+                        ind, 'Goal'] else None
+                    plan_val = float(df.loc[ind, sol_name])
+                    df.at[ind, sol_name] = generate_criteria_bar(limit, goal, plan_val)
+                except Exception as e:
+                    print(f"Skipping row {ind} due to error: {e}")
 
         sol_names.append('Limit')
         sol_names.append('Goal')
-        df.style.set_properties(**{'text-align': 'right'})
-        styled_df = df.style.apply(color_plan_value, subset=sol_names, axis=1)  # apply
-        styled_df.set_properties(**{'text-align': 'center'}).format(precision=2)
+        # df.style.set_properties(**{'text-align': 'left'})
 
+        # styled_df = df.style.apply(color_plan_value, subset=sol_names, axis=1)  # apply
+        styled_df = (
+            df.style
+            .set_properties(**{
+                'text-align': 'left',
+                'padding-top': '10px'
+            }).set_table_styles([
+                {'selector': 'th', 'props': [('text-align', 'left')]}  # aligns headers
+            ])
+            .format(precision=2)
+        )
         # color to dataframe using df.style method
         if return_df:
+
             return styled_df
         if in_browser:
-            html = styled_df.to_html()  # render to html
-            html_string = '''
-                                                    <html>
-                                                      <head><title>Portpy Clinical Criteria Evaluation</title></head>
-                                                      <style> 
-                                                        table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}
-                                                        th, td {{padding: 5px;}}
-                                                      </style>
-                                                      <body>
-                                                      <h1> Clinical Criteria</h1>
-                                                      <h4 style="color: #90ee90">Meets limit and goal</h4>
-                                                      <h4 style="color: #ffb38a">Meets limit but not goal</h4>
-                                                      <h4 style="color: red">Violate both limit and goal</h4>
-                                                        {table}
-                                                      </body>
-                                                    </html>.
-                                                    '''
             if path is None:
                 path = os.getcwd()
             html_file_path = os.path.join(path, html_file_name)
+            # Add extra styles only for browser HTML
+            styled_df_for_html = styled_df.set_table_styles([
+                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('border', '1px solid black')]},
+                {'selector': 'th, td', 'props': [('border', '1px solid black'), ('text-align', 'left')]}
+            ], overwrite=True)
             with open(html_file_path, 'w') as f:
-                f.write(html_string.format(table=html))
+                f.write(styled_df_for_html.to_html(escape=False))
             if open_browser:
                 webbrowser.open('file://' + os.path.realpath(html_file_path))
 
@@ -276,10 +333,9 @@ class Evaluation:
                                        'display.max_columns', None,
                                        'display.precision', 3,
                                        ):
-
                     display(styled_df)
             else:
-                print(tabulate(df, headers='keys', tablefmt='psql'))  # print in console using tabulate
+                print(tabulate(df_no_format, headers='keys', tablefmt='psql'))  # print in console using tabulate
 
     @staticmethod
     def get_dose(sol: dict, struct: str, volume_per: float, dose_1d: np.ndarray = None,
