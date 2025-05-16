@@ -34,7 +34,7 @@
 
 # Radiotherapy Optimization 101 <a name="RadOpt101"></a>
 
-<img src="./images/101.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
+<img src="./images/discretization.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
   
 The key variables in treatment planning optimization are the parameters of the **radiation beams** (e.g., beams' shape, angle, and intensity). However, the quality of a treatment is primarily measured by the **radiation dose** delivered to the patient’s body. We can connect the beam parameters to the radiation dose using a straightforward linear relationship. First, we divide the patient’s body into small three-dimensional units called **voxels** and each radiation beam into small two-dimensional sections called **beamlets**. By calculating how much radiation each beamlet (j) delivers to each voxel (i), and representing this with a value **aij**, we create what is known as the **dose deposition matrix (A)**. This matrix links the intensities of the beamlets (x) to the total radiation dose delivered (d) using the equation: **d=Ax**. A general radiotherapy optimization problem can be formulated as:
 
@@ -74,7 +74,7 @@ The easiest way to start is through the PorPy following Jupiter Notebook example
 
 # Benchmark data, benchmark algorithms, and PortPy toolkit <a name="benchmark"></a>
 
-<img src="./images/AI_Pyramid_rev1.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
+<img src="./images/AI_Pyramid.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
   
 This figure illustrates the inspiration behind developing PortPy, drawing from successful open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI and data science. Our goal is to replicate this successful model in the field of radiotherapy by equipping researchers with PortPy toolkit, benchmark algorithms, and datasets, as outlined below:
 1. **PortPy Toolkit**. PortPy allows researchers to develop, test, and validate novel treatment planning optimization algorithms.
@@ -183,7 +183,7 @@ For those keen on creating a logo for their repository, we offer the option to c
 
 # Data <a name="Data"></a>
 
-<img src="./images/PortPy Data.png" align="right" width="50%" height="40%">
+<img src="./images/PortPy_Data_Curation.png" align="right" width="50%" height="40%">
 
 PortPy equips researchers with a robust benchmark patient dataset, sourced from the FDA-approved Eclipse commercial treatment planning system through its API. This dataset embodies all necessary elements for optimizing various machine configurations such as beam angles, aperture shapes, and leaf movements. It includes
 
