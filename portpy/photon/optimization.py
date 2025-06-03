@@ -58,8 +58,15 @@ class Optimization(object):
         """
         It runs optimization to create optimal plan based upon clinical criteria
 
-        :return: cvxpy problem object
+        This method constructs the components of the CVXPY optimization problem:
+        - Populates :attr obj: with a list of individual objective terms
+        - Populates :attr constraints: with dose-based and clinical constraints
 
+        Note:
+            This method does not return a CVXPY Problem object. Instead, it prepares the internal components
+            used by :meth solve(): or for manual construction of a CVXPY Problem.
+
+        :return:
         """
 
         # unpack data
@@ -324,16 +331,16 @@ class Optimization(object):
 
     def solve(self, return_cvxpy_prob=False, *args, **kwargs):
         """
-                Return optimal solution and influence matrix associated with it in the form of dictionary
-                If return_problem set to true, returns cvxpy problem instance
+        Return optimal solution and influence matrix associated with it in the form of dictionary
+        If return_problem set to true, returns cvxpy problem instance
 
-                :Example
-                        dict = {"optimal_fluence": [..],
-                        "inf_matrix": my_plan.inf_marix
-                        }
+        :Example
+                dict = {"optimal_fluence": [..],
+                "inf_matrix": my_plan.inf_marix
+                }
 
-                :return: solution dictionary, cvxpy problem instance(optional)
-                """
+        :return: solution dictionary, cvxpy problem instance(optional)
+        """
 
         problem = cp.Problem(cp.Minimize(cp.sum(self.obj)), constraints=self.constraints)
         print('Running Optimization..')
