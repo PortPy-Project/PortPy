@@ -188,14 +188,14 @@ class ClinicalCriteria:
         criteria = deepcopy(old_criteria)
         struct_name = criteria['parameters']['structure_name']
         if criteria['type'] == 'dose_volume_D':
-            constraint_keys = criteria['constraints'].keys()
+            constraint_keys = list(criteria['constraints'].keys())
             for key in constraint_keys:
                 if 'perc' in key:
                     value = criteria['constraints'][key]
                     new_key = key.replace('perc', 'gy')
                     criteria['constraints'][new_key] = criteria['constraints'].pop(key)
                     criteria['constraints'][new_key] = value / 100 * my_plan.get_prescription()
-            param_keys = criteria['parameters'].keys()
+            param_keys = list(criteria['parameters'].keys())
             for key in param_keys:
                 if 'volume_cc' in key:
                     value = criteria['parameters'][key]
@@ -204,7 +204,7 @@ class ClinicalCriteria:
                     criteria['parameters'][new_key] = value / my_plan.structures.get_volume_cc(
                         struct_name.upper()) * 100
         if criteria['type'] == 'dose_volume_V':
-            constraint_keys = criteria['constraints'].keys()
+            constraint_keys = list(criteria['constraints'].keys())
             for key in constraint_keys:
                 if 'volume_cc' in key:
                     value = criteria['constraints'][key]
@@ -212,7 +212,7 @@ class ClinicalCriteria:
                     criteria['constraints'][new_key] = criteria['constraints'].pop(key)
                     criteria['constraints'][new_key] = value / my_plan.structures.get_volume_cc(
                         struct_name.upper()) * 100
-            param_keys = criteria['parameters'].keys()
+            param_keys = list(criteria['parameters'].keys())
             for key in param_keys:
                 if 'dose_perc' in key:
                     value = criteria['parameters'][key]
@@ -284,6 +284,7 @@ class ClinicalCriteria:
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
+        self.filter_dvh(my_plan=my_plan)
         return self.dvh_table
 
 
@@ -331,4 +332,17 @@ class ClinicalCriteria:
                             max_tol = self.dose_to_gy(limit_key, criterion['constraints'][limit_key])
             dvh_table.at[ind, 'max_tol'] = max_tol
 
+        return self.dvh_table
+
+    def filter_dvh(self, my_plan: Plan):
+        dvh_table = deepcopy(self.dvh_table)
+        drop_indices = []
+        for ind in dvh_table.index:
+            structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
+                dvh_table['volume_perc'][ind]
+            vol_perc = vol_perc / my_plan.inf_matrix.get_fraction_of_vol_in_calc_box(structure_name)
+            if vol_perc >= 100 or vol_perc <= 0: # remove unnecessary constraints or goals
+                drop_indices.append(ind)
+        dvh_table = dvh_table.drop(index=drop_indices).reset_index(drop=True)
+        self.dvh_table = dvh_table
         return self.dvh_table

@@ -18,21 +18,27 @@ See options/base_options.py and options/train_options.py for more training optio
 See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/tips.md
 See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
 """
-import time
-from options.train_options import TrainOptions
-from data import create_dataset
-from models import create_model
-from util.visualizer import Visualizer
-import matplotlib.pyplot as plt
 import os
+import sys
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+import time
+from portpy.ai.options.train_options import TrainOptions
+from portpy.ai.data import create_dataset
+from portpy.ai.models import create_model
+from portpy.ai.util.visualizer import Visualizer
+import matplotlib.pyplot as plt
+
 import pandas as pd
 import torch
 import numpy as np
 
-if __name__ == '__main__':
 
+def main(opt):
     torch.cuda.empty_cache()
-    opt = TrainOptions().parse()  # get training options
+    # opt = TrainOptions().parse()  # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)  # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
@@ -108,11 +114,11 @@ if __name__ == '__main__':
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()  # update learning rates at the end of every epoch.
-        avg_loss_each_epoch_train = total_loss_each_epoch/len(dataset)
+        avg_loss_each_epoch_train = total_loss_each_epoch / len(dataset)
         print('Avg Loss at the end of epoch {}:{}'.format(epoch, avg_loss_each_epoch_train))
         loss_summary.append(avg_loss_each_epoch_train)
 
-        #Evaluating Validation Loss
+        # Evaluating Validation Loss
         total_loss_each_epoch_test = 0
         model.eval()
         for i, data_test in enumerate(dataset_test):
@@ -130,8 +136,6 @@ if __name__ == '__main__':
         loss_summary_test.append(avg_loss_each_epoch_test)
         ##Reset to training mode
         model.train()
-
-
 
     # plt.plot(losssummary, np.arange(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay, 1), 'r--')
     total_time_end = time.time()
@@ -166,3 +170,24 @@ if __name__ == '__main__':
     df = pd.read_csv(loss_filename, delim_whitespace=True, header=None)
     df.columns = ["Epoch", "Test_Loss"]
     df.to_excel(r"{}.xlsx".format(loss_filename))
+
+
+def train(args=None):
+    if args is None:
+        # Parse command-line arguments normally
+        opt = TrainOptions().parse()
+    else:
+        # Convert dictionary to Namespace while keeping default values
+        default_opt = TrainOptions().parse()  # Get argparse parser
+
+        # Update only the provided keys
+        vars(default_opt).update(args)
+
+        opt = default_opt  # Now opt contains updated values
+        for k, v in vars(opt).items():
+            print(f"{k}: {v}")
+    main(opt)
+
+
+if __name__ == '__main__':
+    train()

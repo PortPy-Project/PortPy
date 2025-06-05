@@ -123,7 +123,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 x = x / pres * 100
                 max_dose = np.maximum(max_dose, x[-1])
-                ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose (%)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -131,7 +131,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume (%)', fontsize=fontsize)
             ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count], label=struct_names[i])
             count = count + 1
             # legend.append(struct_names[i])
@@ -275,6 +275,7 @@ class Visualization:
                 print('Skipping Structure {} as it is not within calculation box.'.format(all_orgs[i]))
                 continue
             dose_sort_list = []
+            y = []
             for dose_1d in dose_1d_list:
                 x, y = Evaluation.get_dvh(sol, struct=all_orgs[i], dose_1d=dose_1d)
                 dose_sort_list.append(x)
@@ -289,7 +290,7 @@ class Visualization:
             elif dose_scale == 'Relative(%)':
                 max_dose = np.maximum(max_dose, d_max_mat[-1])
                 max_dose = max_dose / pres * 100
-                ax.set_xlabel('Dose ($\%$)', fontsize=fontsize)
+                ax.set_xlabel(r'Dose (%)', fontsize=fontsize)
 
             if volume_scale == 'Absolute(cc)':
                 y = y * my_plan.structures.get_volume_cc(all_orgs[i]) / 100
@@ -297,7 +298,7 @@ class Visualization:
                 ax.set_ylabel('Volume (cc)', fontsize=fontsize)
             elif volume_scale == 'Relative(%)':
                 max_vol = np.maximum(max_vol, y[0] * 100)
-                ax.set_ylabel('Fractional Volume ($\%$)', fontsize=fontsize)
+                ax.set_ylabel(r'Fractional Volume (%)', fontsize=fontsize)
             # ax.plot(x, 100 * y, linestyle=style, linewidth=width, color=colors[count])
 
             # ax.plot(d_min_mat, 100 * y, linestyle='dotted', linewidth=width*0.5, color=colors[count])
@@ -441,10 +442,10 @@ class Visualization:
             optimal_fluence_2d = inf_matrix.fluence_1d_to_2d(sol=sol)
         (ax, surf) = Visualization.surface_plot(optimal_fluence_2d[ind[0]], ax=ax, figsize=figsize,
                                                 cmap='viridis', edgecolor='black')
-        plt.colorbar(surf, ax=ax, pad=0.2)
-        ax.set_zlabel('Fluence Intensity')
-        ax.set_xlabel('x-axis (beamlets column)')
-        ax.set_ylabel('y-axis (beamlets row)')
+        plt.colorbar(surf, ax=ax, pad=0.1, shrink=0.7)
+        ax.set_zlabel('Fluence Intensity', fontsize=8)
+        ax.set_xlabel('x-axis (beamlets column)', fontsize=8)
+        ax.set_ylabel('y-axis (beamlets row)', fontsize=8)
 
         if title is not None:
             ax.set_title('{}'.format(title))
@@ -500,7 +501,7 @@ class Visualization:
         # adjust the main plot to make room for the legends
         plt.subplots_adjust(left=0.2)
         dose_3d = []
-        if sol is not None:
+        if sol is not None or dose_1d is not None:
             show_dose = True
         if show_dose:
             if sol is not None:
@@ -514,9 +515,19 @@ class Visualization:
             else:
                 masked = np.ma.masked_where(dose_3d[slice_num, :, :] < 0, dose_3d[slice_num, :, :])
             im = ax.imshow(masked, alpha=0.4, interpolation='none',
-                           cmap='rainbow')
+                           cmap='jet', vmin=0.1, vmax=np.max(dose_3d))
 
-            plt.colorbar(im, ax=ax, pad=0.1)
+            # plt.colorbar(im, ax=ax, pad=0.1)
+            # use make_axes_locatable to attach a properly-sized colorbar
+            from mpl_toolkits.axes_grid1 import make_axes_locatable
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.2)
+
+            # create colorbar in the new axis
+            cbar = plt.colorbar(im, cax=cax)
+            cbar.set_label("Dose [Gy]")
+            cbar.ax.yaxis.set_tick_params()
+            ax.set_facecolor('black')
 
         if show_isodose:
             if not show_dose:
@@ -558,7 +569,7 @@ class Visualization:
             import matplotlib.patches as mpatches
             patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
             # rax.labels = labels
-            ax.legend(handles=patches, bbox_to_anchor=(0.1, 0.8), loc=2, borderaxespad=0.)
+            ax.legend(handles=patches, bbox_to_anchor=(0.05, 0.95), loc=2, borderaxespad=0.)
             # bbox_transform=fig.transFigure)
         if show:
             plt.show()
@@ -650,17 +661,22 @@ class Visualization:
             "#1f77b4", "#2ca02c", "#d62728", "#9467bd", "#ff7f0e",
             "#8c564b", "#e377c2", "#7f7f7f", "#17becf", "#bcbd22",
             "#20b2aa", "#ff00ff", "#ffff00", "#87ceeb", "#006400",
-            "#fa8072", "#e6e6fa", "#ffd700", "#8b0000", "#40e0d0"
+            "#fa8072", "#e6e6fa", "#ffd700", "#8b0000", "#40e0d0",
+            "#ff1493", "#7cfc00", "#4682b4", "#dc143c", "#00ff7f",
+            "#8a2be2", "#f4a460", "#a52a2a", "#ff6347", "#ff4500",
+            "#32cd32", "#00008b", "#b8860b", "#ffdab9", "#808000",
+            "#9932cc", "#4682b4", "#9acd32", "#f08080", "#000000"
         ]
         return colors
 
     @staticmethod
-    def surface_plot(matrix: np.ndarray, **kwargs):
+    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
         # acquire the cartesian coordinate matrices from the matrix
         # x is cols, y is rows
         (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
         surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
         return ax, surf
 
@@ -705,14 +721,3 @@ class Visualization:
             return False  # Probably standard Python interpreter
         except:
             return False  # Probably standard Python interpreter
-
-    @staticmethod
-    def surface_plot(matrix, ax=None, figsize=(8, 8), **kwargs):
-        # acquire the cartesian coordinate matrices from the matrix
-        # x is cols, y is rows
-        (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-
-        if ax is None:
-            fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='3d'))
-        surf = ax.plot_surface(x, y, np.transpose(matrix), **kwargs)
-        return ax, surf

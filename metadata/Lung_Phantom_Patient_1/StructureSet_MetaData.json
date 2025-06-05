@@ -1,0 +1,65 @@
+[
+  {
+    "name": "GTV",
+    "volume_cc": 27.6293621,
+    "dicom_structure_name": "GTV_LtLung",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/GTV"
+  },
+  {
+    "name": "LUNGS_NOT_GTV",
+    "volume_cc": 2983.24463,
+    "dicom_structure_name": "Lungs_NOT_GTV",
+    "fraction_of_vol_in_calc_box": 0.67015487,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNGS_NOT_GTV"
+  },
+  {
+    "name": "PTV",
+    "volume_cc": 43.9017868,
+    "dicom_structure_name": "PTV_LtLung",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/PTV"
+  },
+  {
+    "name": "CORD",
+    "volume_cc": 5.30768538,
+    "dicom_structure_name": "Cord",
+    "fraction_of_vol_in_calc_box": 0.645985365,
+    "structure_mask_3d_File": "StructureSet_Data.h5/CORD"
+  },
+  {
+    "name": "HEART",
+    "volume_cc": 841.405457,
+    "dicom_structure_name": "Heart",
+    "fraction_of_vol_in_calc_box": 0.9601993,
+    "structure_mask_3d_File": "StructureSet_Data.h5/HEART"
+  },
+  {
+    "name": "LUNG_L",
+    "volume_cc": 1467.2594,
+    "dicom_structure_name": "Lung_L",
+    "fraction_of_vol_in_calc_box": 0.671671331,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNG_L"
+  },
+  {
+    "name": "LUNG_R",
+    "volume_cc": 1471.76038,
+    "dicom_structure_name": "Lung_R",
+    "fraction_of_vol_in_calc_box": 0.6677572,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNG_R"
+  },
+  {
+    "name": "SKIN",
+    "volume_cc": 1,
+    "dicom_structure_name": "EL_Skin",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/SKIN"
+  },
+  {
+    "name": "BODY",
+    "volume_cc": 8031.07666,
+    "dicom_structure_name": "BODY",
+    "fraction_of_vol_in_calc_box": 0.669234157,
+    "structure_mask_3d_File": "StructureSet_Data.h5/BODY"
+  }
+]

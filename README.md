@@ -5,15 +5,15 @@
 
 <h2 align="center">
   <a href="#What">What is PortPy? </a> | 
-    <a href="#RadOpt101">Radiotherapy Optimization 101 </a> |
-  <a href="https://www.iccr2024.org/papers/523895.pdf">ICCR Extended Abstract</a>
+    <a href="#RadOpt101">Radiotherapy Optimization 101 </a>
 
 </h2>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.0.4.6&color=darkgreen)
+![Version](https://img.shields.io/static/v1?label=latest&message=v1.1.0&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
+**Note**: If you have any questions about PortPy, please create an [Issue](https://github.com/PortPy-Project/PortPy/issues) on Github. If you are unable to do so for any reason, you may contact Gourav Jhanwar (jhanwarg@mskcc.org)
 
 # What is PortPy? <a name="What"></a>
 
@@ -34,7 +34,7 @@
 
 # Radiotherapy Optimization 101 <a name="RadOpt101"></a>
 
-<img src="./images/101.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
+<img src="./images/discretization_latest.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
   
 The key variables in treatment planning optimization are the parameters of the **radiation beams** (e.g., beams' shape, angle, and intensity). However, the quality of a treatment is primarily measured by the **radiation dose** delivered to the patient’s body. We can connect the beam parameters to the radiation dose using a straightforward linear relationship. First, we divide the patient’s body into small three-dimensional units called **voxels** and each radiation beam into small two-dimensional sections called **beamlets**. By calculating how much radiation each beamlet (j) delivers to each voxel (i), and representing this with a value **aij**, we create what is known as the **dose deposition matrix (A)**. This matrix links the intensities of the beamlets (x) to the total radiation dose delivered (d) using the equation: **d=Ax**. A general radiotherapy optimization problem can be formulated as:
 
@@ -56,24 +56,25 @@ we plan to launch an educational YouTube channel to assist researchers new to th
 # Quick start and examples <a name="QuickStart"></a>
 The easiest way to start is through the PorPy following Jupiter Notebook examples. 
 
-| Example File                          	                                                                                                        | Description                                                                                                                                                           	|
-|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
-| [1_basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb)                	                | Demonstrates the main functionalities of PortPy (e.g., Access data, create an IMRT plan, visualize)                                                                   	|
-| [vmat_scp_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb)               	               | Creates a VMAT plan using sequential convex programming                                                                                                               	|
-| [vmat_scp_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_dose_prediction.ipynb)                 | Predicts 3D dose distribution using deep learning and converts it into a deliverable VMAT plan                                                                        	|
-| [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb)           	           | Creates an IMRT plan and visualizes it in 3D-Slicer                                                                                                                   	|
-| [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb)                	                  | 1. Outputs IMRT plan in DICOM RT format and imports it into TPS. <br>2. Outputs IMRT plan optimal fluence in an Eclipse-compatable format and imports it into Eclipse 	|
-| [vmat_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_tps_import.ipynb)                 	                 | Outputs VMAT plan in DICOM RT format and imports it into TPS                                                                                                          	|
-| [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb)            	            | Predicts 3D dose distribution using deep learning and converts it into a deliverable IMRT plan                                                                        	|
-| [vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb)           	               | Finds a globally optimal VMAT plan                                                                                                                                    	|
-| [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb) 	 | Finds globally optimal beam angles for IMRT                                                                                                                           	|
-| [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)  	    | Finds a globally optimal plan meeting Dose Volume Histogram (DVH) constraints                                                                                         	|
+| Example File                          	                                                                                                                          | Description                                                                                                                                                           	                                                                          |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [1_basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb)                	                                  | Demonstrates the main functionalities of PortPy (e.g., Access data, create an IMRT plan, visualize)                                                                   	                                                                          |
+| [eclipse_photon_dose_calculation.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_photon_dose_calculation.ipynb)                	 | Demonstrates the capability of running dose calculation for patients outside PortPy dataset using Varian's photon dose calculation module and perform optimization in PortPy                                                                   	 |
+| [vmat_scp_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb)               	                                 | Creates a VMAT plan using sequential convex programming                                                                                                               	                                                                          |
+| [vmat_scp_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_dose_prediction.ipynb)                                   | Predicts 3D dose distribution using deep learning and converts it into a deliverable VMAT plan                                                                        	                                                                          |
+| [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb)           	                             | Creates an IMRT plan and visualizes it in 3D-Slicer                                                                                                                   	                                                                          |
+| [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb)                	                                    | 1. Outputs IMRT plan in DICOM RT format and imports it into TPS. <br>2. Outputs IMRT plan optimal fluence in an Eclipse-compatable format and imports it into Eclipse 	                                                                          |
+| [vmat_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_tps_import.ipynb)                 	                                   | Outputs VMAT plan in DICOM RT format and imports it into TPS                                                                                                          	                                                                          |
+| [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb)            	                              | Predicts 3D dose distribution using deep learning and converts it into a deliverable IMRT plan                                                                        	                                                                          |
+| [vmat_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb)           	                                 | Finds a globally optimal VMAT plan                                                                                                                                    	                                                                          |
+| [beam_orientation_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb) 	                   | Finds globally optimal beam angles for IMRT                                                                                                                           	                                                                          |
+| [dvh_constraint_global_optimal.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)  	                      | Finds a globally optimal plan meeting Dose Volume Histogram (DVH) constraints                                                                                         	                                                                          |
 
 
 
 # Benchmark data, benchmark algorithms, and PortPy toolkit <a name="benchmark"></a>
 
-<img src="./images/AI_Pyramid_rev1.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
+<img src="./images/AI_Pyramid.png" align="right" alt="Radiotherapy 101" width="50%" height="40%">
   
 This figure illustrates the inspiration behind developing PortPy, drawing from successful open-source practices in the AI and computer science communities. Tools like PyTorch and TensorFlow, along with benchmark datasets such as ImageNet and algorithms like AlexNet, have revolutionized AI and data science. Our goal is to replicate this successful model in the field of radiotherapy by equipping researchers with PortPy toolkit, benchmark algorithms, and datasets, as outlined below:
 1. **PortPy Toolkit**. PortPy allows researchers to develop, test, and validate novel treatment planning optimization algorithms.
@@ -105,6 +106,15 @@ ECHO ([YouTube Video](https://youtu.be/895M6j5KjPs), [Paper](https://aapm.online
 More information about data can be found in [Data](#Data) section.
      * In the current version, you can only work with the benchmark dataset provided in this PortPy repo and 
    cannot use your own dataset for now. We will address this problem in the near future
+      ```python
+      # Use PortPy DataExplorer class to explore PortPy data
+      data = pp.DataExplorer(data_dir='../data')
+      # Load ct, structure set, beams for the above patient using CT, Structures, and Beams classes
+      ct = pp.CT(data)
+      structs = pp.Structures(data)
+      beams = pp.Beams(data)
+      # By default, PortPy uses the beams selected by an expert planner, which are included as part of the dataset.
+      ```
 
 2. **Plan Generation**
      * This module facilitates the generation of treatment plans using either classical optimization methods or 
@@ -117,12 +127,38 @@ purposes) (see [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/b
 data pre-processing, model training and testing, and patient-specific 3D dose prediction 
 (see [imrt_dose_prediction.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb) notebook)
 
+      ```python
+      # Load optimization parameters and clinical criteria
+      clinical_criteria = pp.ClinicalCriteria(data, protocol_name='Lung_2Gy_30Fx')
+      opt_params = data.load_config_opt_params(protocol_name='Lung_2Gy_30Fx')
+      
+      # Load influence matrix
+      inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+      # create a plan object
+      my_plan = pp.Plan(ct = ct, structs = structs, beams = beams, inf_matrix = inf_matrix, clinical_criteria=clinical_criteria)
+      
+      # create cvxpy problem using the clinical criteria and optimization parameters and solve it
+      opt = pp.Optimization(my_plan, opt_params=opt_params, clinical_criteria=clinical_criteria)
+      opt.create_cvxpy_problem()
+      sol = opt.solve(solver='MOSEK', verbose=False)
+      ```
+
 3. **Plan Visualization and Evaluation**
      * Basic built-in visualization tools (e.g., DVH, dose distribution) are integrated into PortPy 
      * Enhanced visualizations are available through the integration with the popular open-source [3DSlicer](https://www.slicer.org/) package (see [3d_slicer_integration.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/3d_slicer_integration.ipynb) notebook)
      * Plans can be quantitatively evaluated using well-established clinical protocols (e.g., Lung 2Gyx30, see  [basic_tutorial.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb))
      * Plans can be imported into any TPS for final clinical evaluations  (see [imrt_tps_import.ipynb](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb))  
 
+      ```python
+      # plot fluence in 3d for the 1st beam
+      pp.Visualization.plot_fluence_3d(sol=sol, beam_id=my_plan.beams.get_all_beam_ids()[0])
+      # plot dvh for the structures
+      pp.Visualization.plot_dvh(my_plan, sol=sol, struct_names=['PTV', 'CORD'], title=data.patient_id)
+      # plot 2d axial slice for the given solution and display the structures contours on the slice
+      pp.Visualization.plot_2d_slice(my_plan=my_plan, sol=sol, slice_num=60, struct_names=['PTV'])
+      # visualize plan metrics and compare them against the clinical criteria
+      pp.Evaluation.display_clinical_criteria(my_plan, sol=sol, clinical_criteria=clinical_criteria)
+      ```
 
 # How to contribute? <a name="HowContribute"></a>
 <p align="center">
@@ -147,7 +183,7 @@ For those keen on creating a logo for their repository, we offer the option to c
 
 # Data <a name="Data"></a>
 
-<img src="./images/PortPy Data.png" align="right" width="50%" height="40%">
+<img src="./images/PortPy_Data_Curation.png" align="right" width="50%" height="40%">
 
 PortPy equips researchers with a robust benchmark patient dataset, sourced from the FDA-approved Eclipse commercial treatment planning system through its API. This dataset embodies all necessary elements for optimizing various machine configurations such as beam angles, aperture shapes, and leaf movements. It includes
 
@@ -159,7 +195,8 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 Currently, this set encompasses only the Lung 2Gy×30 protocol but will be expanded in the future to more protocols as well as TCP/NTCP evaluation functions.  
 
 To access these resources, users are advised to download the latest version of the dataset, 
-which can be found [here](https://drive.google.com/drive/folders/1nA1oHEhlmh2Hk8an9e0Oi0ye6LRPREit?usp=sharing). 
+which can be found on hugging face dataset [PortPy_Dataset](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset). 
+You can also browse and download patient data manually using our interactive [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization).
 Subsequently, create a directory titled './data' in the current project directory and transfer the downloaded 
 file into it. For example, ./data/Lung_Phantom_Patient_1. 
 We have adopted the widely-used JSON and HDF5 formats for data storage.
@@ -182,7 +219,14 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
       ```
       pip install portpy[mosek, pydicom]
       ```
-   
+   * For installing AI related packages
+     ```
+      pip install portpy[ai]   
+     ```
+   * For installing all the additional packages
+     ```
+      pip install portpy[all]   
+     ```
 
 2. Install using conda:
 

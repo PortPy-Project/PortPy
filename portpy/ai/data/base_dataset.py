@@ -11,6 +11,8 @@ import torchvision.transforms.functional as TF
 from abc import ABC, abstractmethod
 import torch
 import warnings
+from scipy.ndimage import affine_transform
+
 
 warnings.filterwarnings("ignore")
 
@@ -215,8 +217,75 @@ def transform_ct_dose_pair2D(ct_arr, dose_arr, oar_arr, ptv_arr, apply_transform
     # print(oar_arr.min(), oar_arr.max())
     return ct_arr, dose_arr, oar_arr, ptv_arr
 
+def random_flip_rotation_translation(shape, max_translation=10, max_rotation=10):
+    """Create random affine transform matrix for 3D volume."""
+    # Random flips (diagonal -1s)
+    flip = np.diag([np.random.choice([-1, 1]) for _ in range(3)])
 
-def transform_3d_data(ct_arr, dose_arr, oar_arr, ptv_arr, beam_arr, transform=False):
+    # Random small rotations (in degrees → radians)
+    angles = np.deg2rad(np.random.uniform(-max_rotation, max_rotation, size=3))
+    cx, cy, cz = np.cos(angles)
+    sx, sy, sz = np.sin(angles)
+
+    # Rotation matrices
+    Rx = np.array([[1, 0, 0],
+                   [0, cx, -sx],
+                   [0, sx, cx]])
+    Ry = np.array([[cy, 0, sy],
+                   [0, 1, 0],
+                   [-sy, 0, cy]])
+    Rz = np.array([[cz, -sz, 0],
+                   [sz, cz, 0],
+                   [0, 0, 1]])
+    rotation = Rz @ Ry @ Rx
+
+    # Combine flip and rotation
+    transform_matrix = flip @ rotation
+
+    # Center of the volume
+    center = np.array(shape) / 2
+
+    # Random translation
+    translation = np.random.uniform(-max_translation, max_translation, size=3)
+
+    # Offset to apply rotation around center
+    offset = center - transform_matrix @ center + translation
+
+    return transform_matrix, offset
+
+
+def augment_sample(ct, dose, masks, ptv_mask, beamlet_dose=None):
+    """Apply the same 3D affine augmentation to all spatial arrays."""
+    assert ct.shape == masks.shape == dose.shape, "All inputs must have the same shape"
+
+    transform_matrix, offset = random_flip_rotation_translation(ct.shape)
+
+    # Augment CT (interpolation order 1 for smooth intensity)
+    ct_aug = affine_transform(ct, transform_matrix, offset=offset, order=1, mode='nearest')
+
+    # Augment masks (order 0 to preserve binary)
+    masks_aug = affine_transform(masks, transform_matrix, offset=offset, order=0, mode='nearest')
+
+    # Augment masks (order 0 to preserve binary)
+    ptv_aug = affine_transform(ptv_mask, transform_matrix, offset=offset, order=0, mode='nearest')
+
+    # Augment dose (continuous value)
+    dose_aug = affine_transform(dose, transform_matrix, offset=offset, order=1, mode='nearest')
+    dose_mask = dose > 0  # Or use explicit mask if you have it
+    dose_mask_aug = affine_transform(dose_mask.astype(np.uint8), transform_matrix, offset=offset, order=0,
+                                     mode='nearest')
+    dose_aug *= (dose_mask_aug > 0)
+
+    # Augment beamlet dose if provided
+    beamlet_aug = None
+    if beamlet_dose is not None:
+        beamlet_aug = affine_transform(beamlet_dose, transform_matrix, offset=offset, order=1, mode='nearest')
+
+    return ct_aug, dose_aug, masks_aug, ptv_aug, beamlet_aug
+
+def transform_3d_data(ct_arr, dose_arr, oar_arr, ptv_arr, beam_arr, augment=False):
+    if augment:
+        ct_arr, dose_arr, oar_arr, ptv_arr, beam_arr = augment_sample(ct_arr, dose_arr, oar_arr, ptv_arr, beam_arr)
     ct = torch.from_numpy(ct_arr)
     dose = torch.from_numpy(dose_arr)
     beam = torch.from_numpy(beam_arr)

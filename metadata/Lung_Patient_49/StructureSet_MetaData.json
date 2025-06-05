@@ -1,0 +1,72 @@
+[
+  {
+    "name": "GTV",
+    "volume_cc": 27.4063835,
+    "dicom_structure_name": "GTV-1",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/GTV"
+  },
+  {
+    "name": "LUNGS_NOT_GTV",
+    "volume_cc": 6643.308,
+    "dicom_structure_name": "Lungs_Not_GTV",
+    "fraction_of_vol_in_calc_box": 0.548265636,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNGS_NOT_GTV"
+  },
+  {
+    "name": "PTV",
+    "volume_cc": 143.656662,
+    "dicom_structure_name": "PTV",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/PTV"
+  },
+  {
+    "name": "ESOPHAGUS",
+    "volume_cc": 28.332653,
+    "dicom_structure_name": "Esophagus",
+    "fraction_of_vol_in_calc_box": 0.472462982,
+    "structure_mask_3d_File": "StructureSet_Data.h5/ESOPHAGUS"
+  },
+  {
+    "name": "HEART",
+    "volume_cc": 600.3153,
+    "dicom_structure_name": "Heart",
+    "fraction_of_vol_in_calc_box": 0,
+    "structure_mask_3d_File": "StructureSet_Data.h5/HEART"
+  },
+  {
+    "name": "LUNG_L",
+    "volume_cc": 3590.899,
+    "dicom_structure_name": "Lung-Left",
+    "fraction_of_vol_in_calc_box": 0.5858404,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNG_L"
+  },
+  {
+    "name": "LUNG_R",
+    "volume_cc": 3072.5376,
+    "dicom_structure_name": "Lung-Right",
+    "fraction_of_vol_in_calc_box": 0.50729686,
+    "structure_mask_3d_File": "StructureSet_Data.h5/LUNG_R"
+  },
+  {
+    "name": "CORD",
+    "volume_cc": 57.7177162,
+    "dicom_structure_name": "Spinal-Cord",
+    "fraction_of_vol_in_calc_box": 0.48416248,
+    "structure_mask_3d_File": "StructureSet_Data.h5/CORD"
+  },
+  {
+    "name": "SKIN",
+    "volume_cc": 1,
+    "dicom_structure_name": "EL_Skin",
+    "fraction_of_vol_in_calc_box": 1,
+    "structure_mask_3d_File": "StructureSet_Data.h5/SKIN"
+  },
+  {
+    "name": "BODY",
+    "volume_cc": 23871.4063,
+    "dicom_structure_name": "BODY",
+    "fraction_of_vol_in_calc_box": 0.3787758,
+    "structure_mask_3d_File": "StructureSet_Data.h5/BODY"
+  }
+]

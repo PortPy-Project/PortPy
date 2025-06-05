@@ -1,8 +1,8 @@
-from data.base_dataset import BaseDataset, get_transform
-from data.image_folder import make_dataset
+from portpy.ai.data.base_dataset import BaseDataset, get_transform
+from portpy.ai.data.image_folder import make_dataset
 import torch
 import numpy as np
-from .base_dataset import transform_3d_data_test
+from portpy.ai.data.base_dataset import transform_3d_data_test
 import os
 
 class SingleDataset(BaseDataset):

@@ -136,6 +136,56 @@ class InfluenceMatrix:
             raise ValueError('invalid row number {}'.format(row_number))
         return row_dict
 
+    def get_voxel_coordinates(self, row_numbers=None):
+        """
+        param row_numbers: rows of influence matrix for which voxel coordinates should be computed
+        return: xyz_mm. Center Coordinates of voxel in x,y and z direction
+        """
+        if row_numbers is None:
+            row_numbers = np.arange(0, self.A.shape[0])
+        row_numbers = np.array(row_numbers)  # Ensure input is a NumPy array
+
+        # Extract the dose voxel map (shape: Z, Y, X)
+        dose_map = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+
+        # Find all locations where dose_map matches any row_number
+        mask = np.isin(dose_map, row_numbers)
+        z_inds, y_inds, x_inds = np.where(mask)  # Get all matching coordinates
+        matched_row_numbers = dose_map[mask]  # Get corresponding row numbers
+
+        # Sort indices by row number for efficient processing
+        sort_idx = np.argsort(matched_row_numbers)
+        matched_row_numbers = matched_row_numbers[sort_idx]
+        z_inds, y_inds, x_inds = z_inds[sort_idx], y_inds[sort_idx], x_inds[sort_idx]
+
+        # Find unique row numbers and their positions in sorted array
+        unique_rows, row_start_idx = np.unique(matched_row_numbers, return_index=True)
+
+        # Compute min/max indices for each row using grouped operations
+        min_z = np.minimum.reduceat(z_inds, row_start_idx)
+        max_z = np.maximum.reduceat(z_inds, row_start_idx)
+        min_y = np.minimum.reduceat(y_inds, row_start_idx)
+        max_y = np.maximum.reduceat(y_inds, row_start_idx)
+        min_x = np.minimum.reduceat(x_inds, row_start_idx)
+        max_x = np.maximum.reduceat(x_inds, row_start_idx)
+
+        # Compute center of patch in voxel coordinates
+        center_z = (min_z + max_z) / 2
+        center_y = (min_y + max_y) / 2
+        center_x = (min_x + max_x) / 2
+
+        # Convert to physical coordinates
+        ct_res = self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']
+        ct_orig = self.opt_voxels_dict['ct_origin_xyz_mm']
+
+        xyz_mm = np.column_stack([
+            ct_orig[0] + center_x * ct_res[0],
+            ct_orig[1] + center_y * ct_res[1],
+            ct_orig[2] + center_z * ct_res[2]
+        ])  # Shape (N, 3)
+
+        return xyz_mm  # NumPy array containing [x, y, z] coordinates for each row_number
+
     def get_beamlet_info(self, col_number: int) -> dict:
         """
 

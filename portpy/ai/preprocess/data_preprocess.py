@@ -1,5 +1,5 @@
-
 import sys
+
 sys.path.append(r'..\..')
 import argparse
 import os
@@ -8,6 +8,7 @@ import SimpleITK as sitk
 import numpy as np
 import torch
 from skimage.transform import resize
+import traceback
 
 
 def get_dataset(in_dir, case, suffix):
@@ -58,7 +59,7 @@ def get_crop_settings_calc_box(ct: pp.CT, meta_data):
     end_zyx = [end_xyz[2], end_xyz[1], end_xyz[0]]
     return start_zyx, end_zyx
 
-    
+
 def get_crop_settings(oar):
     # Use to get crop settings
     # Don't use cord or eso as they spread through more slices
@@ -227,77 +228,94 @@ def process_case(ct_portpy, meta_data, ct, dose, oar, ptv, beamlet, out_dir, cas
     np.savez(filename, CT=ct, DOSE=dose, OAR=oar, PTV=ptv, BEAM=beamlet)
 
 
-# Initialize parser
-parser = argparse.ArgumentParser()
+def data_preprocess(in_dir, out_dir):
+    """
+    in_dir: raw data input directory
+    out_dir: processed data out directory
 
-# Adding optional argument
-parser.add_argument("--in_dir", required=False, help="Enter input dir having patient folders with their dicoms")
-parser.add_argument("--out_dir", required=False, help="Enter out dir having patient folders with their dicoms")
-args, _ = parser.parse_known_args()
-in_dir = args.in_dir
-out_dir = args.out_dir
+    """
+    if not os.path.isabs(in_dir):
+        base_dir = os.getcwd()  # get current running directory
+        in_dir = os.path.join(base_dir, in_dir)
+    if not os.path.isabs(out_dir):
+        base_dir = os.getcwd()  # get current running directory
+        out_dir = os.path.join(base_dir, out_dir)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
 
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
+    cases = os.listdir(in_dir)
 
-cases = os.listdir(in_dir)
+    labels = {
+        'cord': 1,
+        'esophagus': 2,
+        'heart': 3,
+        'lung_l': 4,
+        'lung_r': 5,
+        'ptv': 1
+    }  # PTV will be stored separately as its extent is not mutually exclusive with other anatomies
 
-labels = {
-    'cord': 1,
-    'esophagus': 2,
-    'heart': 3,
-    'lung_l': 4,
-    'lung_r': 5,
-    'ptv': 1
-}  # PTV will be stored separately as its extent is not mutually exclusive with other anatomies
+    for idx, case in enumerate(cases):
+        # process all the nrrd files
+        try:
 
-for idx, case in enumerate(cases):
-    # process all the nrrd files
-    try:
+            if 'Lung_Patient' in case:
+                if case == 'Lung_Phantom_Patient_1' or case == 'Lung_Patient_8':
+                    # These patient doesnt include some structures. Modify code in future
+                    continue
+                print('Processing case {}: {} of {} ...'.format(case, idx + 1, len(cases)))
+                # read dicom CT and write it in out_dir
+                data = pp.DataExplorer(data_dir=in_dir)
+                data.patient_id = case
+                meta_data = data.load_metadata()
+                # Load ct and structure set for the above patient using CT and Structures class
+                ct = pp.CT(data)
+                ct_arr = ct.ct_dict['ct_hu_3d'][0]
+                structs = pp.Structures(data)
+                beams = pp.Beams(data)
+                inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+                beams_1d = inf_matrix.A * np.ones((inf_matrix.A.shape[1]))
+                beams_3d = inf_matrix.dose_1d_to_3d(dose_1d=beams_1d)
+                beams_3d = beams_3d.astype('float16')
 
-        if case == 'Lung_Phantom_Patient_1' or case == 'Lung_Patient_8':
-            # These patient doesnt include some structures. Modify code in future
-            continue
-        print('Processing case {}: {} of {} ...'.format(case, idx + 1, len(cases)))
-        # read dicom CT and write it in out_dir
-        data = pp.DataExplorer(data_dir=in_dir)
-        data.patient_id = case
-        meta_data = data.load_metadata()
-        # Load ct and structure set for the above patient using CT and Structures class
-        ct = pp.CT(data)
-        ct_arr = ct.ct_dict['ct_hu_3d'][0]
-        structs = pp.Structures(data)
-        beams = pp.Beams(data)
-        inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
-        beams_1d = inf_matrix.A * np.ones((inf_matrix.A.shape[1]))
-        beams_3d = inf_matrix.dose_1d_to_3d(dose_1d=beams_1d)
-        beams_3d = beams_3d.astype('float16')
+                # normalize beams_3d. Don't forget add these lines
+                beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 72
+                planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
+                                                                     dose_file_name=os.path.join(in_dir, case, 'rt_dose_echo_imrt.dcm'))
 
-        # normalize beams_3d. Don't forget add these lines
-        beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 72
-        planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
-                                                             dose_file_name=os.path.join(in_dir, case, 'rt_dose.dcm'))
+                # oars = ['Cord', 'Esophagus', 'Heart', 'Lung_L', 'Lung_R', 'PTV']
+                oars = ['cord', 'esophagus', 'heart', 'lung_l', 'lung_r', 'ptv']
+                target_oars = dict.fromkeys(oars, -1)  # Will store index of target OAR contours from dicom dataset
 
-        # oars = ['Cord', 'Esophagus', 'Heart', 'Lung_L', 'Lung_R', 'PTV']
-        oars = ['cord', 'esophagus', 'heart', 'lung_l', 'lung_r', 'ptv']
-        target_oars = dict.fromkeys(oars, -1)  # Will store index of target OAR contours from dicom dataset
+                oar_mask = np.zeros(ct_arr.shape, np.uint8)
+                ptv_mask = np.zeros_like(oar_mask)
 
-        oar_mask = np.zeros(ct_arr.shape, np.uint8)
-        ptv_mask = np.zeros_like(oar_mask)
+                for k, v in target_oars.items():
+                    # anatomy_mask = np.zeros_like(oar_mask)
+                    ind = structs.structures_dict['name'].index(k.upper())
+                    anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
 
-        for k, v in target_oars.items():
-            # anatomy_mask = np.zeros_like(oar_mask)
-            ind = structs.structures_dict['name'].index(k.upper())
-            anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
+                    if k == 'ptv':
+                        ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
+                    else:
+                        oar_mask[np.where(anatomy_mask > 0)] = labels[k]
 
-            if k == 'ptv':
-                ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
-            else:
-                oar_mask[np.where(anatomy_mask > 0)] = labels[k]
+                # print('Processing case {}: {} of {} ...'.format(case, idx+1, len(cases)))
+                process_case(ct_portpy=ct, meta_data=meta_data, ct=ct_arr, dose=planner_dose_3d, oar=oar_mask, ptv=ptv_mask, beamlet=beams_3d, out_dir=out_dir,
+                             case=case)
+        except:
+            print('Processing of case {} failed'.format(case))
+            print(str(traceback.format_exc()))
+            pass
 
-        # print('Processing case {}: {} of {} ...'.format(case, idx+1, len(cases)))
-        process_case(ct_portpy=ct, meta_data=meta_data, ct=ct_arr, dose=planner_dose_3d, oar=oar_mask, ptv=ptv_mask, beamlet=beams_3d, out_dir=out_dir,
-                     case=case)
-    except:
-        print('Processing of case {} failed'.format(case))
-        pass
+
+if __name__ == "__main__":
+    # Initialize parser
+    parser = argparse.ArgumentParser()
+
+    # Adding optional argument
+    parser.add_argument("--in_dir", required=False, help="Enter input dir having patient folders with their dicoms")
+    parser.add_argument("--out_dir", required=False, help="Enter out dir having patient folders with their dicoms")
+    args, _ = parser.parse_known_args()
+    in_dir = args.in_dir
+    out_dir = args.out_dir
+    data_preprocess(in_dir=in_dir, out_dir=out_dir)

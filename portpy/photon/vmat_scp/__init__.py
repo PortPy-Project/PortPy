@@ -1,2 +1,3 @@
 from .arcs import Arcs
 from .vmat_scp_optimization import VmatScpOptimization
+from portpy.photon.vmat_scp.vmat_optimization_col_gen import VmatOptimizationColGen

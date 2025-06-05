@@ -8,7 +8,15 @@ from pathlib import Path
 import pandas as pd
 from tabulate import tabulate
 import webbrowser
+import posixpath  # Added for HF path construction
+from typing import List
 
+try:
+    from huggingface_hub import hf_hub_download, list_repo_files
+    # from datasets import load_dataset, DatasetDict # Not strictly needed for this implementation
+    HUGGINGFACE_AVAILABLE = True
+except ImportError:
+    HUGGINGFACE_AVAILABLE = False
 
 class DataExplorer:
     """
@@ -18,6 +26,9 @@ class DataExplorer:
 
         :param data_dir: local directory containing data
         :param patient_id: patient id of the patient
+        :param hf_repo_id: Hugging Face repository ID (e.g., "PortPy-Project/PortPy_Dataset")
+        :param local_download_dir: Alias for data_dir when using Hugging Face, for clarity.
+                                   If provided, overrides data_dir for HF downloads.
 
     - **Methods** ::
         :display_patient_metadata()
@@ -27,12 +38,28 @@ class DataExplorer:
 
 
     """
-    def __init__(self, data_dir: str = None, patient_id: str = None):
-        if data_dir is None:
-            data_dir = os.path.join('..', 'data')
-        self.data_dir = data_dir
+    def __init__(self, data_dir: str = None, patient_id: str = None, hf_repo_id: str = None, hf_token: str = None, local_download_dir: str = None):
+        if local_download_dir:
+            self.data_dir = local_download_dir
+        elif data_dir:
+            self.data_dir = data_dir
+        elif hf_repo_id:  # If HF repo is given but no specific local dir, use a default
+            self.data_dir = os.path.join('..', 'hugging_face_data')
+        else:
+            self.data_dir = os.path.join('..', 'data')
         if patient_id is not None:
             self.patient_id = patient_id
+
+        self.hf_repo_id = hf_repo_id
+        self.hf_token = hf_token
+
+        # Ensure the download directory exists if we're using Hugging Face
+        if self.hf_repo_id:
+            os.makedirs(self.data_dir, exist_ok=True)
+            if not HUGGINGFACE_AVAILABLE:
+                raise ImportError(
+                    "huggingface_hub library is not installed. Please install it to use Hugging Face datasets: pip install huggingface_hub")
+
 
     def display_patient_metadata(self, in_browser: bool = False, return_beams_df: bool = False,
                                  return_structs_df: bool = False):
@@ -49,8 +76,16 @@ class DataExplorer:
         """
 
         pat_dir = os.path.join(self.data_dir, self.patient_id)
-        if not os.path.exists(pat_dir):  # check if valid directory
-            raise Exception("Invalid data directory. Please input valid directory")
+        if not os.path.exists(pat_dir):
+            # Check if it's nested under a 'data' subdirectory, common with hf_hub_download's behavior
+            # when filename in repo has 'data/...' prefix.
+            potential_pat_dir = os.path.join(self.data_dir, "data", self.patient_id)
+            if os.path.exists(potential_pat_dir):
+                self.data_dir = os.path.join(self.data_dir, "data") #update data directory
+                pat_dir = potential_pat_dir
+            else:
+                raise Exception(
+                    f"Invalid data directory for patient {self.patient_id}. Checked: {pat_dir} and {potential_pat_dir}")
 
         meta_data = self.load_metadata(pat_dir)
         # if show_beams:
@@ -152,29 +187,37 @@ class DataExplorer:
         >>> DataExplorer.display_list_of_patients(data_dir='path/to/data', in_browser=True)
 
         """
+        if self.hf_repo_id is not None:
+            if not HUGGINGFACE_AVAILABLE:
+                raise ImportError("huggingface_hub is required to list patients from Hugging Face.")
 
-        display_dict = {}  # we add all the relevant information from meta_data to this dictionary
-        data_dir = self.data_dir
-        if not os.path.exists(data_dir):  # check if valid directory
-            raise Exception("Invalid data directory. Please input valid directory")
-        pat_ids = os.listdir(data_dir)
-        for i, pat_id in enumerate(pat_ids):  # Loop through patients in path
-            if "Patient" in pat_id:  # ignore irrelevant folders
-                display_dict.setdefault('patient_id', []).append(pat_id)
-                meta_data = self.load_metadata(os.path.join(data_dir, pat_id))  # load metadata for the patients
-                # set the keys and append to display dict
-                display_dict.setdefault('disease_site', []).append(pat_id.split('_')[0])
-                ind = meta_data['structures']['name'].index('PTV')
-                display_dict.setdefault('ptv_vol_cc', []).append(meta_data['structures']['volume_cc'][ind])
-                display_dict.setdefault('num_beams', []).append(len(meta_data['beams']['ID']))
-                # check if all the iso centers are same for beams
-                # res = all(
-                #     ele == meta_data['beams']['iso_center'][0] for ele in meta_data['beams']['iso_center'])
-                # if res:
-                #     display_dict.setdefault('iso_center_shift ', []).append('No')
-                # else:
-                #     display_dict.setdefault('iso_center_shift ', []).append('Yes')
-        df = pd.DataFrame.from_dict(display_dict)  # convert dictionary to dataframe
+            print(f"Fetching patient list from Hugging Face repository: {self.hf_repo_id}")
+            # Try to get basic info from data_info.jsonl first
+            df = self._get_hf_patient_list_from_data_info()
+
+        else:
+            display_dict = {}  # we add all the relevant information from meta_data to this dictionary
+            data_dir = self.data_dir
+            if not os.path.exists(data_dir):  # check if valid directory
+                raise Exception("Invalid data directory. Please input valid directory")
+            pat_ids = natsorted(os.listdir(data_dir))
+            for i, pat_id in enumerate(pat_ids):  # Loop through patients in path
+                if "Patient" in pat_id:  # ignore irrelevant folders
+                    display_dict.setdefault('patient_id', []).append(pat_id)
+                    meta_data = self.load_metadata(os.path.join(data_dir, pat_id))  # load metadata for the patients
+                    # set the keys and append to display dict
+                    display_dict.setdefault('disease_site', []).append(pat_id.split('_')[0])
+                    ind = meta_data['structures']['name'].index('PTV')
+                    display_dict.setdefault('ptv_vol_cc', []).append(meta_data['structures']['volume_cc'][ind])
+                    display_dict.setdefault('num_beams', []).append(len(meta_data['beams']['ID']))
+                    # check if all the iso centers are same for beams
+                    # res = all(
+                    #     ele == meta_data['beams']['iso_center'][0] for ele in meta_data['beams']['iso_center'])
+                    # if res:
+                    #     display_dict.setdefault('iso_center_shift ', []).append('No')
+                    # else:
+                    #     display_dict.setdefault('iso_center_shift ', []).append('Yes')
+            df = pd.DataFrame.from_dict(display_dict)  # convert dictionary to dataframe
         if return_df:
             return df
         if in_browser:
@@ -463,6 +506,437 @@ class DataExplorer:
             return False  # Probably standard Python interpreter
         except:
             return False  # Probably standard Python interpreter
+
+    def _get_hf_patient_list_from_data_info(self, quiet: bool = False) -> pd.DataFrame:
+        """
+        Fetches patient IDs and disease sites from data_info.jsonl in the Hugging Face repo.
+        """
+        if not self.hf_repo_id:
+            if not quiet:
+                print("Hugging Face repository ID (hf_repo_id) not set.")
+            return pd.DataFrame()
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+
+        try:
+            data_info_file_path = "data_info.jsonl"
+            if not quiet:
+                print(f"Fetching patient list from {self.hf_repo_id}/{data_info_file_path}...")
+            local_file = hf_hub_download(
+                repo_id=self.hf_repo_id,
+                repo_type="dataset",
+                filename=data_info_file_path,
+                local_dir=os.path.join(self.data_dir, ".hf_cache")  # Temp cache for this file
+                # use_auth_token=self.hf_token
+            )
+            with open(local_file) as f:
+                data_info = [json.loads(line) for line in f]
+
+            patient_ids = [pat.get('patient_id') for pat in data_info if pat.get('patient_id')]
+            if not patient_ids:
+                if not quiet:
+                    print("No patient_id found in data_info.jsonl")
+                return pd.DataFrame()
+
+            df = pd.DataFrame(patient_ids, columns=["patient_id"])
+            # Attempt to extract disease site common pattern
+            df["disease_site"] = df["patient_id"].apply(
+                lambda x: x.split('_')[0] if isinstance(x, str) and '_' in x else "Unknown")
+
+            # Estimate num_beams from beam_metadata_paths
+            df["num_beams"] = [
+                len(pat.get("beam_metadata_paths", [])) if isinstance(pat.get("beam_metadata_paths"), list) else None
+                for pat in data_info
+            ]
+            return df
+        except Exception as e:
+            if not quiet:
+                print(f"Error fetching or parsing data_info.jsonl from Hugging Face: {e}")
+            return pd.DataFrame()
+
+    def _load_hf_structure_metadata(self, patient_id: str, temp_download_dir: str) -> list:
+        """Loads structure metadata for a patient from Hugging Face."""
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+        try:
+            file_path = posixpath.join("data", patient_id, "StructureSet_MetaData.json")
+            local_file = hf_hub_download(
+                self.hf_repo_id, repo_type="dataset", filename=file_path,
+                local_dir=temp_download_dir, use_auth_token=self.hf_token
+            )
+            with open(local_file) as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load structure metadata for {patient_id} from HF: {e}")
+            return []
+
+    def _load_hf_beam_metadata(self, patient_id: str, temp_download_dir: str) -> list:
+        """Loads all beam metadata for a patient from Hugging Face."""
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+        beam_meta = []
+        try:
+            repo_files = list_repo_files(repo_id=self.hf_repo_id, repo_type="dataset", token=self.hf_token)
+            beam_meta_paths = [
+                f for f in repo_files
+                if f.startswith(f"data/{patient_id}/Beams/Beam_") and f.endswith("_MetaData.json")
+            ]
+            for path in beam_meta_paths:
+                local_file = hf_hub_download(
+                    self.hf_repo_id, repo_type="dataset", filename=path,
+                    local_dir=temp_download_dir, use_auth_token=self.hf_token
+                )
+                with open(local_file) as f:
+                    beam_meta.append(json.load(f))
+        except Exception as e:
+            print(f"Warning: Could not load beam metadata for {patient_id} from HF: {e}")
+        return beam_meta
+
+    def _load_hf_planner_beams(self, patient_id: str, temp_download_dir: str) -> list:
+        """Loads planner beam IDs for a patient from Hugging Face."""
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+        try:
+            file_path = posixpath.join("data", patient_id, "PlannerBeams.json")
+            local_file = hf_hub_download(
+                self.hf_repo_id, repo_type="dataset", filename=file_path,
+                local_dir=temp_download_dir #, use_auth_token=self.hf_token
+            )
+            with open(local_file) as f:
+                return json.load(f).get("IDs", [])
+        except Exception as e:
+            print(f"Warning: Could not load planner beams for {patient_id} from HF: {e}")
+            return []
+
+    def _get_hf_patient_summary(self, patient_id: str, temp_download_dir: str) -> dict:
+        """Gets PTV volume and beam count for a patient by downloading minimal HF metadata."""
+        structs = self._load_hf_structure_metadata(patient_id, temp_download_dir)
+        beams = self._load_hf_beam_metadata(patient_id, temp_download_dir)
+        planner_beam_ids = self._load_hf_planner_beams(patient_id, temp_download_dir)
+
+        ptv_vol = None
+        if structs:
+            for s in structs:
+                if "PTV" in s.get("name", "").upper():
+                    ptv_vol = s.get("volume_cc")
+                    break
+        return {
+            "ptv_vol_cc": ptv_vol,
+            "num_beams": len(beams),
+            "beams_metadata": beams,  # For detailed filtering
+            "structures_metadata": structs,  # For detailed filtering
+            "planner_beam_ids": planner_beam_ids
+        }
+
+    def filter_and_download_hf_dataset(self,
+                                       disease_site_filter: str = None,
+                                       patient_ids: List[str] = None,
+                                       min_ptv_volume_cc: float = None,
+                                       gantry_angles_filter: str = None,  # Comma-separated string e.g. "0,90,180"
+                                       collimator_angles_filter: str = None,  # Comma-separated string
+                                       couch_angles_filter: str = None,  # Comma-separated string
+                                       energies_filter: str = None,  # Comma-separated string e.g. "6X,10X"
+                                       use_planner_beams_only: bool = True,
+                                       max_patients_to_download: int = None):
+        """
+        Filters patients from the configured Hugging Face dataset based on criteria and downloads their data.
+
+        :param disease_site_filter: Disease site to filter by (e.g., "Lung").
+        :param patient_ids: (Optional) List of patient ids to be downloaded
+        :param min_ptv_volume_cc: Minimum PTV volume in cc.
+        :param gantry_angles_filter: Comma-separated string of desired gantry angles.
+        :param collimator_angles_filter: Comma-separated string of desired collimator angles.
+        :param couch_angles_filter: Comma-separated string of desired couch angles.
+        :param energies_filter: Comma-separated string of desired beam energies (e.g., "6X", "10X").
+        :param use_planner_beams_only: If True, only consider beams selected by the planner.
+                                       If False, considers all available beams matching other criteria.
+        :param max_patients_to_download: Maximum number of matched patients to download.
+        :return: List of local paths to the downloaded patient folders.
+        """
+        if not self.hf_repo_id:
+            print("Hugging Face repository ID (hf_repo_id) not set.")
+            return []
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+
+        print(f"Starting filtering and download from {self.hf_repo_id}...")
+
+        # Determine output directory
+        print(f"Data will be downloaded to: {self.data_dir}")
+
+        # Temporary directory for downloading metadata for filtering
+        # This avoids cluttering the main data_dir with metadata from non-matching patients
+        temp_filter_meta_dir = os.path.join(self.data_dir, ".hf_cache")
+        os.makedirs(temp_filter_meta_dir, exist_ok=True)
+
+        # 1. Get initial list of patients
+        all_patients_df = self._get_hf_patient_list_from_data_info()
+
+        # 2. Filter by disease site (if provided in data_info.jsonl)
+        if disease_site_filter and "disease_site" in all_patients_df.columns:
+            all_patients_df = all_patients_df[
+                all_patients_df["disease_site"].str.contains(disease_site_filter, case=False, na=False)]
+        elif disease_site_filter:
+            print(
+                "Warning: Disease site filtering may be incomplete as 'disease_site' column not in data_info.jsonl summary.")
+            # If not in summary, we'd have to download metadata for all patients, which is slow.
+            # For now, we proceed and filter later if possible or rely on patient ID naming.
+
+        # Convert filter strings to sets for easier lookup
+        gantry_angles_set = set(map(float, gantry_angles_filter.split(","))) if gantry_angles_filter else None
+        collimator_angles_set = set(
+            map(float, collimator_angles_filter.split(","))) if collimator_angles_filter else None
+        couch_angles_set = set(map(float, couch_angles_filter.split(","))) if couch_angles_filter else None
+        energies_set = set(e.strip() for e in energies_filter.split(",")) if energies_filter else None
+
+        matched_patients_data = []
+        processed_patient_ids = all_patients_df["patient_id"].tolist()
+        if self.patient_id is not None:
+            processed_patient_ids = [self.patient_id]
+        else:
+            processed_patient_ids = patient_ids
+
+
+        print(
+            f"Found {len(processed_patient_ids)} patients matching initial criteria. Fetching metadata for detailed filtering...")
+
+        for i, patient_id in enumerate(processed_patient_ids):
+            # print(f"Processing patient {i + 1}/{len(processed_patient_ids)}: {patient_id}")
+            # Fetch detailed metadata for this patient
+            summary = self._get_hf_patient_summary(patient_id, temp_filter_meta_dir)
+            structures_metadata = summary.get("structures_metadata", [])
+            beams_metadata = summary.get("beams_metadata", [])
+
+            # Apply disease site filter again if not done via data_info.jsonl or if it was ambiguous
+            if disease_site_filter and not structures_metadata:  # fallback if disease_site not well defined in data_info
+                if disease_site_filter.lower() not in patient_id.lower():
+                    continue
+
+            # PTV Volume Filter
+            if min_ptv_volume_cc is not None:
+                current_ptv_vol = summary.get("ptv_vol_cc")
+                if current_ptv_vol is None or current_ptv_vol < min_ptv_volume_cc:
+                    continue
+
+            # Beam property filters
+            selected_beams_for_patient = []
+            if not beams_metadata:  # No beams, cannot match beam criteria
+                if any([gantry_angles_set, collimator_angles_set, couch_angles_set, energies_set]):
+                    continue  # Skip if beam filters are active but no beam data
+                else:
+                    selected_beams_for_patient = []  # No specific beams to select if no filters
+            else:
+                for beam in beams_metadata:
+                    match = True
+                    if gantry_angles_set and beam.get("gantry_angle") not in gantry_angles_set:
+                        match = False
+                    if collimator_angles_set and beam.get("collimator_angle") not in collimator_angles_set:
+                        match = False
+                    if couch_angles_set and beam.get("couch_angle") not in couch_angles_set:
+                        match = False
+                    if energies_set and beam.get(
+                            "energy_MV") not in energies_set:  # Assuming energy_MV stores "6X", "10X" etc.
+                        match = False
+                    if match:
+                        selected_beams_for_patient.append(beam)
+
+            if not selected_beams_for_patient and any(
+                    [gantry_angles_set, collimator_angles_set, couch_angles_set, energies_set]):
+                continue  # No beams matched the criteria
+
+            selected_beam_ids = [b["ID"] for b in selected_beams_for_patient]
+
+            if use_planner_beams_only:
+                planner_beam_ids_list = summary["planner_beam_ids"]
+                if not planner_beam_ids_list:  # If no planner beams, this patient cannot match
+                    continue
+                planner_beam_ids_set = set(planner_beam_ids_list)
+                # Filter the already selected beams to include only planner beams
+                final_selected_beam_ids = list(planner_beam_ids_set.intersection(selected_beam_ids))
+                if not final_selected_beam_ids:  # No overlap
+                    continue
+                # Store the planner-only beam IDs for download
+                beam_ids_to_download = final_selected_beam_ids
+            else:
+                # Use all beams that matched the criteria, or all beams if no criteria specified
+                beam_ids_to_download = selected_beam_ids if selected_beams_for_patient else [b['ID'] for b in
+                                                                                             beams_metadata]
+
+            # If we pass all filters for this patient
+            matched_patients_data.append({
+                "patient_id": patient_id,
+                "beam_ids_to_download": beam_ids_to_download,
+                "ptv_volume": summary.get("ptv_vol_cc"),
+                "num_matching_beams": len(beam_ids_to_download)
+            })
+            print(f"Patient {patient_id} matched with {len(beam_ids_to_download)} beams.")
+
+            if max_patients_to_download and len(matched_patients_data) >= max_patients_to_download:
+                print(f"Reached max_patients_to_download ({max_patients_to_download}).")
+                break
+
+        # # Cleanup temp filter cache
+        # try:
+        #     import shutil
+        #     shutil.rmtree(temp_filter_meta_dir)
+        # except OSError as e:
+        #     print(f"Warning: Could not remove temporary filter cache directory {temp_filter_meta_dir}: {e}")
+
+        # 3. Download data for matched patients
+        downloaded_patient_folders = []
+        if not matched_patients_data:
+            print("No patients matched the specified criteria.")
+            return []
+
+        print(f"\nFound {len(matched_patients_data)} patients matching all criteria. Starting download...")
+        for patient_info in matched_patients_data:
+            pat_id = patient_info["patient_id"]
+            beam_ids = patient_info["beam_ids_to_download"]
+            patient_download_dir = os.path.join(self.data_dir, 'data', pat_id)  # Download into subfolder per patient
+            # os.makedirs(patient_download_dir, exist_ok=True)
+
+            print(f"Downloading data for patient: {pat_id}...")
+            self._download_hf_patient_data(
+                patient_id=pat_id,
+                beam_ids_to_download=beam_ids,  # Pass only the filtered beam IDs
+                local_patient_dir=patient_download_dir,  # Download directly into the patient's final folder
+                download_all_beams_if_empty=not bool(beam_ids) and not any(
+                    [gantry_angles_set, collimator_angles_set, couch_angles_set, energies_set, use_planner_beams_only])
+                # Download all if no beam filters applied
+            )
+            downloaded_patient_folders.append(patient_download_dir)
+            # Update self.data_dir and self.patient_id if only one patient downloaded for immediate exploration
+            if len(matched_patients_data) == 1:
+                self.patient_id = pat_id
+                print(f"DataExplorer automatically set to explore downloaded patient: {pat_id} in {self.data_dir}")
+
+        print("\nDownload complete.")
+        print("Downloaded patient folders:", downloaded_patient_folders)
+        return downloaded_patient_folders
+
+    def _download_hf_patient_data(self, patient_id: str, beam_ids_to_download: list = None,
+                                  local_patient_dir: str = None, max_retries: int = 2,
+                                  download_all_beams_if_empty: bool = False):
+        """
+        Downloads files for a specific patient from Hugging Face.
+        If beam_ids_to_download is None or empty and download_all_beams_if_empty is True,
+        it will try to download all beams for that patient.
+
+        :param patient_id: The ID of the patient.
+        :param beam_ids_to_download: Specific list of beam IDs to download.
+        :param local_patient_dir: The local directory to save this patient's data.
+                                 If None, defaults to self.data_dir / patient_id.
+        :param max_retries: Number of retries for downloading each file.
+        :param download_all_beams_if_empty: If beam_ids_to_download is empty/None, download all beams.
+        """
+        if not self.hf_repo_id:
+            print("Hugging Face repository ID (hf_repo_id) not set.")
+            return
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for this feature.")
+
+        # Files that are always downloaded for a patient (non-beam specific)
+        static_files_templates = [
+            "CT_Data.h5", "CT_MetaData.json",
+            "StructureSet_Data.h5", "StructureSet_MetaData.json",
+            "OptimizationVoxels_Data.h5", "OptimizationVoxels_MetaData.json",
+            "PlannerBeams.json",
+            # Optional DICOM files - check if they exist before attempting download or make this configurable
+            # "rt_dose_echo_imrt.dcm", "rt_plan_echo_imrt.dcm"
+        ]
+        # Add known DICOM files if they are standard part of your dataset
+        optional_dicom_files = ["rt_dose_echo_imrt.dcm", "rt_plan_echo_imrt.dcm"]
+        all_repo_files = list_repo_files(repo_id=self.hf_repo_id, repo_type="dataset")
+
+        files_to_download = []
+        for filename_template in static_files_templates:
+            hf_path = posixpath.join("data", patient_id, filename_template)
+            if hf_path in all_repo_files:
+                files_to_download.append(hf_path)
+            else:
+                print(f"Info: Static file {hf_path} not found in repository. Skipping.")
+
+        for dicom_file in optional_dicom_files:
+            hf_path = posixpath.join("data", patient_id, dicom_file)
+            if hf_path in all_repo_files:  # Check if it exists
+                files_to_download.append(hf_path)
+            else:
+                print(f"Info: Optional DICOM file {hf_path} not found. Skipping.")
+
+        # Determine which beams to download
+        actual_beam_ids_to_download = []
+        if beam_ids_to_download:  # Specific beams requested
+            actual_beam_ids_to_download = beam_ids_to_download
+        elif download_all_beams_if_empty:  # Download all beams for this patient
+            print(f"No specific beams listed, downloading all available beams for {patient_id}...")
+            beam_meta_files = [
+                f for f in all_repo_files
+                if f.startswith(f"data/{patient_id}/Beams/Beam_") and f.endswith("_MetaData.json")
+            ]
+            for meta_file_path in beam_meta_files:
+                # Extract beam ID from filename like "data/Patient_X/Beams/Beam_Y_MetaData.json" -> Y
+                try:
+                    beam_id_str = meta_file_path.split('/')[-1].replace("Beam_", "").replace("_MetaData.json", "")
+                    actual_beam_ids_to_download.append(beam_id_str)  # Assuming beam IDs are strings here
+                except Exception as e:
+                    print(f"Warning: Could not parse beam ID from {meta_file_path}: {e}")
+
+        if actual_beam_ids_to_download:
+            print(f"Identified beams to download for {patient_id}: {actual_beam_ids_to_download}")
+            for bid in actual_beam_ids_to_download:
+                # Construct paths for beam data and metadata
+                # Ensure correct casing and extensions as per your HF repo
+                beam_data_fname = f"Beam_{bid}_Data.h5"
+                beam_meta_fname = f"Beam_{bid}_MetaData.json"
+
+                beam_data_hf_path = posixpath.join("data", patient_id, "Beams", beam_data_fname)
+                beam_meta_hf_path = posixpath.join("data", patient_id, "Beams", beam_meta_fname)
+
+                if beam_data_hf_path in all_repo_files:
+                    files_to_download.append(beam_data_hf_path)
+                else:
+                    print(
+                        f"Warning: Beam data file {beam_data_hf_path} not found for patient {patient_id}, beam {bid}. Skipping.")
+
+                if beam_meta_hf_path in all_repo_files:
+                    files_to_download.append(beam_meta_hf_path)
+                else:
+                    print(
+                        f"Warning: Beam metadata file {beam_meta_hf_path} not found for patient {patient_id}, beam {bid}. Skipping.")
+        elif beam_ids_to_download is not None and not beam_ids_to_download:  # Empty list explicitly passed and not download_all
+            print(f"No beams selected for download for patient {patient_id} based on filters.")
+
+        downloaded_file_paths = []
+        for hf_path in files_to_download:
+            # Determine the correct local path structure
+            # hf_path is like "data/Patient_ID/Beams/Beam_1_Data.h5"
+            # We want it in local_patient_dir/"Beams/Beam_1_Data.h5" or local_patient_dir/"StructureSet_Data.h5"
+            relative_path_from_patient_data_on_hf = posixpath.relpath(hf_path, posixpath.join("data", patient_id))
+            # local_dest_path = os.path.join(local_patient_dir, relative_path_from_patient_data_on_hf)
+            # os.makedirs(os.path.dirname(local_dest_path), exist_ok=True) # Ensure subdirectories like "Beams" exist
+
+            for attempt in range(max_retries):
+                try:
+                    # hf_hub_download will create subdirectories specified in `filename` relative to `local_dir`
+                    # So, filename should be the path *within* the patient's data folder on HF
+                    # and local_dir should be the patient's root download folder.
+                    print(f"  Downloading {hf_path} to {local_patient_dir}...")
+                    local_file_actually_downloaded_to = hf_hub_download(
+                        repo_id=self.hf_repo_id,
+                        repo_type="dataset",
+                        filename=hf_path,  # Full path on repo
+                        local_dir=self.data_dir,  # This should be the root output dir for filtered data
+
+                    )
+
+                    downloaded_file_paths.append(local_file_actually_downloaded_to)
+                    break  # Success
+                except Exception as e:
+                    print(f"  Attempt {attempt + 1}/{max_retries} failed for {hf_path}: {e}")
+                    if attempt == max_retries - 1:
+                        print(f"  Failed to download {hf_path} after {max_retries} retries.")
+        # return downloaded_file_paths # Not currently used, but good for debugging
+
 
     @staticmethod
     def list_to_dict(json_data):

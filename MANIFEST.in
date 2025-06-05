@@ -1,3 +1,4 @@
 include images/*.jpg
 recursive-include portpy/config_files/clinical_criteria *
 recursive-include portpy/config_files/optimization_params *
+include portpy/config_files/tcia_patients/tcia_patients_metadata.json
