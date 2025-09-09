@@ -1,31 +1,19 @@
-"""This module implements an abstract base class (ABC) 'BaseDataset' for datasets.
-
-It also includes common transformation functions (e.g., get_transform, __scale_width), which can be later used in subclasses.
-"""
-import random
-import numpy as np
-import torch.utils.data as data
-from PIL import Image
-import torchvision.transforms as transforms
-import torchvision.transforms.functional as TF
-from abc import ABC, abstractmethod
-import torch
-import warnings
-from scipy.ndimage import affine_transform
-
-
-warnings.filterwarnings("ignore")
-
-
-class BaseDataset(data.Dataset, ABC):
-    """This class is an abstract base class (ABC) for datasets.
-
-    To create a subclass, you need to implement the following four functions:
-    -- <__init__>:                      initialize the class, first call BaseDataset.__init__(self, opt).
-    -- <__len__>:                       return the size of dataset.
-    -- <__getitem__>:                   get a data point.
-    -- <modify_commandline_options>:    (optionally) add dataset-specific options and set default options.
-    """
+# Copyright 2025, the PortPy Authors
+#
+# Licensed under the Apache License, Version 2.0 with the Commons Clause restriction.
+# You may obtain a copy of the Apache 2 License at:
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# ----------------------------------------------------------------------
+# Commons Clause Restriction Notice:
+# PortPy is licensed under Apache 2.0 with the Commons Clause.
+# You may use, modify, and share the code for non-commercial
+# academic and research purposes only.
+# Commercial use — including offering PortPy as a service,
+# or incorporating it into a commercial product — requires
+# a separate commercial license.
+# ----------------------------------------------------------------------
 
     def __init__(self, opt):
         """Initialize the class; save the options in the class
