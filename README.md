@@ -9,7 +9,7 @@
 
 </h2>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.1.1&color=darkgreen)
+![PyPI version](https://img.shields.io/pypi/v/portpy?color=darkgreen&label=latest)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
