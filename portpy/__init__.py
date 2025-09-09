@@ -16,5 +16,5 @@
 # ----------------------------------------------------------------------
 
 __version__ = "1.1.1"
-
+# Change version here manually to reflect it everywhere
 from portpy import photon
