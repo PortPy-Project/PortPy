@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "portpy"
-dynamic = ["version"]
+version = { file = "portpy/__init__.py" }
 description = "First open-source radiation treatment planning system in Python"
 readme = "README.md"
 license = "Apache-2.0"
