@@ -9,7 +9,7 @@
 
 </h2>
 
-![Version](https://img.shields.io/static/v1?label=latest&message=v1.1.0&color=darkgreen)
+![Version](https://img.shields.io/static/v1?label=latest&message=v1.1.1&color=darkgreen)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads)](https://pepy.tech/project/portpy?&left_text=totalusers)
 [![Monthly Downloads](https://static.pepy.tech/badge/portpy/month)](https://pepy.tech/project/portpy)
 
@@ -228,13 +228,7 @@ We have adopted the widely-used JSON and HDF5 formats for data storage.
       pip install portpy[all]   
      ```
 
-2. Install using conda:
-
-    ```
-    conda install -c conda-forge portpy
-    ```
-
-3. Install from source:
+2. Install from source:
    
     * Clone this repository using
       ```
