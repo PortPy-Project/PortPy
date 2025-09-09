@@ -50,9 +50,6 @@ dependencies = [
 where = ["."]
 include = ["portpy.*"]
 
-[tool.setuptools.dynamic]
-version = { attr = "portpy.__version__" }
-
 [tool.setuptools.package-data]
 "*" = ["*.md"]
 
