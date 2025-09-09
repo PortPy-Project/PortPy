@@ -59,7 +59,7 @@ def basic_tutorial():
     data_dir = r'../../data'
     data = pp.DataExplorer(data_dir=data_dir)
     # OR
-    # data = pp.DataExplorer(hf_repo_id="PortPy-Project/PortPy_Dataset")
+    # data = pp.DataExplorer(hf_repo_id="PortPy-Project/PortPy_Dataset", local_download_dir='your_local_directory')
 
     # display the existing patients in console or browser.
     data.display_list_of_patients()
@@ -67,7 +67,7 @@ def basic_tutorial():
     # pick a patient from the existing patient list to get detailed info (e.g., beam angles, structures).
     data.patient_id = 'Lung_Phantom_Patient_1'
 
-    # download patient data with planner beams from hugging face
+    # download patient data with planner beams from hugging face. Run it only once for the initial run to download the data. Skip it for next run
     # data.filter_and_download_hf_dataset()
 
     # display the data of the patient in console or browser.

@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from portpy.photon.plan import Plan
+    from portpy.photon.influence_matrix import InfluenceMatrix
 from copy import deepcopy
 import numpy as np
 
@@ -288,7 +289,34 @@ class ClinicalCriteria:
         return self.dvh_table
 
 
-    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray):
+    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray, inf_matrix: InfluenceMatrix):
+        """
+        Identifies and stores the indices of low-dose voxels for each DVH constraint or goal.
+
+        For each row in the DVH table, the method:
+        - Retrieves the relevant structure name, dose threshold, and volume percentage.
+        - Adjusts the volume percentage based on the fraction of the volume in the dose calculation box.
+        - Sorts the structure's voxels based on dose values (ascending).
+        - Accumulates voxel volumes until the specified volume percentage is reached.
+        - Marks these as low-dose voxels and stores them in the `low_dose_voxels` column.
+
+        Parameters
+        ----------
+        my_plan : Plan
+            The treatment plan object that includes the influence matrix.
+        dose : np.ndarray
+            A 1D array representing the dose values for all optimization voxels.
+        inf_matrix : InfluenceMatrix, optional
+            The influence matrix that provides voxel-related metadata. If not provided,
+            it defaults to `my_plan.inf_matrix`.
+
+        Returns
+        -------
+        pd.DataFrame
+            Updated DVH table with a new column `low_dose_voxels` indicating voxel indices
+            in each structure that received the lowest doses contributing up to the specified
+            volume percentage.
+        """
         dvh_table = self.dvh_table
         inf_matrix = my_plan.inf_matrix
         for ind in dvh_table.index:

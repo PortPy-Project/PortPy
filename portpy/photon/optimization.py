@@ -139,6 +139,9 @@ class Optimization(object):
                 else:
                     constraint_def += [opt_constraint]
 
+        d_max = np.infty * np.ones(A.shape[0]) # create a vector to avoid putting redundant max constraint on
+        # duplicate voxels among structure
+
         # Adding max/mean constraints
         for i in range(len(constraint_def)):
             if constraint_def[i]['type'] == 'max_dose':
@@ -150,7 +153,9 @@ class Optimization(object):
                         if org in my_plan.structures.get_structures():
                             if len(st.get_opt_voxels_idx(org)) == 0:
                                 continue
-                            constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
+                            voxels = st.get_opt_voxels_idx(org)
+                            d_max[voxels] = np.minimum(d_max[voxels], limit / num_fractions)
+                            # constraints += [A[st.get_opt_voxels_idx(org), :] @ x <= limit / num_fractions]
             elif constraint_def[i]['type'] == 'mean_dose':
                 limit_key = self.matching_keys(constraint_def[i]['constraints'], 'limit')
                 if limit_key:
@@ -166,7 +171,11 @@ class Optimization(object):
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
                                         <= limit / num_fractions]
-
+        mask = np.isfinite(d_max)
+        # Create index mask arrays
+        indices = np.arange(len(mask))  # assumes mask is 1D and corresponds to voxel indices
+        all_d_max_vox_ind = indices[mask]
+        constraints += [A[all_d_max_vox_ind, :] @ x <= d_max[all_d_max_vox_ind]] # Add constraint for all d_max voxels at once
         print('Problem created')
 
     def add_max(self, struct: str, dose_gy: float):
@@ -365,7 +374,7 @@ class Optimization(object):
         self.obj_value = problem.value
         print("Optimal value: %s" % problem.value)
         print("Elapsed time: {} seconds".format(elapsed))
-        sol = {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix}
+        sol = {'optimal_intensity': self.vars['x'].value, 'inf_matrix': self.inf_matrix, 'obj_value': problem.value}
         if return_cvxpy_prob:
             return sol, problem
         else:

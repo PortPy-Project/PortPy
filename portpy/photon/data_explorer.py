@@ -9,7 +9,7 @@ import pandas as pd
 from tabulate import tabulate
 import webbrowser
 import posixpath  # Added for HF path construction
-from typing import List
+from typing import List, Dict, Set, Optional, Tuple, Union
 
 try:
     from huggingface_hub import hf_hub_download, list_repo_files
@@ -554,15 +554,30 @@ class DataExplorer:
                 print(f"Error fetching or parsing data_info.jsonl from Hugging Face: {e}")
             return pd.DataFrame()
 
-    def _load_hf_structure_metadata(self, patient_id: str, temp_download_dir: str) -> list:
-        """Loads structure metadata for a patient from Hugging Face."""
+    def _load_structure_metadata(self, patient_id: str, temp_download_dir: Optional[str] = None,
+                                 local_data_dir: Optional[str] = None) -> list:
+        """Loads structure metadata from local disk if available; otherwise from Hugging Face."""
+        filename = "StructureSet_MetaData.json"
+        if local_data_dir:
+            local_file = os.path.join(local_data_dir, patient_id, filename)
+            if os.path.exists(local_file):
+                try:
+                    with open(local_file) as f:
+                        return json.load(f)
+                except Exception as e:
+                    print(f"Warning: Could not load local structure metadata for {patient_id}: {e}")
+
         if not HUGGINGFACE_AVAILABLE:
-            raise ImportError("huggingface_hub is required for this feature.")
+            raise ImportError("huggingface_hub is required for Hugging Face access.")
+
         try:
-            file_path = posixpath.join("data", patient_id, "StructureSet_MetaData.json")
+            hf_path = posixpath.join("data", patient_id, filename)
             local_file = hf_hub_download(
-                self.hf_repo_id, repo_type="dataset", filename=file_path,
-                local_dir=temp_download_dir, use_auth_token=self.hf_token
+                repo_id=self.hf_repo_id,
+                repo_type="dataset",
+                filename=hf_path,
+                local_dir=temp_download_dir,
+                use_auth_token=self.hf_token
             )
             with open(local_file) as f:
                 return json.load(f)
@@ -570,11 +585,27 @@ class DataExplorer:
             print(f"Warning: Could not load structure metadata for {patient_id} from HF: {e}")
             return []
 
-    def _load_hf_beam_metadata(self, patient_id: str, temp_download_dir: str) -> list:
-        """Loads all beam metadata for a patient from Hugging Face."""
-        if not HUGGINGFACE_AVAILABLE:
-            raise ImportError("huggingface_hub is required for this feature.")
+    def _load_beam_metadata(self, patient_id: str, temp_download_dir: Optional[str] = None,
+                            local_data_dir: Optional[str] = None) -> list:
+        """Loads beam metadata from local disk if available; otherwise from Hugging Face."""
         beam_meta = []
+
+        if local_data_dir:
+            local_beam_dir = os.path.join(local_data_dir, patient_id, "Beams")
+            if os.path.isdir(local_beam_dir):
+                try:
+                    for fname in os.listdir(local_beam_dir):
+                        if fname.endswith("_MetaData.json"):
+                            with open(os.path.join(local_beam_dir, fname)) as f:
+                                beam_meta.append(json.load(f))
+                    if beam_meta:
+                        return beam_meta
+                except Exception as e:
+                    print(f"Warning: Could not load local beam metadata for {patient_id}: {e}")
+
+        if not HUGGINGFACE_AVAILABLE:
+            raise ImportError("huggingface_hub is required for Hugging Face access.")
+
         try:
             repo_files = list_repo_files(repo_id=self.hf_repo_id, repo_type="dataset", token=self.hf_token)
             beam_meta_paths = [
@@ -583,24 +614,43 @@ class DataExplorer:
             ]
             for path in beam_meta_paths:
                 local_file = hf_hub_download(
-                    self.hf_repo_id, repo_type="dataset", filename=path,
-                    local_dir=temp_download_dir, use_auth_token=self.hf_token
+                    self.hf_repo_id,
+                    repo_type="dataset",
+                    filename=path,
+                    local_dir=temp_download_dir,
+                    use_auth_token=self.hf_token
                 )
                 with open(local_file) as f:
                     beam_meta.append(json.load(f))
         except Exception as e:
             print(f"Warning: Could not load beam metadata for {patient_id} from HF: {e}")
+
         return beam_meta
 
-    def _load_hf_planner_beams(self, patient_id: str, temp_download_dir: str) -> list:
-        """Loads planner beam IDs for a patient from Hugging Face."""
+    def _load_planner_beams(self, patient_id: str, temp_download_dir: Optional[str] = None,
+                            local_data_dir: Optional[str] = None) -> list:
+        """Loads planner beam IDs from local disk if available; otherwise from Hugging Face."""
+        filename = "PlannerBeams.json"
+        if local_data_dir:
+            local_file = os.path.join(local_data_dir, patient_id, filename)
+            if os.path.exists(local_file):
+                try:
+                    with open(local_file) as f:
+                        return json.load(f).get("IDs", [])
+                except Exception as e:
+                    print(f"Warning: Could not load local planner beams for {patient_id}: {e}")
+
         if not HUGGINGFACE_AVAILABLE:
-            raise ImportError("huggingface_hub is required for this feature.")
+            raise ImportError("huggingface_hub is required for Hugging Face access.")
+
         try:
-            file_path = posixpath.join("data", patient_id, "PlannerBeams.json")
+            hf_path = posixpath.join("data", patient_id, filename)
             local_file = hf_hub_download(
-                self.hf_repo_id, repo_type="dataset", filename=file_path,
-                local_dir=temp_download_dir #, use_auth_token=self.hf_token
+                self.hf_repo_id,
+                repo_type="dataset",
+                filename=hf_path,
+                local_dir=temp_download_dir,
+                use_auth_token=self.hf_token
             )
             with open(local_file) as f:
                 return json.load(f).get("IDs", [])
@@ -610,9 +660,9 @@ class DataExplorer:
 
     def _get_hf_patient_summary(self, patient_id: str, temp_download_dir: str) -> dict:
         """Gets PTV volume and beam count for a patient by downloading minimal HF metadata."""
-        structs = self._load_hf_structure_metadata(patient_id, temp_download_dir)
-        beams = self._load_hf_beam_metadata(patient_id, temp_download_dir)
-        planner_beam_ids = self._load_hf_planner_beams(patient_id, temp_download_dir)
+        structs = self._load_structure_metadata(patient_id, temp_download_dir=temp_download_dir)
+        beams = self._load_beam_metadata(patient_id, temp_download_dir=temp_download_dir)
+        planner_beam_ids = self._load_planner_beams(patient_id, temp_download_dir=temp_download_dir)
 
         ptv_vol = None
         if structs:
@@ -632,10 +682,11 @@ class DataExplorer:
                                        disease_site_filter: str = None,
                                        patient_ids: List[str] = None,
                                        min_ptv_volume_cc: float = None,
-                                       gantry_angles_filter: str = None,  # Comma-separated string e.g. "0,90,180"
-                                       collimator_angles_filter: str = None,  # Comma-separated string
-                                       couch_angles_filter: str = None,  # Comma-separated string
-                                       energies_filter: str = None,  # Comma-separated string e.g. "6X,10X"
+                                       gantry_angles_filter: List[float] = None,  # List of floats
+                                       collimator_angles_filter: List[float] = None,  # List of floats
+                                       couch_angles_filter: List[float] = None,  # List of floats
+                                       energies_filter: List[str] = None,  # List of strings
+                                       beam_ids_to_download: Union[List[Union[int, str]], np.ndarray] = None,
                                        use_planner_beams_only: bool = True,
                                        max_patients_to_download: int = None):
         """
@@ -648,6 +699,7 @@ class DataExplorer:
         :param collimator_angles_filter: Comma-separated string of desired collimator angles.
         :param couch_angles_filter: Comma-separated string of desired couch angles.
         :param energies_filter: Comma-separated string of desired beam energies (e.g., "6X", "10X").
+        :param beam_ids_to_download: Explicit list/array of beam IDs to download (overrides all beam filtering).
         :param use_planner_beams_only: If True, only consider beams selected by the planner.
                                        If False, considers all available beams matching other criteria.
         :param max_patients_to_download: Maximum number of matched patients to download.
@@ -683,11 +735,10 @@ class DataExplorer:
             # For now, we proceed and filter later if possible or rely on patient ID naming.
 
         # Convert filter strings to sets for easier lookup
-        gantry_angles_set = set(map(float, gantry_angles_filter.split(","))) if gantry_angles_filter else None
-        collimator_angles_set = set(
-            map(float, collimator_angles_filter.split(","))) if collimator_angles_filter else None
-        couch_angles_set = set(map(float, couch_angles_filter.split(","))) if couch_angles_filter else None
-        energies_set = set(e.strip() for e in energies_filter.split(",")) if energies_filter else None
+        gantry_angles_set = set(map(float, gantry_angles_filter)) if gantry_angles_filter else None
+        collimator_angles_set = set(map(float, collimator_angles_filter)) if collimator_angles_filter else None
+        couch_angles_set = set(map(float, couch_angles_filter)) if couch_angles_filter else None
+        energies_set = set(map(str, energies_filter)) if energies_filter else None
 
         matched_patients_data = []
         processed_patient_ids = all_patients_df["patient_id"].tolist()
@@ -718,49 +769,22 @@ class DataExplorer:
                 if current_ptv_vol is None or current_ptv_vol < min_ptv_volume_cc:
                     continue
 
-            # Beam property filters
-            selected_beams_for_patient = []
-            if not beams_metadata:  # No beams, cannot match beam criteria
-                if any([gantry_angles_set, collimator_angles_set, couch_angles_set, energies_set]):
-                    continue  # Skip if beam filters are active but no beam data
-                else:
-                    selected_beams_for_patient = []  # No specific beams to select if no filters
-            else:
-                for beam in beams_metadata:
-                    match = True
-                    if gantry_angles_set and beam.get("gantry_angle") not in gantry_angles_set:
-                        match = False
-                    if collimator_angles_set and beam.get("collimator_angle") not in collimator_angles_set:
-                        match = False
-                    if couch_angles_set and beam.get("couch_angle") not in couch_angles_set:
-                        match = False
-                    if energies_set and beam.get(
-                            "energy_MV") not in energies_set:  # Assuming energy_MV stores "6X", "10X" etc.
-                        match = False
-                    if match:
-                        selected_beams_for_patient.append(beam)
+            planner_ids_set = set(summary["planner_beam_ids"]) if use_planner_beams_only and summary.get(
+                "planner_beam_ids") else None
 
-            if not selected_beams_for_patient and any(
-                    [gantry_angles_set, collimator_angles_set, couch_angles_set, energies_set]):
-                continue  # No beams matched the criteria
+            beam_ids_to_download = self.filter_beams_by_properties(
+                beams_metadata=beams_metadata,
+                gantry_angles=gantry_angles_set,
+                collimator_angles=collimator_angles_set,
+                couch_angles=couch_angles_set,
+                energies=energies_set,
+                planner_beam_ids=planner_ids_set,
+                use_planner_beams_only=use_planner_beams_only,
+                beam_ids=beam_ids_to_download
+            )
 
-            selected_beam_ids = [b["ID"] for b in selected_beams_for_patient]
-
-            if use_planner_beams_only:
-                planner_beam_ids_list = summary["planner_beam_ids"]
-                if not planner_beam_ids_list:  # If no planner beams, this patient cannot match
-                    continue
-                planner_beam_ids_set = set(planner_beam_ids_list)
-                # Filter the already selected beams to include only planner beams
-                final_selected_beam_ids = list(planner_beam_ids_set.intersection(selected_beam_ids))
-                if not final_selected_beam_ids:  # No overlap
-                    continue
-                # Store the planner-only beam IDs for download
-                beam_ids_to_download = final_selected_beam_ids
-            else:
-                # Use all beams that matched the criteria, or all beams if no criteria specified
-                beam_ids_to_download = selected_beam_ids if selected_beams_for_patient else [b['ID'] for b in
-                                                                                             beams_metadata]
+            if not beam_ids_to_download:
+                continue
 
             # If we pass all filters for this patient
             matched_patients_data.append({
@@ -792,7 +816,7 @@ class DataExplorer:
         for patient_info in matched_patients_data:
             pat_id = patient_info["patient_id"]
             beam_ids = patient_info["beam_ids_to_download"]
-            patient_download_dir = os.path.join(self.data_dir, 'data', pat_id)  # Download into subfolder per patient
+            patient_download_dir = os.path.join(self.data_dir, 'data', pat_id)  # TODO. Download into subfolder per patient
             # os.makedirs(patient_download_dir, exist_ok=True)
 
             print(f"Downloading data for patient: {pat_id}...")
@@ -806,6 +830,7 @@ class DataExplorer:
             )
             downloaded_patient_folders.append(patient_download_dir)
             # Update self.data_dir and self.patient_id if only one patient downloaded for immediate exploration
+            self.data_dir = os.path.join(self.data_dir, 'data')
             if len(matched_patients_data) == 1:
                 self.patient_id = pat_id
                 print(f"DataExplorer automatically set to explore downloaded patient: {pat_id} in {self.data_dir}")
@@ -813,6 +838,120 @@ class DataExplorer:
         print("\nDownload complete.")
         print("Downloaded patient folders:", downloaded_patient_folders)
         return downloaded_patient_folders
+
+    def filter_beams_by_properties(
+            self,
+            beams_metadata: Optional[List[Dict]] = None,
+            gantry_angles: Optional[Union[List[float], Set[float]]] = None,
+            collimator_angles: Optional[Union[List[float], Set[float]]] = None,
+            couch_angles: Optional[Union[List[float], Set[float]]] = None,
+            energies: Optional[Union[List[float], Set[float]]] = None,
+            planner_beam_ids: Optional[Union[List[float], Set[float]]] = None,
+            iso_centers: Optional[Union[List, Set]] = None,
+            match_iso_to_planner_beams: bool = True,
+            use_planner_beams_only: bool = False,
+            beam_ids: Optional[Union[List[Union[int, str]], np.ndarray]] = None
+    ) -> List[Union[int, str]]:
+        """
+        Filters beam IDs based on gantry, collimator, couch, energy, isocenter, and optionally planner beams.
+
+        :param beams_metadata: List of beam metadata dictionaries.
+        :param gantry_angles: Set of allowed gantry angles.
+        :param collimator_angles: Set of allowed collimator angles.
+        :param couch_angles: Set of allowed couch angles.
+        :param energies: Set of allowed energy strings (e.g., {"6X", "10X"}).
+        :param planner_beam_ids: Set of planner beam IDs (optional).
+        :param iso_centers: Set of allowed isocenter coordinates as tuples (x_mm, y_mm, z_mm).
+        :param match_iso_to_planner_beams: If True, only beams matching the isocenter(s) of planner beams are kept.
+        :param use_planner_beams_only: If True, only planner beams are considered in final result.
+        :param beam_ids: Optional[Union[List[Union[int, str]], np.ndarray]] = None,
+        :return: List of filtered beam IDs.
+        """
+
+        if beam_ids is not None:
+            if isinstance(beam_ids, np.ndarray):
+                beam_ids = beam_ids.tolist()
+            return [str(b) for b in beam_ids]
+
+        # Convert list args to sets for consistent lookup
+        if isinstance(gantry_angles, list):
+            gantry_angles = set(gantry_angles)
+        if isinstance(collimator_angles, list):
+            collimator_angles = set(collimator_angles)
+        if isinstance(couch_angles, list):
+            couch_angles = set(couch_angles)
+        if isinstance(energies, list):
+            energies = set(energies)
+        if isinstance(planner_beam_ids, list):
+            planner_beam_ids = set(planner_beam_ids)
+
+        seen_fingerprints = set()
+        unique_beam_ids = []
+
+        # Determine reference iso centers from planner beams if needed
+        if beams_metadata is None:
+            beams_metadata = self._load_beam_metadata(self.patient_id, local_data_dir=self.data_dir)
+        if planner_beam_ids is None:
+            # read information regarding beam angles selected by an expert planner
+            fname = os.path.join(self.data_dir,self.patient_id,'PlannerBeams.json')
+            if os.path.isfile(fname):
+                # Opening JSON file
+                json_data = self.load_json(fname)
+                planner_beam_ids = DataExplorer.list_to_dict(json_data)
+                planner_beam_ids = planner_beam_ids['IDs']
+        if match_iso_to_planner_beams and planner_beam_ids:
+            planner_iso_centers = {
+                tuple(beam["iso_center"].get(k) for k in ("x_mm", "y_mm", "z_mm"))
+                for beam in beams_metadata
+                if beam["ID"] in planner_beam_ids
+            }
+        else:
+            planner_iso_centers = None
+
+        selected_beams = []
+
+        for beam in beams_metadata:
+            if gantry_angles and beam.get("gantry_angle") not in gantry_angles:
+                continue
+            if collimator_angles and beam.get("collimator_angle") not in collimator_angles:
+                continue
+            if couch_angles and beam.get("couch_angle") not in couch_angles:
+                continue
+            if energies and beam.get("energy_MV") not in energies:
+                continue
+
+            iso = beam.get("iso_center", {})
+            iso_tuple = (iso.get("x_mm"), iso.get("y_mm"), iso.get("z_mm"))
+
+            if iso_centers and iso_tuple not in iso_centers:
+                continue
+            if planner_iso_centers and iso_tuple not in planner_iso_centers:
+                continue
+            # Create a fingerprint based on key beam metadata
+            fingerprint = (
+                beam.get("gantry_angle"),
+                beam.get("collimator_angle"),
+                beam.get("couch_angle"),
+                beam.get("energy_MV"),
+                round(beam.get("iso_center", {}).get("x_mm", 0), 2),
+                round(beam.get("iso_center", {}).get("y_mm", 0), 2),
+                round(beam.get("iso_center", {}).get("z_mm", 0), 2),
+            )
+            if fingerprint in seen_fingerprints:
+                continue  # skip duplicate
+            seen_fingerprints.add(fingerprint)
+
+            selected_beams.append(beam)
+
+        selected_ids = {beam["ID"] for beam in selected_beams}
+
+        if use_planner_beams_only:
+            if planner_beam_ids:
+                selected_ids = selected_ids & set(planner_beam_ids)
+            else:
+                return []
+
+        return list(selected_ids)
 
     def _download_hf_patient_data(self, patient_id: str, beam_ids_to_download: list = None,
                                   local_patient_dir: str = None, max_retries: int = 2,
