@@ -48,7 +48,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["portpy.*"]
+include = ["portpy", "portpy.*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "portpy.__version__" }
