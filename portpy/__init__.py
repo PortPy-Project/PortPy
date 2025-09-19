@@ -15,6 +15,6 @@
 # a separate commercial license.
 # ----------------------------------------------------------------------
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 # Change version here manually to reflect it everywhere
 from portpy import photon

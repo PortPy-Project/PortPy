@@ -88,7 +88,7 @@ class DosePred3DDataset(BaseDataset):
         if self.phase == 'train':
             # A, B, OAR, beam, hist, bins = transform_3d_data(A, B, OAR, PTV, beam, hist, bins, transform=False)
 
-            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, augment=self.transform)
+            A, B, OAR, beam = transform_3d_data(A, B, OAR, PTV, beam, augment=self.augment)
             A = torch.unsqueeze(A, dim=0)  # Add channel dimensions as data is 3D
             B = torch.unsqueeze(B, dim=0)
             beam = torch.unsqueeze(beam, dim=0)

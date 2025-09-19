@@ -42,7 +42,7 @@ out_dir = r'../../ai_data' # directory where processed data to be stored for tra
 
 
 # preprocess portpy data
-# data_preprocess(in_dir, out_dir)
+data_preprocess(in_dir, out_dir)
 
 # **Note** split the data in train and test folder in the output directory before running further code
 # e.g. out_dir\train\Lung_Patient_2 out_dir\test\Lung_Patient_9
