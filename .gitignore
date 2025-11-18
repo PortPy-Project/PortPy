@@ -56,3 +56,4 @@ docs/_build/
 /results/
 /metadata/
 /examples/hugging_face_data/
+.DS_Store
