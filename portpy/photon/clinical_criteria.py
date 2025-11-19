@@ -140,34 +140,38 @@ class ClinicalCriteria:
         return all_criteria
 
     def check_criterion_exists(self, criterion, return_ind:bool = False):
-        criterion_exist = False
-        criterion_ind = None
-        for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
-            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
-                for constraint in crit['constraints']:
-                    if constraint == criterion['constraints']:
-                        criterion_exist = True
-                        criterion_ind = ind
-        if return_ind:
-            return criterion_exist,criterion_ind
-        else:
-            return criterion_exist
+            criterion_exist = False
+            criterion_ind = None
+            for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
+                if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
+                    for constraint in crit['constraints']:
+                        for key, _ in criterion['constraints'].items():
+                            if constraint == key:
+                                criterion_exist = True
+                                criterion_ind = ind
+            if return_ind:
+                return criterion_exist,criterion_ind
+            else:
+                return criterion_exist
 
     def modify_criterion(self, criterion):
         """
-        Modify the criterion the clinical criteria
-
-
+        Update constraints for an existing criterion.
+        Only updates keys that already exist in the original constraint dict.
         """
-        criterion_found = False
         for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
-            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
-                for constraint in crit['constraints']:
-                    if constraint == criterion['constraints']:
-                        self.clinical_criteria_dict['criteria'][ind]['constraints'][constraint] = criterion['constraints']
-                        criterion_found = True
-        if not criterion_found:
-            raise Warning('No criteria  for {}'.format(criterion))
+
+            if crit['type'] == criterion['type'] and crit['parameters'] == criterion['parameters']:
+                existing_keys = crit['constraints']
+                updated = False
+                for key, value in criterion.get('constraints', {}).items():
+                    if key in existing_keys:
+                        existing_keys[key] = value
+                        updated = True
+                if updated:
+                    return
+
+        raise Warning(f"No criteria found for {criterion}")
 
 
     def get_num(self, string: Union[str, float]):

@@ -1178,7 +1178,7 @@ class VmatScpOptimization(Optimization):
             + cp.multiply(bound_v_r, card_bound_inds_r)]
         # generic constraints for relation between interior and boundary beamlets
         constraints += [leaf_pos_mu_r - leaf_pos_mu_l >= int_v[map_int_v]]
-        constraints += [int_v >= self.vmat_params['mu_min']]
+        constraints += [int_v*100 >= self.vmat_params['mu_min']] # multiply it by 100 to match eclipse mu
         constraints += [bound_v_l <= int_v[map_int_v]]
         constraints += [bound_v_r <= int_v[map_int_v]]
         if 'minimum_dynamic_leaf_gap_mm' in self.vmat_params:
