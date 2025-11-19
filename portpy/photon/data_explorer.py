@@ -593,8 +593,8 @@ class DataExplorer:
                 repo_id=self.hf_repo_id,
                 repo_type="dataset",
                 filename=hf_path,
-                local_dir=temp_download_dir,
-                use_auth_token=self.hf_token
+                local_dir=temp_download_dir
+                # use_auth_token=self.hf_token
             )
             with open(local_file) as f:
                 return json.load(f)
@@ -634,8 +634,8 @@ class DataExplorer:
                     self.hf_repo_id,
                     repo_type="dataset",
                     filename=path,
-                    local_dir=temp_download_dir,
-                    use_auth_token=self.hf_token
+                    local_dir=temp_download_dir
+                    # use_auth_token=self.hf_token
                 )
                 with open(local_file) as f:
                     beam_meta.append(json.load(f))
@@ -666,8 +666,8 @@ class DataExplorer:
                 self.hf_repo_id,
                 repo_type="dataset",
                 filename=hf_path,
-                local_dir=temp_download_dir,
-                use_auth_token=self.hf_token
+                local_dir=temp_download_dir
+                # use_auth_token=self.hf_token
             )
             with open(local_file) as f:
                 return json.load(f).get("IDs", [])

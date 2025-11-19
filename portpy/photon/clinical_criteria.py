@@ -279,6 +279,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][limit_key]
                     df.at[count, 'dvh_type'] = 'constraint'
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
@@ -287,6 +288,7 @@ class ClinicalCriteria:
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
                     df.at[count, 'dvh_type'] = 'goal'
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
             if 'dose_volume_D' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
@@ -295,6 +297,7 @@ class ClinicalCriteria:
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
                     df.at[count, 'dose_gy'] = self.dose_to_gy(limit_key, dvh_updated_list[i]['constraints'][limit_key])
                     df.at[count, 'dvh_type'] = 'constraint'
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
@@ -303,6 +306,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(goal_key, dvh_updated_list[i]['constraints'][goal_key])
                     df.at[count, 'dvh_type'] = 'goal'
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
@@ -339,15 +343,25 @@ class ClinicalCriteria:
             volume percentage.
         """
         dvh_table = self.dvh_table
-        inf_matrix = my_plan.inf_matrix
+        if inf_matrix is None:
+            inf_matrix = my_plan.inf_matrix
         for ind in dvh_table.index:
             structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
             dvh_table['volume_perc'][ind]
             dvh_type = dvh_table['dvh_type'][ind]
+            bound_type = dvh_table.at[ind, 'bound_type'] if 'bound_type' in dvh_table.columns else 'upper'
             vol_perc = vol_perc / inf_matrix.get_fraction_of_vol_in_calc_box(structure_name)
             struct_vox = inf_matrix.get_opt_voxels_idx(structure_name)
             n_struct_vox = len(struct_vox)
-            sort_ind = np.argsort(dose[struct_vox])
+            # sort_ind = np.argsort(dose[struct_vox])
+            if bound_type == 'lower':
+                # For lower bound (e.g., PTV coverage), pick HIGHEST-dose voxels up to p%
+                sort_ind = np.argsort(-dose[struct_vox])  # descending
+                target_perc = vol_perc  # accumulate to p%
+            else:
+                # Original behavior (upper bound): pick LOWEST-dose voxels up to (100 - p)%
+                sort_ind = np.argsort(dose[struct_vox])  # ascending
+                target_perc = 100 - vol_perc  # accumulate to (100 - p)%
             voxel_sort = struct_vox[sort_ind]
             weights = inf_matrix.get_opt_voxels_volume_cc(structure_name)
             weights_sort = weights[sort_ind]
@@ -357,7 +371,7 @@ class ClinicalCriteria:
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum
-                    if w_ratio * 100 >= (100 - vol_perc):
+                    if w_ratio * 100 >= target_perc:
                         break
                 low_dose_voxels = voxel_sort[:w_ind+1]
                 if ind == 0:
