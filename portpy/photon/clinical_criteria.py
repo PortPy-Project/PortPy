@@ -314,7 +314,7 @@ class ClinicalCriteria:
         return self.dvh_table
 
 
-    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray, inf_matrix: InfluenceMatrix):
+    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray, inf_matrix: InfluenceMatrix = None):
         """
         Identifies and stores the indices of low-dose voxels for each DVH constraint or goal.
 
