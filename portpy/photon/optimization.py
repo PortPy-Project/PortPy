@@ -188,12 +188,88 @@ class Optimization(object):
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
                                         <= limit / num_fractions]
+                        
+            elif constraint_def[i]['type'] == 'CVaR_Upper':
+
+                '''
+                Json example:
+                    {
+                    "type": "CVaR_Upper",
+                    "parameters": {
+                        "structure_name": "HEART",
+                        "alpha": 0.90
+                        },
+                    "constraints": {
+                        "limit": 5
+                        }
+                    }
+                '''
+
+                alpha = float(constraint_def[i]['parameters']['alpha'])
+                if not (0.0 < alpha < 1.0):
+                    raise ValueError(f"CVaR_Upper: alpha must be in (0,1), got {alpha}")
+                struct = constraint_def[i]['parameters']['structure_name']
+                limit = constraint_def[i]['constraints']['limit']
+                if struct in self.my_plan.structures.get_structures():
+                    voxel_idx = st.get_opt_voxels_idx(struct)
+                    if len(voxel_idx) > 0:
+                        dose_1d_list = A[voxel_idx, :] @ x * num_fractions  # dose per voxel
+
+                        label = f"constraint_{struct}_a{alpha:.4f}"
+
+                        zeta = cp.Variable(name=f"zeta_{label}")
+                        w = cp.Variable(len(voxel_idx), name=f"w_{label}")
+
+                        # Store variables in self.vars using label
+                        self.vars[f"zeta_{label}"] = zeta
+                        self.vars[f"w_{label}"] = w
+
+                        # Add CVaR constraint
+                        constraints += [
+                            zeta + (1 / ((1 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
+                            w >= dose_1d_list - zeta,
+                            w >= 0
+                        ]
+
         mask = np.isfinite(d_max)
         # Create index mask arrays
         indices = np.arange(len(mask))  # assumes mask is 1D and corresponds to voxel indices
         all_d_max_vox_ind = indices[mask]
         constraints += [A[all_d_max_vox_ind, :] @ x <= d_max[all_d_max_vox_ind]] # Add constraint for all d_max voxels at once
         print('Problem created')
+
+    def add_CVaR_Upper(self, alpha: float, limit: float, struct: str):
+        """
+        add CVaR+ to the problem as a constraint
+
+        """
+        constraints = self.constraints
+        x = self.vars["x"]                     
+        st = self.inf_matrix
+        A = self.inf_matrix.A
+        num_fractions = self.clinical_criteria.get_num_of_fractions()
+
+        if struct in self.my_plan.structures.get_structures():
+            voxel_idx = st.get_opt_voxels_idx(struct)
+
+            if len(voxel_idx) > 0:
+                dose_1d_list = A[voxel_idx, :] @ x * num_fractions  # dose per voxel
+
+                label = f"constraint_{struct}_a{alpha:.4f}"
+
+                zeta = cp.Variable(name=f"zeta_{label}")
+                w = cp.Variable(len(voxel_idx), name=f"w_{label}")
+
+                # Store variables in self.vars using label
+                self.vars[f"zeta_{label}"] = zeta
+                self.vars[f"w_{label}"] = w
+
+                # Add CVaR constraint
+                constraints += [
+                    zeta + (1 / ((1 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
+                    w >= dose_1d_list - zeta,
+                    w >= 0
+                ]
 
     def add_max(self, struct: str, dose_gy: float):
         """
