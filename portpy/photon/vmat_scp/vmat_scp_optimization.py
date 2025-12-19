@@ -1220,7 +1220,8 @@ class VmatScpOptimization(Optimization):
         inner_iteration = int(0)
         best_obj_value = 0
         vmat_params = self.vmat_params
-        self.arcs.get_initial_leaf_pos(initial_leaf_pos=vmat_params['initial_leaf_pos'])
+        if not vmat_params['initial_leaf_pos'].lower() == 'cg':
+            self.arcs.get_initial_leaf_pos(initial_leaf_pos=vmat_params['initial_leaf_pos'])
         self.create_cvx_params()
         sol_convergence = []
         while True:
