@@ -159,8 +159,73 @@ class Optimization(object):
         d_max = np.infty * np.ones(A.shape[0]) # create a vector to avoid putting redundant max constraint on
         # duplicate voxels among structure
 
-        # Adding max/mean constraints
+        # Adding constraints
         for i in range(len(constraint_def)):
+
+            item = constraint_def[i]
+            item_type = item.get('type')
+
+            if item_type in ('dose_volume_V', 'dose_volume_D'):
+
+                params = item.get('parameters', {})
+                cons   = item.get('constraints', {})
+
+                dvh_method = params.get('dvh_method', None)
+                if dvh_method != 'cvar':
+                    continue
+
+                struct = params['structure_name']
+                voxel_idx = st.get_opt_voxels_idx(struct)
+                if len(voxel_idx) == 0:
+                    continue
+
+                limit = float(params['dose_gy'])
+
+                volume_perc = float(cons['limit_volume_perc'])
+                if not (0.0 < volume_perc < 100.0):
+                    raise ValueError(
+                        f"limit_volume_perc must be in (0,100), got {volume_perc}"
+                    )
+
+                alpha = 1.0 - volume_perc / 100.0
+                dose_1d_list = A[voxel_idx, :] @ x * num_fractions
+
+                if cons.get('constraint_type') == 'upper':
+
+                    label = f"constraint_{struct}_{item_type}_upper_a{alpha:.4f}"
+
+                    zeta = cp.Variable(name=f"zeta_{label}")
+                    w = cp.Variable(len(voxel_idx), name=f"w_{label}")
+
+                    self.vars[f"zeta_{label}"] = zeta
+                    self.vars[f"w_{label}"] = w
+
+                    constraints += [
+                        zeta + (1.0 / ((1.0 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
+                        w >= dose_1d_list - zeta,
+                        w >= 0
+                    ]
+
+                elif cons.get('constraint_type') == 'lower':
+
+                    dose_neg = -dose_1d_list
+                    limit_neg = -limit
+
+                    label = f"constraint_{struct}_{item_type}_lower_a{alpha:.4f}"
+
+                    zeta = cp.Variable(name=f"zeta_{label}")
+                    w = cp.Variable(len(voxel_idx), name=f"w_{label}")
+
+                    self.vars[f"zeta_{label}"] = zeta
+                    self.vars[f"w_{label}"] = w
+
+                    constraints += [
+                        zeta + (1.0 / ((1.0 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit_neg,
+                        w >= dose_neg - zeta,
+                        w >= 0
+                    ]
+
+
             if constraint_def[i]['type'] == 'max_dose':
                 limit_key = self.matching_keys(constraint_def[i]['constraints'], 'limit')
                 if limit_key:
@@ -188,48 +253,6 @@ class Optimization(object):
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
                                         <= limit / num_fractions]
-                        
-            elif constraint_def[i]['type'] == 'CVaR_Upper':
-
-                '''
-                Json example:
-                    {
-                    "type": "CVaR_Upper",
-                    "parameters": {
-                        "structure_name": "HEART",
-                        "alpha": 0.90
-                        },
-                    "constraints": {
-                        "limit": 5
-                        }
-                    }
-                '''
-
-                alpha = float(constraint_def[i]['parameters']['alpha'])
-                if not (0.0 < alpha < 1.0):
-                    raise ValueError(f"CVaR_Upper: alpha must be in (0,1), got {alpha}")
-                struct = constraint_def[i]['parameters']['structure_name']
-                limit = constraint_def[i]['constraints']['limit']
-                if struct in self.my_plan.structures.get_structures():
-                    voxel_idx = st.get_opt_voxels_idx(struct)
-                    if len(voxel_idx) > 0:
-                        dose_1d_list = A[voxel_idx, :] @ x * num_fractions  # dose per voxel
-
-                        label = f"constraint_{struct}_a{alpha:.4f}"
-
-                        zeta = cp.Variable(name=f"zeta_{label}")
-                        w = cp.Variable(len(voxel_idx), name=f"w_{label}")
-
-                        # Store variables in self.vars using label
-                        self.vars[f"zeta_{label}"] = zeta
-                        self.vars[f"w_{label}"] = w
-
-                        # Add CVaR constraint
-                        constraints += [
-                            zeta + (1 / ((1 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
-                            w >= dose_1d_list - zeta,
-                            w >= 0
-                        ]
 
         mask = np.isfinite(d_max)
         # Create index mask arrays
@@ -238,38 +261,6 @@ class Optimization(object):
         constraints += [A[all_d_max_vox_ind, :] @ x <= d_max[all_d_max_vox_ind]] # Add constraint for all d_max voxels at once
         print('Problem created')
 
-    def add_CVaR_Upper(self, alpha: float, limit: float, struct: str):
-        """
-        add CVaR+ to the problem as a constraint
-
-        """
-        constraints = self.constraints
-        x = self.vars["x"]                     
-        st = self.inf_matrix
-        A = self.inf_matrix.A
-        num_fractions = self.clinical_criteria.get_num_of_fractions()
-
-        if struct in self.my_plan.structures.get_structures():
-            voxel_idx = st.get_opt_voxels_idx(struct)
-
-            if len(voxel_idx) > 0:
-                dose_1d_list = A[voxel_idx, :] @ x * num_fractions  # dose per voxel
-
-                label = f"constraint_{struct}_a{alpha:.4f}"
-
-                zeta = cp.Variable(name=f"zeta_{label}")
-                w = cp.Variable(len(voxel_idx), name=f"w_{label}")
-
-                # Store variables in self.vars using label
-                self.vars[f"zeta_{label}"] = zeta
-                self.vars[f"w_{label}"] = w
-
-                # Add CVaR constraint
-                constraints += [
-                    zeta + (1 / ((1 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
-                    w >= dose_1d_list - zeta,
-                    w >= 0
-                ]
 
     def add_max(self, struct: str, dose_gy: float):
         """
