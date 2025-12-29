@@ -140,34 +140,38 @@ class ClinicalCriteria:
         return all_criteria
 
     def check_criterion_exists(self, criterion, return_ind:bool = False):
-        criterion_exist = False
-        criterion_ind = None
-        for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
-            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
-                for constraint in crit['constraints']:
-                    if constraint == criterion['constraints']:
-                        criterion_exist = True
-                        criterion_ind = ind
-        if return_ind:
-            return criterion_exist,criterion_ind
-        else:
-            return criterion_exist
+            criterion_exist = False
+            criterion_ind = None
+            for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
+                if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
+                    for constraint in crit['constraints']:
+                        for key, _ in criterion['constraints'].items():
+                            if constraint == key:
+                                criterion_exist = True
+                                criterion_ind = ind
+            if return_ind:
+                return criterion_exist,criterion_ind
+            else:
+                return criterion_exist
 
     def modify_criterion(self, criterion):
         """
-        Modify the criterion the clinical criteria
-
-
+        Update constraints for an existing criterion.
+        Only updates keys that already exist in the original constraint dict.
         """
-        criterion_found = False
         for ind, crit in enumerate(self.clinical_criteria_dict['criteria']):
-            if (crit['type'] == criterion['type']) and crit['parameters'] == criterion['parameters']:
-                for constraint in crit['constraints']:
-                    if constraint == criterion['constraints']:
-                        self.clinical_criteria_dict['criteria'][ind]['constraints'][constraint] = criterion['constraints']
-                        criterion_found = True
-        if not criterion_found:
-            raise Warning('No criteria  for {}'.format(criterion))
+
+            if crit['type'] == criterion['type'] and crit['parameters'] == criterion['parameters']:
+                existing_keys = crit['constraints']
+                updated = False
+                for key, value in criterion.get('constraints', {}).items():
+                    if key in existing_keys:
+                        existing_keys[key] = value
+                        updated = True
+                if updated:
+                    return
+
+        raise Warning(f"No criteria found for {criterion}")
 
 
     def get_num(self, string: Union[str, float]):
@@ -279,6 +283,7 @@ class ClinicalCriteria:
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][limit_key]
                     df.at[count, 'dvh_type'] = 'constraint'
                     df.at[count, 'dvh_method'] = dvh_method
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
@@ -288,6 +293,7 @@ class ClinicalCriteria:
                     df.at[count, 'dvh_type'] = 'goal'
                     df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
             if 'dose_volume_D' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
@@ -297,6 +303,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(limit_key, dvh_updated_list[i]['constraints'][limit_key])
                     df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'dvh_type'] = 'constraint'
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
                 if goal_key in dvh_updated_list[i]['constraints']:
@@ -306,6 +313,7 @@ class ClinicalCriteria:
                     df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'dvh_type'] = 'goal'
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
+                    df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
         self.dvh_table = df
         self.get_max_tol(constraints_list=constraint_list)
@@ -313,7 +321,7 @@ class ClinicalCriteria:
         return self.dvh_table
 
 
-    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray, inf_matrix: InfluenceMatrix):
+    def get_low_dose_vox_ind(self, my_plan: Plan, dose: np.ndarray, inf_matrix: InfluenceMatrix = None):
         """
         Identifies and stores the indices of low-dose voxels for each DVH constraint or goal.
 
@@ -342,15 +350,25 @@ class ClinicalCriteria:
             volume percentage.
         """
         dvh_table = self.dvh_table
-        inf_matrix = my_plan.inf_matrix
+        if inf_matrix is None:
+            inf_matrix = my_plan.inf_matrix
         for ind in dvh_table.index:
             structure_name, dose_gy, vol_perc = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind], \
             dvh_table['volume_perc'][ind]
             dvh_type = dvh_table['dvh_type'][ind]
+            bound_type = dvh_table.at[ind, 'bound_type'] if 'bound_type' in dvh_table.columns else 'upper'
             vol_perc = vol_perc / inf_matrix.get_fraction_of_vol_in_calc_box(structure_name)
             struct_vox = inf_matrix.get_opt_voxels_idx(structure_name)
             n_struct_vox = len(struct_vox)
-            sort_ind = np.argsort(dose[struct_vox])
+            # sort_ind = np.argsort(dose[struct_vox])
+            if bound_type == 'lower':
+                # For lower bound (e.g., PTV coverage), pick HIGHEST-dose voxels up to p%
+                sort_ind = np.argsort(-dose[struct_vox])  # descending
+                target_perc = vol_perc  # accumulate to p%
+            else:
+                # Original behavior (upper bound): pick LOWEST-dose voxels up to (100 - p)%
+                sort_ind = np.argsort(dose[struct_vox])  # ascending
+                target_perc = 100 - vol_perc  # accumulate to (100 - p)%
             voxel_sort = struct_vox[sort_ind]
             weights = inf_matrix.get_opt_voxels_volume_cc(structure_name)
             weights_sort = weights[sort_ind]
@@ -360,7 +378,7 @@ class ClinicalCriteria:
                 for w_ind in range(n_struct_vox):
                     w_sum = w_sum + weights_sort[w_ind]
                     w_ratio = w_sum / weight_all_sum
-                    if w_ratio * 100 >= (100 - vol_perc):
+                    if w_ratio * 100 >= target_perc:
                         break
                 low_dose_voxels = voxel_sort[:w_ind+1]
                 if ind == 0:
