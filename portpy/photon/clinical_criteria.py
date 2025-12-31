@@ -271,6 +271,9 @@ class ClinicalCriteria:
         df = pd.DataFrame()
         count = 0
         for i in range(len(dvh_updated_list)):
+
+            dvh_method =  dvh_updated_list[i]['parameters'].get('dvh_method', None)
+
             if 'dose_volume_V' in dvh_updated_list[i]['type']:
                 limit_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'limit')
                 dose_key = self.matching_keys(dvh_updated_list[i]['parameters'], 'dose_')
@@ -279,6 +282,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][limit_key]
                     df.at[count, 'dvh_type'] = 'constraint'
+                    df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
                 goal_key = self.matching_keys(dvh_updated_list[i]['constraints'], 'goal')
@@ -287,6 +291,7 @@ class ClinicalCriteria:
                     df.at[count, 'dose_gy'] = self.dose_to_gy(dose_key, dvh_updated_list[i]['parameters'][dose_key])
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['constraints'][goal_key]
                     df.at[count, 'dvh_type'] = 'goal'
+                    df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
@@ -296,6 +301,7 @@ class ClinicalCriteria:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
                     df.at[count, 'dose_gy'] = self.dose_to_gy(limit_key, dvh_updated_list[i]['constraints'][limit_key])
+                    df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'dvh_type'] = 'constraint'
                     df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
                     count = count + 1
@@ -304,6 +310,7 @@ class ClinicalCriteria:
                     df.at[count, 'structure_name'] = dvh_updated_list[i]['parameters']['structure_name']
                     df.at[count, 'volume_perc'] = dvh_updated_list[i]['parameters']['volume_perc']
                     df.at[count, 'dose_gy'] = self.dose_to_gy(goal_key, dvh_updated_list[i]['constraints'][goal_key])
+                    df.at[count, 'dvh_method'] = dvh_method
                     df.at[count, 'dvh_type'] = 'goal'
                     df.at[count, 'weight'] = dvh_updated_list[i]['parameters']['weight']
                     df.at[count, 'bound_type'] = dvh_updated_list[i]['constraints'].get('bound_type', 'upper')
