@@ -196,16 +196,50 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 Currently, this set encompasses only the Lung 2Gy×30 protocol but will be expanded in the future to more protocols as well as TCP/NTCP evaluation functions.  
 
 To access these resources, users are advised to download the latest version of the dataset, 
-which can be found on hugging face dataset [PortPy_Dataset](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset). 
-You can also browse and download patient data manually using our interactive [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization).
+which can be found on hugging face dataset [PortPy_Dataset](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset).
+## Downloading the PortPy Dataset
+
+PortPy datasets are large (GBs per patient) and are **not bundled** with the Python package.  
+You have **two options** to download the dataset:
+
+1. **CLI (recommended)**: `download_portpy_data`
+2. **Python**: `pp.download_portpy_data(...)`
+
+---
+
+### Option 1: CLI
+
+Install the optional dependency and download the data using the command line interface (CLI):
+
+```bash
+pip install "portpy[data]"
+download_portpy_data --patients Lung_Patient_3 Lung_Patient_4 --beam-mode planner --out ./PortPy_Dataset
+```
+- `--patients`: List of patient IDs to download. You can find the list of available patient IDs on the [Hugging Face Dataset Page](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset).
+- `--beam-mode`: Options are "all" or "planner" or beam ids list e.g., [0,10,20]. Default is "planner"
+- `--out`: Output directory to save the downloaded data.
+
+### Option 2: Python (pp.download_portpy_data)
+Option 2: Python 
+
+Use the same downloader from Python (useful for python, notebooks and pipelines):
+```bash
+import portpy.photon as pp
+
+pp.download_portpy_data(
+    ["Lung_Patient_3", "Lung_Patient_4"],
+    out="./", # output directory
+    beam_mode="planner", # options: "all" or "planner" or beam ids list e.g., [0,10,20]. Default is "planner"
+)
+```
+
 Subsequently, create a directory titled './data' in the current project directory and transfer the downloaded 
-file into it. For example, ./data/Lung_Phantom_Patient_1. 
+file into it. For example, ./data/Lung_Patient_3. 
+You can also browse and download patient data manually (not recommended. Usually slow) using our interactive [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization).
 We have adopted the widely-used JSON and HDF5 formats for data storage.
 [HDFViwer](https://www.hdfgroup.org/downloads/hdfview/) can be utilized to view the contents of the HDF5 files.  
 
-
-
-**Note:** Initially, we will utilize a lung dataset from [TCIA](https://wiki.cancerimagingarchive.net/display/Public/NSCLC-Radiomics). The original DICOM CT images and structure sets are not included in the PortPy dataset and need to be directly downloaded from the TCIA. Users can fetch the **TCIA collection ID** and the **TCIA subject ID** for each PortPy patient using the *get_tcia_metadata()* method in PortPy and subsequently download the data from TCIA (see [imrt_tps_import](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb))
+**Note:** Initially, we will utilize a lung and prostate dataset from [TCIA](https://wiki.cancerimagingarchive.net/display/Public/NSCLC-Radiomics). Users can fetch the **TCIA collection ID** and the **TCIA subject ID** for each PortPy patient using the *get_tcia_metadata()* method in PortPy and subsequently download the data from TCIA (see [imrt_tps_import](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb))
 
 
 # Installation <a name="Installation"></a>

@@ -162,70 +162,6 @@ class Optimization(object):
         # Adding constraints
         for i in range(len(constraint_def)):
 
-            item = constraint_def[i]
-            item_type = item.get('type')
-
-            if item_type in ('dose_volume_V', 'dose_volume_D'):
-
-                params = item.get('parameters', {})
-                cons   = item.get('constraints', {})
-
-                dvh_method = params.get('dvh_method', None)
-                if dvh_method != 'cvar':
-                    continue
-
-                struct = params['structure_name']
-                voxel_idx = st.get_opt_voxels_idx(struct)
-                if len(voxel_idx) == 0:
-                    continue
-
-                limit = float(params['dose_gy'])
-
-                volume_perc = float(cons['limit_volume_perc'])
-                if not (0.0 < volume_perc < 100.0):
-                    raise ValueError(
-                        f"limit_volume_perc must be in (0,100), got {volume_perc}"
-                    )
-
-                alpha = 1.0 - volume_perc / 100.0
-                dose_1d_list = A[voxel_idx, :] @ x * num_fractions
-
-                if cons.get('constraint_type') == 'upper':
-
-                    label = f"constraint_{struct}_{item_type}_upper_a{alpha:.4f}"
-
-                    zeta = cp.Variable(name=f"zeta_{label}")
-                    w = cp.Variable(len(voxel_idx), name=f"w_{label}")
-
-                    self.vars[f"zeta_{label}"] = zeta
-                    self.vars[f"w_{label}"] = w
-
-                    constraints += [
-                        zeta + (1.0 / ((1.0 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit,
-                        w >= dose_1d_list - zeta,
-                        w >= 0
-                    ]
-
-                elif cons.get('constraint_type') == 'lower':
-
-                    dose_neg = -dose_1d_list
-                    limit_neg = -limit
-
-                    label = f"constraint_{struct}_{item_type}_lower_a{alpha:.4f}"
-
-                    zeta = cp.Variable(name=f"zeta_{label}")
-                    w = cp.Variable(len(voxel_idx), name=f"w_{label}")
-
-                    self.vars[f"zeta_{label}"] = zeta
-                    self.vars[f"w_{label}"] = w
-
-                    constraints += [
-                        zeta + (1.0 / ((1.0 - alpha) * len(voxel_idx))) * cp.sum(w) <= limit_neg,
-                        w >= dose_neg - zeta,
-                        w >= 0
-                    ]
-
-
             if constraint_def[i]['type'] == 'max_dose':
                 limit_key = self.matching_keys(constraint_def[i]['constraints'], 'limit')
                 if limit_key:
@@ -253,7 +189,38 @@ class Optimization(object):
                                         (cp.sum((cp.multiply(st.get_opt_voxels_volume_cc(org),
                                                              A[st.get_opt_voxels_idx(org), :] @ x))))
                                         <= limit / num_fractions]
+        # Adding CVaR DVH constraints from clinical criteria dvh table
 
+        if not self.clinical_criteria.dvh_table.empty:
+            dvh_table = self.clinical_criteria.dvh_table
+            for ind in dvh_table.index:
+                if dvh_table['dvh_type'][ind] == 'constraint':
+                    dvh_method = dvh_table['dvh_method'][ind] if 'dvh_method' in dvh_table.columns else None
+                    if dvh_method == 'cvar':
+                        org = dvh_table['structure_name'][ind]
+                        fraction_of_vol_in_calc_box = inf_matrix.get_fraction_of_vol_in_calc_box(org)
+                        dose_gy = dvh_table['dose_gy'][ind]/num_fractions
+                        volume_perc = dvh_table['volume_perc'][ind]/fraction_of_vol_in_calc_box
+                        bound_type = dvh_table['bound_type'][ind] if 'bound_type' in dvh_table.columns else 'upper'
+
+                        voxels = st.get_opt_voxels_idx(org)
+                        voxels_cc = st.get_opt_voxels_volume_cc(org)
+                        label = f"constraint_{org}_{bound_type}_{dose_gy:.1f}_{volume_perc:.1f}"
+                        zeta = cp.Variable(name=f"zeta_{label}")
+                        w = cp.Variable(len(voxels), name=f"w_{label}", nonneg=True)
+                        if bound_type == 'upper':
+                            tail_fraction = volume_perc / 100.0
+                            constraints += [
+                                zeta + (1.0 / (tail_fraction * np.sum(voxels_cc))) * cp.sum(cp.multiply(voxels_cc, w)) <= dose_gy,
+                                w >= A[voxels, :] @ x - zeta
+                            ]
+                        elif bound_type == 'lower':
+                            tail_fraction = max(1.0 - (volume_perc / 100.0), 0.001)
+                            constraints += [
+                                zeta - (1.0 / (tail_fraction * np.sum(voxels_cc))) * cp.sum(cp.multiply(voxels_cc, w)) >= dose_gy,
+                                w >= zeta - A[voxels, :] @ x
+                            ]
+                        print('Added CVaR DVH constraint for structure:', org, ' at dose:', dose_gy, 'Gy', 'volume perc:', volume_perc, '%, bound type:', bound_type)
         mask = np.isfinite(d_max)
         # Create index mask arrays
         indices = np.arange(len(mask))  # assumes mask is 1D and corresponds to voxel indices

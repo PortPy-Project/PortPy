@@ -7,7 +7,8 @@
     {
       "type": "max_dose",
       "parameters": {
-        "structure_name": "GTV"
+        "structure_name": "GTV",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 69,
@@ -17,7 +18,8 @@
     {
       "type": "max_dose",
       "parameters": {
-        "structure_name": "PTV"
+        "structure_name": "PTV",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 69,
@@ -36,7 +38,8 @@
     {
       "type": "mean_dose",
       "parameters": {
-        "structure_name": "ESOPHAGUS"
+        "structure_name": "ESOPHAGUS",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 34,
@@ -65,7 +68,8 @@
     {
       "type": "mean_dose",
       "parameters": {
-        "structure_name": "HEART"
+        "structure_name": "HEART",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 27,
@@ -86,7 +90,8 @@
       "type": "dose_volume_V",
       "parameters": {
         "structure_name": "HEART",
-        "dose_gy": 30
+        "dose_gy": 30,
+        "weight": 50
       },
       "constraints": {
         "goal_volume_perc": 48
@@ -113,7 +118,8 @@
     {
       "type": "max_dose",
       "parameters": {
-        "structure_name": "CORD"
+        "structure_name": "CORD",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 50,
@@ -143,7 +149,8 @@
       "type": "mean_dose",
       "parameters": {
         "structure_name": "LUNGS_NOT_GTV",
-		"structure_def": "(LUNG_L | LUNG_R) - GTV"
+		"structure_def": "(LUNG_L | LUNG_R) - GTV",
+        "weight": 50
       },
       "constraints": {
         "limit_dose_gy": 21,

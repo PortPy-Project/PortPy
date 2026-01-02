@@ -26,3 +26,4 @@ from .leaf_sequencing_siochi import leaf_sequencing_siochi
 from .write_rt_plan_imrt import write_rt_plan_imrt
 from .write_rt_plan_vmat import write_rt_plan_vmat
 from .create_ct_dose_voxel_map import create_ct_dose_voxel_map
+from .download_portpy_data import download_portpy_data
