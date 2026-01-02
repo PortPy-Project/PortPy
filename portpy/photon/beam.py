@@ -66,7 +66,7 @@ class Beams:
         ind = self.beams_dict['ID'].index(beam_id)
         return self.beams_dict['beamlet_idx_2d_finest_grid'][ind]
 
-    def get_gantry_angle(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[int, List[int]]:
+    def get_gantry_angle(self, beam_id: Union[Union[int, str], List[Union[int, str]]]) -> Union[float, List[float]]:
         """
         Get gantry angle
 
