@@ -162,24 +162,10 @@ data pre-processing, model training and testing, and patient-specific 3D dose pr
       ```
 
 # How to contribute? <a name="HowContribute"></a>
-<p align="center">
-<img src="./images/PortPy_Organization.png" width="90%" height="40%">
-<p>
 
-As illustrated in the above figure, PortPy organization includes "PortPy", which is the current repository, 
-and PortPy extensions, which are the repositories developed using the PortPy as a platform. 
-To maintain the lightweight nature and user-friendliness of PortPy modules, our aim is to include only fundamental 
-functionalities, along with benchmark data and algorithms in the PortPy repo, and establish separate repositories 
-for other projects, similar to what we've done for projects like [CompressRTP](https://github.com/PortPy-Project/LowDimRT)
-and [ECHO VMAT](https://github.com/PortPy-Project/ECHO-VMAT).
+PortPy-Project includes the core **PortPy** repository (this repo) and separate **extension repositories** built on top of PortPy. To keep PortPy lightweight and easy to use, we aim to include only core functionality, benchmark data, and reference algorithms here, while hosting project-specific work in separate repos (e.g., [CompressRTP](https://github.com/PortPy-Project/LowDimRT) and [ECHO VMAT](https://github.com/PortPy-Project/ECHO-VMAT)).
 
-If you're interested in contributing to existing PortPy modules or wish to create a new module, 
-we encourage you to contact us first. This will help ensure that our objectives and priorities are aligned. 
-If you use PortPy to build your own package, you're welcome to host your package within the
-[PortPy-Project orgainization](https://github.com/PortPy-Project). 
-Alternatively, you can host your package on your own GitHub page. In this case, 
-please inform us so that we can fork it and feature it under the PortPy-Project organization. 
-For those keen on creating a logo for their repository, we offer the option to customize our [pre-designed logo](https://www.canva.com/design/DAFxivHC0Js/YqZREdr26pmEsIgCeuU-iA/view?utm_content=DAFxivHC0Js&utm_campaign=designshare&utm_medium=link&utm_source=publishsharelink&mode=preview).
+If you’d like to contribute to existing modules or start a new one, please contact us first so we can align on goals and priorities. If you build your own package using PortPy, you can host it under the [PortPy-Project organization](https://github.com/PortPy-Project) or on your own GitHub—if you choose the latter, let us know so we can fork it and feature it under PortPy-Project. You can also customize our [pre-designed logo](https://www.canva.com/design/DAFxivHC0Js/YqZREdr26pmEsIgCeuU-iA/view?utm_content=DAFxivHC0Js&utm_campaign=designshare&utm_medium=link&utm_source=publishsharelink&mode=preview).
 
 
 # Data <a name="Data"></a>
