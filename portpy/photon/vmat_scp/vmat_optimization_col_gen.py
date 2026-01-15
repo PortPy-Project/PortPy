@@ -108,12 +108,12 @@ class VmatOptimizationColGen(Optimization):
 
         # Initialize gradients
         num_beamlets = A.shape[1]
-        ptv_dm_grad = np.zeros(num_beamlets)
-        oar_dm_grad = np.zeros(num_beamlets)
         overdose_grad = np.zeros(num_beamlets)
         underdose_grad = np.zeros(num_beamlets)
         quadratic_grad = np.zeros(num_beamlets)
         constraints_grad = np.zeros(num_beamlets)
+        ptv_dm_grad = np.zeros(num_beamlets)
+        oar_dm_grad = np.zeros(num_beamlets)
 
         # Objective function gradients
         obj_funcs = self.obj_funcs
@@ -125,29 +125,8 @@ class VmatOptimizationColGen(Optimization):
             pred_dose_per_frac = self.predicted_dose / num_fractions
 
         for obj in obj_funcs:
-            if obj['type'] == "PTV-dose-mimicking":
-                struct = obj['structure_name']
-                if struct in self.my_plan.structures.get_structures():
-                    vox = inf_matrix.get_opt_voxels_idx(struct)
-                    if len(vox) == 0:
-                        continue
-                    weight = float(obj['weight'])
-                    influence = A[vox, :] 
-                    ptv_dm_grad += (2 * weight / len(vox)) * (influence.T @ (current_dose[vox] - pred_dose_per_frac[vox]))
-            elif obj['type'] == "OAR-dose-mimicking":
-                target_voxels = self.inf_matrix.get_opt_voxels_idx('PTV') 
-                all_vox = self.my_plan.inf_matrix.get_opt_voxels_idx('BODY') 
-                oar_voxels = np.setdiff1d(all_vox, target_voxels)
-                if oar_voxels.size == 0:
-                    continue
-                weight = obj['weight']
-                influence = A[oar_voxels, :]                        
-                d_now = current_dose[oar_voxels]                   
-                d_hat = pred_dose_per_frac[oar_voxels]              
-                over = d_now - d_hat
-                over[over < 0.0] = 0.0                       
-                oar_dm_grad += (2.0 * weight / len(oar_voxels)) * (influence.T @ over)
-            elif obj['type'] == 'quadratic-overdose':
+
+            if obj['type'] == 'quadratic-overdose':
                 struct = obj['structure_name']
                 if struct not in structures.get_structures():
                     continue
@@ -180,7 +159,28 @@ class VmatOptimizationColGen(Optimization):
                     continue
                 influence = A[voxels, :]
                 quadratic_grad += (2 * self.vmat_params['normalize_oar_weights'] * obj['weight'] / len(voxels)) * (influence.T @ current_dose[voxels])
-
+            elif obj['type'] == "PTV-dose-mimicking":
+                struct = obj['structure_name']
+                if struct in self.my_plan.structures.get_structures():
+                    vox = inf_matrix.get_opt_voxels_idx(struct)
+                    if len(vox) == 0:
+                        continue
+                    weight = float(obj['weight'])
+                    influence = A[vox, :]
+                    ptv_dm_grad += (2 * weight / len(vox)) * (influence.T @ (current_dose[vox] - pred_dose_per_frac[vox]))
+            elif obj['type'] == "OAR-dose-mimicking":
+                target_voxels = self.inf_matrix.get_opt_voxels_idx('PTV')
+                all_vox = self.my_plan.inf_matrix.get_opt_voxels_idx('BODY')
+                oar_voxels = np.setdiff1d(all_vox, target_voxels)
+                if oar_voxels.size == 0:
+                    continue
+                weight = obj['weight']
+                influence = A[oar_voxels, :]
+                d_now = current_dose[oar_voxels]
+                d_hat = pred_dose_per_frac[oar_voxels]
+                over = d_now - d_hat
+                over[over < 0.0] = 0.0
+                oar_dm_grad += (2.0 * weight / len(oar_voxels)) * (influence.T @ over)
         # Constraints gradients
         constraint_def = self.constraint_def
         constraints_ind_map = self.constraints_ind_map
@@ -212,7 +212,7 @@ class VmatOptimizationColGen(Optimization):
                     constraints_grad += np.squeeze(np.asarray(dual * (A[oar_voxels, :])))
 
         # Combine all gradients to calculate final scores
-        scores = (overdose_grad + underdose_grad + quadratic_grad + constraints_grad)
+        scores = (overdose_grad + underdose_grad + quadratic_grad + constraints_grad + ptv_dm_grad + oar_dm_grad)
         scores = scores / np.max(abs(scores))
         # scores = scores/np.max(abs(scores[unselected_mask]))  # normalize only using unselected beamlets
         return scores
@@ -601,28 +601,7 @@ class VmatOptimizationColGen(Optimization):
 
         # obj += [(1 / B.shape[0]) * cp.sum_squares(cp.multiply(np.sqrt(self.weights), B @ y - p))]
         for i in range(len(obj_funcs)):
-            if obj_funcs[i]['type'] == "PTV-dose-mimicking":
-                struct = obj_funcs[i]['structure_name']
-                if struct in self.my_plan.structures.get_structures():
-                    vox = st.get_opt_voxels_idx(struct)
-                    if len(vox) == 0:
-                        continue
-                    weight = float(obj_funcs[i]['weight'])
-                    obj += [
-                        (weight / len(vox)) * cp.sum_squares(B[vox, :] @ y - pred_dose_per_fraction[vox])
-                    ]
-            elif obj_funcs[i]['type'] == "OAR-dose-mimicking":
-                target_voxels = self.inf_matrix.get_opt_voxels_idx('PTV')
-                all_vox = self.my_plan.inf_matrix.get_opt_voxels_idx('BODY')
-                oar_voxels = np.setdiff1d(all_vox, target_voxels)
-                weight = float(obj_funcs[i]['weight'])
-                dO = B[oar_voxels, :] @ y
-                s_var = cp.Variable(len(oar_voxels), nonneg=True)
-                constraints += [ dO <= pred_dose_per_fraction[oar_voxels] + s_var ]
-                obj += [
-                    (weight / len(oar_voxels)) * cp.sum_squares(s_var)
-                ]
-            elif obj_funcs[i]['type'] == 'quadratic-overdose':
+            if obj_funcs[i]['type'] == 'quadratic-overdose':
                 if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
                     struct = obj_funcs[i]['structure_name']
                     if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
@@ -646,6 +625,26 @@ class VmatOptimizationColGen(Optimization):
                     if len(st.get_opt_voxels_idx(struct)) == 0:
                         continue
                     obj += [self.vmat_params['normalize_oar_weights'] * (1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(B[st.get_opt_voxels_idx(struct), :] @ y))]
+            elif obj_funcs[i]['type'] == "PTV-dose-mimicking":
+                struct = obj_funcs[i]['structure_name']
+                if struct in self.my_plan.structures.get_structures():
+                    vox = st.get_opt_voxels_idx(struct)
+                    if len(vox) == 0:
+                        continue
+                    weight = float(obj_funcs[i]['weight'])
+                    obj += [
+                        (weight / len(vox)) * cp.sum_squares(B[vox, :] @ y - pred_dose_per_fraction[vox])
+                    ]
+            elif obj_funcs[i]['type'] == "OAR-dose-mimicking":
+                target_voxels = self.inf_matrix.get_opt_voxels_idx('PTV')
+                all_vox = self.inf_matrix.get_opt_voxels_idx('BODY')
+                oar_voxels = np.setdiff1d(all_vox, target_voxels)
+                weight = float(obj_funcs[i]['weight'])
+                do_oar = cp.Variable(len(oar_voxels), nonneg=True)
+                constraints += [B[oar_voxels, :] @ y <= pred_dose_per_fraction[oar_voxels] + do_oar]
+                obj += [
+                    (weight / len(oar_voxels)) * cp.sum_squares(do_oar)
+                ]
         constraint_def = self.constraint_def
         self.constraints_ind_map = {}  # empty previous values if any
         constraints_ind_map = self.constraints_ind_map
