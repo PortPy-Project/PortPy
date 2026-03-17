@@ -21,7 +21,10 @@ from scipy import sparse
 from copy import deepcopy
 from scipy.sparse import csr_matrix
 import itertools
-from patchify import patchify
+try:
+    from patchify import patchify
+except ImportError:
+    patchify = None
 from typing import List, Union
 from .ct import CT
 from .beam import Beams
@@ -873,6 +876,11 @@ class InfluenceMatrix:
             vox_map = []
             vox_weights = []
             slices, height, width = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]
+            if patchify is None:
+                raise ImportError(
+                    "patchify is required for this functionality. "
+                    "Install it with: pip install portpy[all]"
+                )
             patches = patchify(vox_3d, (slices, height, width), step=(slices, height, width))
             # pat = np.vstack(patches)
             # pat = np.vstack(pat)
