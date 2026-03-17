@@ -39,6 +39,7 @@ except ImportError:
     )
     snapshot_download = None
     hf_hub_download = None
+    # ignore missing imports
 
 
 REPO_DEFAULT = "PortPy-Project/PortPy_Dataset"
