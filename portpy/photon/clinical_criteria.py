@@ -250,9 +250,12 @@ class ClinicalCriteria:
         if opt_params is not None:
             # add/modify constraints definition if present in opt params
             for opt_constraint in opt_params['constraints']:
-                # add constraint
-                param = opt_constraint['parameters']
-                if param['structure_name'] in my_plan.structures.get_structures():
+                param = opt_constraint.get('parameters', {})
+                structure_name = param.get('structure_name', None)
+                if structure_name is None:
+                    continue
+
+                if structure_name in my_plan.structures.get_structures():
                     criterion_exist, criterion_ind = self.check_criterion_exists(opt_constraint,
                                                                                               return_ind=True)
                     if criterion_exist:
@@ -262,7 +265,13 @@ class ClinicalCriteria:
 
         dvh_updated_list = []
         for i, constraint in enumerate(constraint_list):
-            if constraint['parameters']['structure_name'] in my_plan.structures.get_structures():
+            param = constraint.get('parameters', {})
+            structure_name = param.get('structure_name', None)
+
+            if structure_name is None:
+                continue
+
+            if structure_name in my_plan.structures.get_structures():
                 if len(my_plan.inf_matrix.get_opt_voxels_idx(constraint['parameters']['structure_name'])) == 0:
                     continue
                 updated_constraint = self.convert_dvh_to_dose_gy_vol_perc(my_plan, constraint)
@@ -389,15 +398,24 @@ class ClinicalCriteria:
         if constraints_list is None:
             constraints_list = self.clinical_criteria_dict['criteria']
         dvh_table = self.dvh_table
+
         for ind in dvh_table.index:
-            structure_name, dose_gy = dvh_table['structure_name'][ind], dvh_table['dose_gy'][ind]
-            max_tol = self.get_prescription() * 1.5  # Hard code. Temporary highest value of dose
+            structure_name = dvh_table['structure_name'][ind]
+            max_tol = -float("inf")  # MINIMAL CHANGE: start low
+            found = False
+
             for criterion in constraints_list:
                 if criterion['type'] == 'max_dose':
-                    if criterion['parameters']['structure_name'] == structure_name:
+                    crit_struct = criterion['parameters']['structure_name']
+                    if crit_struct == structure_name or crit_struct.startswith(structure_name + "_"):
                         limit_key = self.matching_keys(criterion['constraints'], 'limit')
                         if limit_key:
-                            max_tol = self.dose_to_gy(limit_key, criterion['constraints'][limit_key])
+                            max_tol = max(max_tol, self.dose_to_gy(limit_key, criterion['constraints'][limit_key]))
+                            found = True
+
+            if not found:
+                max_tol = self.get_prescription() * 1.5  # fallback only if nothing matched
+
             dvh_table.at[ind, 'max_tol'] = max_tol
 
         return self.dvh_table

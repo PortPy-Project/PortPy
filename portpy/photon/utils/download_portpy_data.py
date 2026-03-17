@@ -28,10 +28,17 @@ import json
 import os
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Union
+import warnings
 try:
     from huggingface_hub import snapshot_download, hf_hub_download
 except ImportError:
-    raise ImportError("To download data please install with: pip install 'portpy[data]'")
+    warnings.warn(
+        "To download data please install with: pip install 'portpy[data]'",
+        ImportWarning,
+        stacklevel=2,
+    )
+    snapshot_download = None
+    hf_hub_download = None
 
 
 REPO_DEFAULT = "PortPy-Project/PortPy_Dataset"
