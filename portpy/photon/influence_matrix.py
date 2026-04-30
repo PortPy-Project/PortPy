@@ -853,6 +853,101 @@ class InfluenceMatrix:
 
         return beam_orig
 
+    # def down_sample_voxels(self, down_sample_xyz: List[int] = None):
+    #     """
+    #     This method creates new ct to dose_1d voxel map array based on down sampled voxels.
+    #     It also outputs map between down sampled voxel indices to original voxel indices for down sampling influence matrix
+    #     :param down_sample_xyz: It down-samples optimization voxels as factor of ct resolution
+    #             e.g. _down_sample_xyz = [5,5,1]. It will down-sample optimization voxels with 5 * ct res. in x direction, 5 * ct res. in y direction and 1*ct res. in z direction.
+    #             defaults to None. When None it will use the original optimization voxel resolution.
+    #     :return: voxel map(list containing map between down-sampled indices to original indices), voxel weight (weighted average of voxels in down sample
+    #      and ct to dose_1d voxel map
+    #     """
+    #
+    #     vox_3d = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
+    #     # dose_to_ct_int = np.round(np.array(self.opt_voxels_dict['dose_voxel_resolution_xyz_mm']) /
+    #     #                           np.array(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']))
+    #     # dose_to_ct_int = dose_to_ct_int.astype(int)
+    #
+    #     # using patchify
+    #     use_patchify = True
+    #     if use_patchify:
+    #         print('reindexing voxels...')
+    #         vox_map = []
+    #         vox_weights = []
+    #         slices, height, width = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]
+    #         if patchify is None:
+    #             raise ImportError(
+    #                 "patchify is required for this functionality. "
+    #                 "Install it with: pip install portpy[all]"
+    #             )
+    #         patches = patchify(vox_3d, (slices, height, width), step=(slices, height, width))
+    #         # pat = np.vstack(patches)
+    #         # pat = np.vstack(pat)
+    #         pat = patches.reshape(-1, slices, height, width)
+    #         count = 0
+    #         for i in range(np.shape(pat)[0]):
+    #             if np.any(pat[i] > -1):
+    #                 vox_inds, weights = np.unique(np.sort(pat[i][pat[i] >= 0]), return_counts=True)
+    #                 weight = weights / np.sum(weights)  # calculate weight for each voxel
+    #                 # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
+    #                 vox_map.append(vox_inds)
+    #                 vox_weights.append(weight)
+    #                 # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
+    #                 pat[i][pat[i] > -1] = int(count)
+    #                 count = count + 1
+    #         unfold_shape = patches.shape
+    #         output_c = unfold_shape[0] * unfold_shape[3]
+    #         output_h = unfold_shape[1] * unfold_shape[4]
+    #         output_w = unfold_shape[2] * unfold_shape[5]
+    #         pat_reshape = pat.reshape(patches.shape)
+    #         down_sample_3d = pat_reshape.transpose([0, 3, 1, 4, 2, 5]).reshape(output_c, output_h, output_w)
+    #         if down_sample_3d.shape != vox_3d.shape:
+    #             down_sample_3d = np.pad(
+    #                 down_sample_3d,
+    #                 [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
+    #                 "constant", constant_values=-1)
+    #
+    #     # using pytorch
+    #     use_torch = False
+    #     if use_torch:
+    #         import torch
+    #         vox_map = []
+    #         vox_weights = []
+    #         vox_3d_torch = torch.from_numpy(vox_3d)
+    #         kc, kh, kw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz kernel size
+    #         dc, dh, dw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz stride
+    #         patches = vox_3d_torch.unfold(0, kc, dc).unfold(1, kh, dh).unfold(2, kw, dw)
+    #         unfold_shape = patches.size()
+    #         patches = patches.contiguous().view(-1, kc, kh, kw)
+    #         count = 0
+    #         for pat in patches:
+    #             if torch.any(pat > -1):
+    #                 elem, ind = torch.sort(pat[pat >= 0])
+    #                 vox_inds, weights = torch.unique(elem, return_counts=True)
+    #                 weight = weights / torch.sum(weights)  # calculate weight for each voxel
+    #                 # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
+    #                 vox_map.append(vox_inds.numpy())
+    #                 vox_weights.append(weight.numpy())
+    #                 # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
+    #                 pat[pat > -1] = count
+    #                 count = count + 1
+    #         # Reshape back
+    #         patches_orig = patches.view(unfold_shape)
+    #         output_c = unfold_shape[0] * unfold_shape[3]
+    #         output_h = unfold_shape[1] * unfold_shape[4]
+    #         output_w = unfold_shape[2] * unfold_shape[5]
+    #         patches_orig = patches_orig.permute(0, 3, 1, 4, 2, 5).contiguous()
+    #         down_sample_3d_torch = patches_orig.view(output_c, output_h, output_w)
+    #         down_sample_3d = down_sample_3d_torch.numpy()
+    #         if down_sample_3d.shape != vox_3d.shape:
+    #             down_sample_3d = np.pad(
+    #                 down_sample_3d,
+    #                 [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
+    #                 "constant", constant_values=-1)
+    #
+    #     return vox_map, vox_weights, down_sample_3d
+
     def down_sample_voxels(self, down_sample_xyz: List[int] = None):
         """
         This method creates new ct to dose_1d voxel map array based on down sampled voxels.
@@ -865,86 +960,55 @@ class InfluenceMatrix:
         """
 
         vox_3d = self.opt_voxels_dict['ct_to_dose_voxel_map'][0]
-        # dose_to_ct_int = np.round(np.array(self.opt_voxels_dict['dose_voxel_resolution_xyz_mm']) /
-        #                           np.array(self.opt_voxels_dict['ct_voxel_resolution_xyz_mm']))
-        # dose_to_ct_int = dose_to_ct_int.astype(int)
 
-        # using patchify
-        use_patchify = True
-        if use_patchify:
-            print('reindexing voxels...')
-            vox_map = []
-            vox_weights = []
-            slices, height, width = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]
-            if patchify is None:
-                raise ImportError(
-                    "patchify is required for this functionality. "
-                    "Install it with: pip install portpy[all]"
-                )
-            patches = patchify(vox_3d, (slices, height, width), step=(slices, height, width))
-            # pat = np.vstack(patches)
-            # pat = np.vstack(pat)
-            pat = patches.reshape(-1, slices, height, width)
-            count = 0
-            for i in range(np.shape(pat)[0]):
-                if np.any(pat[i] > -1):
-                    vox_inds, weights = np.unique(np.sort(pat[i][pat[i] >= 0]), return_counts=True)
-                    weight = weights / np.sum(weights)  # calculate weight for each voxel
-                    # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
-                    vox_map.append(vox_inds)
-                    vox_weights.append(weight)
-                    # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
-                    pat[i][pat[i] > -1] = int(count)
-                    count = count + 1
-            unfold_shape = patches.shape
-            output_c = unfold_shape[0] * unfold_shape[3]
-            output_h = unfold_shape[1] * unfold_shape[4]
-            output_w = unfold_shape[2] * unfold_shape[5]
-            pat_reshape = pat.reshape(patches.shape)
-            down_sample_3d = pat_reshape.transpose([0, 3, 1, 4, 2, 5]).reshape(output_c, output_h, output_w)
-            if down_sample_3d.shape != vox_3d.shape:
-                down_sample_3d = np.pad(
-                    down_sample_3d,
-                    [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
-                    "constant", constant_values=-1)
+        print('reindexing voxels...')
+        vox_map = []
+        vox_weights = []
 
-        # using pytorch
-        use_torch = False
-        if use_torch:
-            import torch
-            vox_map = []
-            vox_weights = []
-            vox_3d_torch = torch.from_numpy(vox_3d)
-            kc, kh, kw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz kernel size
-            dc, dh, dw = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]  # xyz stride
-            patches = vox_3d_torch.unfold(0, kc, dc).unfold(1, kh, dh).unfold(2, kw, dw)
-            unfold_shape = patches.size()
-            patches = patches.contiguous().view(-1, kc, kh, kw)
-            count = 0
-            for pat in patches:
-                if torch.any(pat > -1):
-                    elem, ind = torch.sort(pat[pat >= 0])
-                    vox_inds, weights = torch.unique(elem, return_counts=True)
-                    weight = weights / torch.sum(weights)  # calculate weight for each voxel
-                    # vox_map[vox_inds] = np.column_stack((vox_inds, count * np.ones_like(vox_inds), weight))
-                    vox_map.append(vox_inds.numpy())
-                    vox_weights.append(weight.numpy())
-                    # pat[i] = np.ones((1, 5, 5), dtype=int)*int(count)
-                    pat[pat > -1] = count
-                    count = count + 1
-            # Reshape back
-            patches_orig = patches.view(unfold_shape)
-            output_c = unfold_shape[0] * unfold_shape[3]
-            output_h = unfold_shape[1] * unfold_shape[4]
-            output_w = unfold_shape[2] * unfold_shape[5]
-            patches_orig = patches_orig.permute(0, 3, 1, 4, 2, 5).contiguous()
-            down_sample_3d_torch = patches_orig.view(output_c, output_h, output_w)
-            down_sample_3d = down_sample_3d_torch.numpy()
-            if down_sample_3d.shape != vox_3d.shape:
-                down_sample_3d = np.pad(
-                    down_sample_3d,
-                    [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
-                    "constant", constant_values=-1)
+        slices, height, width = down_sample_xyz[2], down_sample_xyz[1], down_sample_xyz[0]
+
+        # patchify only creates full patches:
+        # win_indices_shape = ((arr_shape - window_shape) // step) + 1
+        crop_z = ((vox_3d.shape[0] - slices) // slices + 1) * slices
+        crop_y = ((vox_3d.shape[1] - height) // height + 1) * height
+        crop_x = ((vox_3d.shape[2] - width) // width + 1) * width
+
+        vox_crop = vox_3d[:crop_z, :crop_y, :crop_x]
+
+        # Equivalent to:
+        # patches = patchify(vox_3d, (slices, height, width), step=(slices, height, width))
+        patches = vox_crop.reshape(
+            crop_z // slices, slices,
+            crop_y // height, height,
+            crop_x // width, width
+        ).transpose(0, 2, 4, 1, 3, 5)
+
+        pat = patches.reshape(-1, slices, height, width)
+
+        count = 0
+        for i in range(np.shape(pat)[0]):
+            if np.any(pat[i] > -1):
+                vox_inds, weights = np.unique(np.sort(pat[i][pat[i] >= 0]), return_counts=True)
+                weight = weights / np.sum(weights)
+                vox_map.append(vox_inds)
+                vox_weights.append(weight)
+                pat[i][pat[i] > -1] = int(count)
+                count = count + 1
+
+        unfold_shape = patches.shape
+        output_c = unfold_shape[0] * unfold_shape[3]
+        output_h = unfold_shape[1] * unfold_shape[4]
+        output_w = unfold_shape[2] * unfold_shape[5]
+
+        pat_reshape = pat.reshape(patches.shape)
+        down_sample_3d = pat_reshape.transpose([0, 3, 1, 4, 2, 5]).reshape(output_c, output_h, output_w)
+
+        if down_sample_3d.shape != vox_3d.shape:
+            down_sample_3d = np.pad(
+                down_sample_3d,
+                [(0, vox_3d.shape[i] - down_sample_3d.shape[i]) for i in range(len(down_sample_3d.shape))],
+                "constant", constant_values=-1
+            )
 
         return vox_map, vox_weights, down_sample_3d
 
