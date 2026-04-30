@@ -22,6 +22,7 @@ import numpy as np
 from skimage import measure
 from portpy.photon.evaluation import Evaluation
 from matplotlib.lines import Line2D
+from matplotlib.colors import TwoSlopeNorm
 import os
 from portpy.photon.utils import view_in_slicer_jupyter
 from pathlib import Path
@@ -128,7 +129,8 @@ class Visualization:
         for i in range(np.size(struct_names)):
             if struct_names[i] not in all_orgs:
                 continue
-            if my_plan.structures.get_fraction_of_vol_in_calc_box(struct_names[i]) == 0:  # check if the structure is within calc box
+            if my_plan.structures.get_fraction_of_vol_in_calc_box(
+                    struct_names[i]) == 0:  # check if the structure is within calc box
                 print('Skipping Structure {} as it is not within calculation box.'.format(struct_names[i]))
                 continue
             # for dose_1d in dose_list:
@@ -169,7 +171,9 @@ class Visualization:
         handles, labels = ax.get_legend_handles_labels()
         # unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
         # Make all handles solid while ensuring unique legend entries
-        unique = [(Line2D([], [], color=h.get_color(), linestyle='-', lw=h.get_linewidth()) if isinstance(h, Line2D) else h, l)
+        unique = [(Line2D([], [], color=h.get_color(), linestyle='-', lw=h.get_linewidth()) if isinstance(h,
+                                                                                                          Line2D) else h,
+                   l)
                   for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
         ax.legend(*zip(*unique), prop={'size': legend_font_size}, loc=legend_loc)
         ax.grid(visible=True, which='major', color='#666666', linestyle='-')
@@ -288,7 +292,8 @@ class Visualization:
         for i in range(np.size(all_orgs)):
             if all_orgs[i] not in struct_names:
                 continue
-            if my_plan.structures.get_fraction_of_vol_in_calc_box(all_orgs[i]) == 0:  # check if the structure is within calc box
+            if my_plan.structures.get_fraction_of_vol_in_calc_box(
+                    all_orgs[i]) == 0:  # check if the structure is within calc box
                 print('Skipping Structure {} as it is not within calculation box.'.format(all_orgs[i]))
                 continue
             dose_sort_list = []
@@ -326,18 +331,21 @@ class Visualization:
             if plot_scenario is not None:
                 if plot_scenario == 'mean':
                     dose_mean = np.mean(d_sort_mat, axis=1)
-                    ax.plot(dose_mean, 100 * y, linestyle=style, color=colors[count], linewidth=width, label=all_orgs[i])
+                    ax.plot(dose_mean, 100 * y, linestyle=style, color=colors[count], linewidth=width,
+                            label=all_orgs[i])
                 elif not isinstance(plot_scenario, list):
                     plot_scenario = [plot_scenario]
 
                     for n in range(len(plot_scenario)):
                         scene_num = plot_scenario[n]
                         if norm_flag:
-                            norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d_list[scene_num], struct=norm_struct, volume_per=norm_volume) / pres
+                            norm_factor = Evaluation.get_dose(sol, dose_1d=dose_1d_list[scene_num], struct=norm_struct,
+                                                              volume_per=norm_volume) / pres
                             dose_sort_list[scene_num] = dose_sort_list[scene_num] / norm_factor
                             d_min_mat = d_min_mat / norm_factor
                             d_max_mat = d_max_mat / norm_factor
-                        ax.plot(dose_sort_list[scene_num], 100 * y, linestyle=style, color=colors[count], linewidth=width)
+                        ax.plot(dose_sort_list[scene_num], 100 * y, linestyle=style, color=colors[count],
+                                linewidth=width)
             count = count + 1
             # legend.append(all_orgs[i])
 
@@ -473,8 +481,9 @@ class Visualization:
         return ax
 
     @staticmethod
-    def plot_2d_slice(my_plan: Plan = None, sol: dict = None, dose_1d: np.ndarray = None, ct: CT = None, structs: Structures = None,
-                      slice_num: int = 40, struct_names: List[str] = None, show_dose: bool = False,
+    def plot_2d_slice(my_plan: Plan = None, sol: dict = None, dose_1d: np.ndarray = None, ct: CT = None,
+                      structs: Structures = None,
+                      slice_num: int = 40, struct_names: List[str] = None, show_ct: bool = True, show_dose: bool = False,
                       show_struct: bool = True, show_isodose: bool = False,
                       **options) -> None:
         """
@@ -489,10 +498,17 @@ class Visualization:
         :param structs: Optional. object of class structs
         :param slice_num: slice number
         :param struct_names: structures for which contours to be displayed on the slice view. e.g. struct_names = ['PTV, ESOPHAGUS']
+
+        :param show_ct: view ct on the slice. Default is True
         :param show_dose: view dose_1d on the slice
         :param show_struct: view struct_name on the slice
         :param show_isodose: view isodose
         :param dpi: Default dpi=100 for figure
+		:param show_colorbar: Optional. show colorbar for this axis. Default=True
+        :param vmin: Optional. minimum value for dose colormap
+        :param vmax: Optional. maximum value for dose colormap
+        :param norm: Optional. matplotlib norm object (e.g. TwoSlopeNorm) for dose display
+        :param legend_loc: Optional. legend location. Default is inside axis
         :return: plot 2d view of ct, dose_1d, isodose and struct_name contours
 
         :Example:
@@ -507,13 +523,21 @@ class Visualization:
         show = options['show'] if 'show' in options else False
         ax = options['ax'] if 'ax' in options else None
 
+        # minimal new options
+        show_colorbar = options['show_colorbar'] if 'show_colorbar' in options else True
+        vmin = options['vmin'] if 'vmin' in options else None
+        vmax = options['vmax'] if 'vmax' in options else None
+        norm = options['norm'] if 'norm' in options else None
+        legend_loc = options['legend_loc'] if 'legend_loc' in options else None
+        alpha = options['alpha'] if 'alpha' in options else 0.4
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
         plt.rcParams["figure.autolayout"] = True
         if ct is None:
             ct = my_plan.ct
         ct_hu_3d = ct.ct_dict['ct_hu_3d'][0]
-        ax.imshow(ct_hu_3d[slice_num, :, :], cmap='gray')
+        if show_ct:
+            ax.imshow(ct_hu_3d[slice_num, :, :], cmap='gray')
 
         # adjust the main plot to make room for the legends
         plt.subplots_adjust(left=0.2)
@@ -526,24 +550,44 @@ class Visualization:
                 dose_3d = sol['inf_matrix'].dose_1d_to_3d(dose_1d=dose_1d)
             else:
                 dose_3d = my_plan.inf_matrix.dose_1d_to_3d(dose_1d=dose_1d)
+            sl = dose_3d[slice_num]
             if hasattr(my_plan, 'structures'):
                 body_mask = my_plan.structures.get_structure_mask_3d('BODY')
-                masked = np.ma.masked_where(~body_mask[slice_num, :, :].astype(bool), dose_3d[slice_num, :, :])
+                masked = np.ma.masked_where(~body_mask[slice_num].astype(bool), sl)
             else:
-                masked = np.ma.masked_where(dose_3d[slice_num, :, :] < 0, dose_3d[slice_num, :, :])
-            im = ax.imshow(masked, alpha=0.4, interpolation='none',
-                           cmap='jet', vmin=0.1, vmax=np.max(dose_3d))
+                masked = np.ma.array(sl, mask=np.zeros_like(sl, dtype=bool))
 
-            # plt.colorbar(im, ax=ax, pad=0.1)
-            # use make_axes_locatable to attach a properly-sized colorbar
-            from mpl_toolkits.axes_grid1 import make_axes_locatable
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.2)
+            m, M = float(masked.min()), float(masked.max())
+            if not show_ct:
+                alpha = 1.0  # if ct is not shown, show the dose with full opacity
 
-            # create colorbar in the new axis
-            cbar = plt.colorbar(im, cax=cax)
-            cbar.set_label("Dose [Gy]")
-            cbar.ax.yaxis.set_tick_params()
+
+            if norm is not None:
+                im = ax.imshow(masked, alpha=alpha, interpolation='none',
+                               cmap='RdBu_r', norm=norm)
+            else:
+                if m >= 0:  # all non-negative → sequential colormap
+                    im = ax.imshow(masked, alpha=alpha, interpolation='none',
+                                   cmap='jet',
+                                   vmin=0.01 if vmin is None else vmin,
+                                   vmax=M if vmax is None else vmax)
+                else:  # mixed signs → diverging, centered at 0
+                    if vmin is not None and vmax is not None:
+                        norm_local = TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax)
+                    else:
+                        vabs = max(-m, M)
+                        norm_local = TwoSlopeNorm(vmin=-vabs, vcenter=0.0, vmax=vabs)
+                    im = ax.imshow(masked, alpha=alpha, interpolation='none',
+                                   cmap='RdBu_r', norm=norm_local)
+
+            # only show colorbar when requested
+            if show_colorbar:
+                from mpl_toolkits.axes_grid1 import make_axes_locatable
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", size="5%", pad=0.2)
+                cbar = plt.colorbar(im, cax=cax)
+                cbar.set_label("Dose [Gy]")
+                cbar.ax.yaxis.set_tick_params()
             ax.set_facecolor('black')
 
         if show_isodose:
@@ -586,8 +630,11 @@ class Visualization:
             import matplotlib.patches as mpatches
             patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
             # rax.labels = labels
-            ax.legend(handles=patches, bbox_to_anchor=(0.05, 0.95), loc=2, borderaxespad=0.)
-            # bbox_transform=fig.transFigure)
+            if legend_loc == 'outside':
+                ax.legend(handles=patches, bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0.)
+            else:
+                ax.legend(handles=patches, bbox_to_anchor=(0.05, 0.95), loc=2, borderaxespad=0.)
+
         if show:
             plt.show()
         if filename is not None:

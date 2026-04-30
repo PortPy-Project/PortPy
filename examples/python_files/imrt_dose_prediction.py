@@ -27,6 +27,7 @@ import os
 import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
+
 from portpy.ai.preprocess.predict_using_model import predict_using_model
 from portpy.ai.preprocess.data_preprocess import data_preprocess
 from portpy.ai.train import train
@@ -38,14 +39,19 @@ from portpy.ai.test import test
 
 
 in_dir = r'../../data' # directory where portpy raw data is located
-out_dir = r'../../ai_data' # directory where processed data to be stored for training and testing model
+out_dir = r'../../ai_data_lungs'  # directory where processed data to be stored for training and testing model
 
 
 # preprocess portpy data
-data_preprocess(in_dir, out_dir)
+data_preprocess(in_dir, out_dir, site='lung', protocol_name='Lung_2Gy_30Fx', technique_name='imrt')
+# for prostate vmat patients, use below code to preprocess the data. You can change the protocol name and technique name as per your requirement
+# beam_ids = np.arange(0, 72)
+# data_preprocess(in_dir, out_dir, site='prostate', protocol_name='Prostate_5Fx', beam_ids = beam_ids, technique_name='vmat')
 
-# **Note** split the data in train and test folder in the output directory before running further code
+
+# **Note** split the data in train, val and test folder in the output directory before running further code
 # e.g. out_dir\train\Lung_Patient_2 out_dir\test\Lung_Patient_9
+# e.g. out_dir\train\Lung_Patient_2 out_dir\val\Lung_Patient_8
 
 # ### 2. Training and testing the model
 # 
@@ -53,10 +59,11 @@ data_preprocess(in_dir, out_dir)
 
 # Provide only the arguments you want to override
 train_options = {
-    "dataroot": "../../ai_data",
+    "dataroot": "../../ai_data_lungs",
     "checkpoints_dir": "../../checkpoints",
-    "netG": "unet_128",
-    "name": "portpy_test_4",
+    "netG": "mednext",
+    "dose_loss": "mednext_hybrid",
+    "name": "portpy_lung_mednext",
     "model": "doseprediction3d",
     "direction": "AtoB",
     "lambda_L1": 1,
@@ -65,13 +72,17 @@ train_options = {
     "batch_size": 1,
     "pool_size": 0,
     "display_port": 8097,
-    "lr": 0.0002,
+    "lr": 0.0001,
+    "n_epochs": 100,
     "input_nc": 8,
     "output_nc": 1,
     "display_freq": 10,
+    "display_id":-1,
     "print_freq": 1,
     "augment": False,  # transform images for data augmentation
-    "gpu_ids": [0]  # Converted to a list since multiple GPUs may be supported
+    "gpu_ids": [0], # Converted to a list since multiple GPUs may be supported
+    "val_phase": "val",
+    "lr_policy": "plateau"
 }
 
 train(train_options)  # Run training directly in Jupyter Notebook
@@ -80,13 +91,50 @@ train(train_options)  # Run training directly in Jupyter Notebook
 #!python ../portpy/ai/train.py --dataroot ../ai_data --netG unet_128 --name portpy_test_3 --model doseprediction3d --direction AtoB --lambda_L1 1 --dataset_mode dosepred3d --norm batch --batch_size 1 --pool_size 0 --display_port 8097 --lr 0.0002 --input_nc 8 --output_nc 1 --display_freq 10 --print_freq 1 --gpu_ids 0
 
 
+# # if you are retraining with upkernel strategy using mednext pretrained model, you can use below code. You can change the parameters for the training as show below. Please make sure to provide the correct path for the pretrained model
+# from portpy.ai.train_upkern import train_upkern
+#
+# train_options = {
+#     "dataroot": "../../ai_data_lungs",
+#     "checkpoints_dir": "../../checkpoints",
+#     "netG": "mednext",
+#     "name": "portpy_test_7_upkern",
+#     "model": "doseprediction3d",
+#     "direction": "AtoB",
+#     "lambda_L1": 1,
+#     "dataset_mode": "dosepred3d",
+#     "norm": "batch",
+#     "batch_size": 1,
+#     "pool_size": 0,
+#     "display_port": 8097,
+#     "display_id": 0,
+#     "lr": 0.00005,
+#     "input_nc": 8,
+#     "output_nc": 1,
+#     "display_freq": 10,
+#     "print_freq": 1,
+#     "augment": False,
+#     "gpu_ids": [0],
+#
+#     # UpKern-specific
+#     "dose_loss": "mednext_hybrid",
+#     "mednext_model_id": "B",
+#     "mednext_kernel_size": 5,
+#     "upkern_pretrained_path": "../../checkpoints/portpy_lung_mednext/best_mae_net_G.pth",
+#     "n_epochs": 80,
+#     "n_epochs_decay": 40
+# }
+#
+# train_upkern(train_options)
+
 # Test the model
 test_options = {
-    "dataroot": "../../ai_data",
-    "netG": "unet_128",
+    "dataroot": "../../ai_data_lungs",
+    "netG": "mednext",
     "checkpoints_dir": "../../checkpoints",
     "results_dir": "../../results",
-    "name": "portpy_test_3",
+    'dose_loss': 'mednext_hybrid',
+    "name": "portpy_lung_mednext",
     "phase": "test",
     "mode": "eval",
     "eval": True,  # Boolean flag
@@ -105,9 +153,10 @@ test(test_options)
 # 
 # After training the model, users can use their customized model to create dose prediction for any portpy patient. Below script would preprocess and predict for the patient
 # For users who does not want to train and test, they can directly preprocess and predict using AI model
-patient_id = 'Lung_Patient_4'
-model_name = 'portpy_test_3'
-pred_dose = predict_using_model(patient_id=patient_id, in_dir=in_dir, out_dir=out_dir, model_name=model_name, checkpoints_dir='../../checkpoints', results_dir='../../results')
+patient_id = 'Lung_Patient_90'
+model_name = 'portpy_lung_mednext'
+pred_dose = predict_using_model(patient_id=patient_id, in_dir=in_dir, out_dir=out_dir, model_name=model_name, checkpoints_dir='../../checkpoints', results_dir='../../results', netG='mednext',
+                                site='lung', protocol_name='Lung_2Gy_30Fx')
 
 
 # ### 4. Fluence optimization using predicted dose
@@ -160,7 +209,7 @@ smoothness_Y_weight = 0.4
 opt.obj += [(smoothness_X_weight * (1 / num_cols) * cp.sum_squares(Qx @ x) +
             smoothness_Y_weight * (1 / num_rows) * cp.sum_squares(Qy @ x))]
 
-sol = opt.solve(solver='MOSEK', verbose=False)
+_ = opt.solve(solver='MOSEK', verbose=False)
 sol = {'optimal_intensity': x.value, 'inf_matrix': inf_matrix}
 
 
@@ -177,6 +226,39 @@ ax = pp.Visualization.plot_dvh(my_plan, dose_1d=pred_dose_1d, struct_names=struc
 ax.set_title('- Optimized .. Predicted')
 plt.show()
 
+#### Score calculation #####
 
+# calculate scores for the optimized plan and compared it with the reference plan using the scorecard. Please make sure to provide the correct path for the scorecard json file. Below code is for lung patients, you can change it for prostate patients by providing the correct scorecard json file and alias map.
+# for lungs
+import json
 
+with open("SC_Lung(60Gy)_2022MAAS_ExampleV2.json", "r") as f:
+    lung_scorecard = json.load(f)
 
+alias_map = {
+    "SPINAL_CORD": "CORD",
+    "TOTAL LUNG - GTV": "TOTAL LUNG - GTV",   # handled internally
+}
+technique_name = 'imrt'
+refernce_dose_1d = planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
+                                                                     dose_file_name=os.path.join(in_dir, patient_id, 'DicomFiles', 'rt_dose_echo_{}.dcm'.format(technique_name.lower())))  # reference dose for score calculation
+pred_dose_opt_1d = inf_matrix.A @ sol['optimal_intensity'] * my_plan.get_num_of_fractions() # optimized dose for score calculation
+gt_score, gt_df = pp.Evaluation.compute_total_quality_score(
+    plan=my_plan,
+    dose_1d=refernce_dose_1d,
+    scorecard_json=lung_scorecard,
+    prescription_gy=60.0,
+    alias_map=alias_map
+)
+
+pred_score, pred_df = pp.Evaluation.compute_total_quality_score(
+    plan=my_plan,
+    dose_1d=pred_dose_opt_1d,
+    scorecard_json=lung_scorecard,
+    prescription_gy=60.0,
+    alias_map=alias_map
+)
+
+print("GT total score  :", gt_score)
+print("Pred total score:", pred_score)
+print(pred_df[["Structure", "MetricType", "MetricValue", "Score", "Status"]])

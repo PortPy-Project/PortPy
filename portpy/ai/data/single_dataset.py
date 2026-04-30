@@ -62,6 +62,8 @@ class SingleDataset(BaseDataset):
         # hist = AB['HIST']
         # bins = AB['BINS']
         beam = AB['BEAM']
+        body = AB['BODY'] if 'BODY' in AB else None
+        prescription_gy = float(AB['PRESCRIPTION_GY']) if 'PRESCRIPTION_GY' in AB else None
 
         A, OAR, beam = transform_3d_data_test(A, OAR, PTV, beam, transform=False)
         A = torch.unsqueeze(A, dim=0)  # Add channel dimensions as data is 3D
@@ -69,6 +71,15 @@ class SingleDataset(BaseDataset):
         beam = torch.unsqueeze(beam, dim=0)
 
         A = torch.cat((A, beam, OAR), axis=0)
+        out = {'A': A, 'A_paths': A_path}
+
+        if body is not None:
+            body_t = torch.from_numpy(body.astype(np.float32))
+            body_t = torch.unsqueeze(body_t, dim=0)
+            out['BODY'] = body_t
+
+        if prescription_gy is not None:
+            out['PRESCRIPTION_GY'] = torch.tensor(prescription_gy, dtype=torch.float32)
         return {'A': A, 'A_paths': A_path}
 
     def __len__(self):

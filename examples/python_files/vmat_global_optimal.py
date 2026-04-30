@@ -10,8 +10,6 @@ import cvxpy as cp
 import os
 import time
 
-import numpy as np
-
 def quadratic_overdose(d, voxels, voxels_cc, D, weight):
     return weight * (1 / np.sum(voxels_cc))*np.sum(voxels_cc*(np.maximum(d[voxels] - D, 0) ** 2))
 
@@ -290,6 +288,47 @@ def vmat_optimization():
                                    norm_flag=True)
     ax.set_title('Solid: MIP Global Optimal  Dashed: Column generation  Dotted: Column generation + SCP')
     plt.show()
+
+    # # run below to evaluate the plans using clinical criteria and scorecard. The scorecard will evaluate the plan based on the clinical criteria and assign a score to the plan. This will help in comparing the plans based on clinical criteria. The scorecard can be customized by the user to include different criteria and weights for each criterion.
+    # # calculate score for mip and scp based plans using the scorecard for the patient. Users can also create their own scorecard json file with custom criteria and use it for evaluation. Below is an example of using the scorecard json file.
+    # import json
+    # alias_map = {
+    #     "BILAT_FEM_HEADS": "FEMURS",
+    #     "SPINAL_CORD": "CORD",
+    #     "TOTAL LUNG - GTV": "LUNGS_NOT_GTV"
+    # }
+    # with open(r"SC_Lung(60Gy)_2022MAAS_ExampleV2.json", "r") as f:
+    #     lung_60 = json.load(f)
+    # scorecard_json = lung_60
+    # inf_matrix_db_1 = inf_matrix.create_down_sample(beamlet_width_mm=new_beamlet_width_mm,
+    #                                               beamlet_height_mm=new_beamlet_height_mm)
+    # mip_dose_1d = inf_matrix_db_1.A @ sol['optimal_intensity'] * my_plan.get_num_of_fractions()
+    # scp_dose_1d = inf_matrix_db_1.A @ sol_scp['optimal_intensity'] * my_plan.get_num_of_fractions()
+    # dummy_scp = {'optimal_intensity': sol_scp['optimal_intensity'], 'inf_matrix': inf_matrix_db_1}
+    # norm_factor = pp.Evaluation.get_dose(dummy_scp, dose_1d=scp_dose_1d, struct='PTV',
+    #                                      volume_per=90) / my_plan.get_prescription()
+    # scp_dose_1d_norm = scp_dose_1d / norm_factor
+    # scp_score, scp_df = pp.Evaluation.compute_total_quality_score(
+    #     plan=my_plan,
+    #     dose_1d=scp_dose_1d_norm,
+    #     scorecard_json=scorecard_json,
+    #     prescription_gy=my_plan.get_prescription(),
+    #     alias_map=alias_map
+    # )
+    # dummy_mip = {'optimal_intensity': sol['optimal_intensity'], 'inf_matrix': inf_matrix_db_1}
+    # norm_factor = pp.Evaluation.get_dose(dummy_mip, dose_1d=mip_dose_1d, struct='PTV',
+    #                                      volume_per=90) / my_plan.get_prescription()
+    # mip_dose_1d_norm = mip_dose_1d / norm_factor
+    # mip_score, mip_df = pp.Evaluation.compute_total_quality_score(
+    #     plan=my_plan,
+    #     dose_1d=mip_dose_1d_norm,
+    #     scorecard_json=scorecard_json,
+    #     prescription_gy=my_plan.get_prescription(),
+    #     alias_map=alias_map
+    # )
+    # print("MIP based plan score: ", mip_score)
+    # print("SCP based plan score: ", scp_score)
+
 
 if __name__ == "__main__":
     vmat_optimization()

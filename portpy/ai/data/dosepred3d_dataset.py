@@ -17,11 +17,6 @@
 
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 11 13:16:11 2020
-
-@author: ndahiya
-"""
 
 import os.path
 from portpy.ai.data.base_dataset import BaseDataset, get_params, get_transform, transform_3d_data
@@ -83,6 +78,8 @@ class DosePred3DDataset(BaseDataset):
         # hist = AB['HIST']
         # bins = AB['BINS']
         beam = AB['BEAM']
+        body = AB['BODY'] if 'BODY' in AB else None
+        prescription_gy = float(AB['PRESCRIPTION_GY']) if 'PRESCRIPTION_GY' in AB else None
 
         # apply the same transform to both A and B
         if self.phase == 'train':
@@ -105,7 +102,16 @@ class DosePred3DDataset(BaseDataset):
             A = torch.cat((A, beam, OAR), axis=0)
             # A = torch.cat((A, OAR), axis=0)  # No beam
             # print(OAR.max())
-        return {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path} #'HIST': hist, 'BINS': bins}
+        out = {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path}
+
+        if body is not None:
+            body_t = torch.from_numpy(body.astype(np.float32))
+            body_t = torch.unsqueeze(body_t, dim=0)
+            out['BODY'] = body_t
+
+        if prescription_gy is not None:
+            out['PRESCRIPTION_GY'] = torch.tensor(prescription_gy, dtype=torch.float32)
+        return out #'HIST': hist, 'BINS': bins}
 
     def __len__(self):
         """Return the total number of images in the dataset."""

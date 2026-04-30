@@ -570,6 +570,29 @@ class Evaluation:
         return bed_d
 
     @staticmethod
+    def compute_total_quality_score(plan: Plan, dose_1d: np.ndarray, scorecard_json, prescription_gy=None, alias_map=None, return_score_df=True):
+        """
+        Compute total quality score for the plan based on the scorecard_json which contains the criteria and their corresponding scores.
+        The score is calculated based on the plan values for each criterion and the scores defined in the scorecard_json.
+
+        :param plan: Object of class Plan
+        :param dose_1d: dose_1d which is not in solution dictionary
+        :param scorecard_json: JSON file containing the criteria and their corresponding scores
+        :param prescription_gy: prescription dose in Gy, required if any criterion in scorecard_json is defined in terms of prescription_gy
+        :param alias_map: dictionary mapping structure aliases to actual structure names in the plan
+        :param return_score_df: Default to True. if True, return a dataframe with the scores for each criterion along with the total score. If False, return only the total score.
+
+        :return: total quality score for the plan
+        """
+        # call compute quality score for each criterion and sum them up to get total quality score from utils module
+        from portpy.photon.utils import compute_total_quality_score
+        total_score, score_df = compute_total_quality_score(plan, dose_1d, scorecard_json, prescription_gy, alias_map)
+        if return_score_df:
+            return total_score, score_df
+        else:
+            return total_score
+
+    @staticmethod
     def add_dvh_to_frame(my_plan: Plan, df: pd.DataFrame, new_column_name: str, old_column_name: str, unit: str, dvh_type=None):
         req_ind = df.index[~df[old_column_name].isnull()].tolist()
         for ind in req_ind:

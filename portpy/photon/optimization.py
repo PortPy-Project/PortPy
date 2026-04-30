@@ -156,7 +156,7 @@ class Optimization(object):
                 else:
                     constraint_def += [opt_constraint]
 
-        d_max = np.infty * np.ones(A.shape[0]) # create a vector to avoid putting redundant max constraint on
+        d_max = np.inf * np.ones(A.shape[0]) # create a vector to avoid putting redundant max constraint on
         # duplicate voxels among structure
 
         # Adding constraints

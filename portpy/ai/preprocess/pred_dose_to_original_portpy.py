@@ -289,7 +289,7 @@ for idx, case in enumerate(cases):
     protocol_name = 'Lung_2Gy_30Fx'
     clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
 
-    my_plan = pp.Plan(ct, structs, beams, inf_matrix, clinical_criteria)
+    my_plan = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix, clinical_criteria=clinical_criteria)
 
     struct_names = ['PTV', 'ESOPHAGUS', 'HEART', 'CORD']
     fig, ax = plt.subplots(figsize=(12, 8))

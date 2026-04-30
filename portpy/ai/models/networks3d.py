@@ -21,7 +21,7 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 import numpy as np
-
+import warnings
 
 ###############################################################################
 # Functions
@@ -111,7 +111,7 @@ def get_scheduler(optimizer, opt):
     elif opt.lr_policy == 'step':
         scheduler = lr_scheduler.StepLR(optimizer, step_size=opt.lr_decay_iters, gamma=0.1)
     elif opt.lr_policy == 'plateau':
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
+        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.75, threshold=1e-4, patience=3)
     elif opt.lr_policy == 'cosine':
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=opt.n_epochs, eta_min=0)
     else:
@@ -119,7 +119,7 @@ def get_scheduler(optimizer, opt):
     return scheduler
 
 
-def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
+def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=None):
     """Initialize a network: 1. register CPU/GPU device (with multi-GPU support); 2. initialize the network weights
     Parameters:
         net (network)      -- the network to be initialized
@@ -129,6 +129,8 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
 
     Return an initialized network.
     """
+    if gpu_ids is None:
+        gpu_ids = []
     if len(gpu_ids) > 0:
         assert (torch.cuda.is_available())
         net.to(gpu_ids[0])
@@ -138,7 +140,9 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
 
 
 def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02,
-             gpu_ids=[]):
+             gpu_ids=None, mednext_model_id='B', mednext_kernel_size=3):
+    if gpu_ids is None:
+        gpu_ids = []
     net = None
     norm_layer = get_norm_layer(norm_type=norm)
 
@@ -148,6 +152,15 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator3d(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'stand_unet':
         net = UNet3D(in_ch=input_nc, out_ch=output_nc)
+    elif netG == 'mednext':
+        net = MedNeXtDose(
+            in_channels=input_nc,
+            out_channels=output_nc,
+            model_id=mednext_model_id,
+            kernel_size=mednext_kernel_size,
+        )
+    elif netG == "beamlet_unet":
+        net = BeamletUNet3D(input_nc, output_nc)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
 
@@ -377,6 +390,135 @@ class UNet3D(nn.Module):
         out = activation(out)
         return out
 
+class MedNeXtDose(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int = 1,
+        model_id: str = 'B',
+        kernel_size: int = 3,
+        deep_supervision: bool = False,
+
+    ):
+        super().__init__()
+        create_mednext_v1 = None
+        try:
+            from nnunet_mednext import create_mednext_v1
+        except ImportError:
+            warnings.warn(
+                "MedNeXt is not installed. Install it with "
+                "`pip install git+https://github.com/MIC-DKFZ/MedNeXt.git`."
+            )
+
+        if create_mednext_v1 is None:
+            raise ImportError(
+                "Requested MedNeXtDose but MedNeXt is not installed. "
+                "Install it with "
+                "`pip install git+https://github.com/MIC-DKFZ/MedNeXt.git`."
+            )
+        from typing import Any, cast
+        create_mednext_v1 = cast(Any, create_mednext_v1)
+        # Keep open kbp style loading path
+        self.model = create_mednext_v1(
+            num_input_channels=in_channels,
+            num_classes=out_channels,
+            model_id=model_id,
+            kernel_size=kernel_size,
+            deep_supervision=deep_supervision,
+        )
+
+        # self.out_act = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        y = self.model(x)
+        if isinstance(y, (list, tuple)):
+            y = y[0]
+        return y
+
+class DoubleConv(nn.Module):
+    """
+    (Conv3d -> GroupNorm -> ReLU) x 2
+    """
+    def __init__(self, in_ch, out_ch, num_groups=8):
+        super().__init__()
+        assert out_ch % num_groups == 0, \
+            f"out_ch={out_ch} must be divisible by num_groups={num_groups}"
+
+        self.conv1 = nn.Conv3d(in_ch, out_ch, kernel_size=3, padding=1, bias=False)
+        self.gn1   = nn.GroupNorm(num_groups=num_groups, num_channels=out_ch)
+        self.relu1 = nn.LeakyReLU(0.01, inplace=True)
+
+        self.conv2 = nn.Conv3d(out_ch, out_ch, kernel_size=3, padding=1, bias=False)
+        self.gn2   = nn.GroupNorm(num_groups=num_groups, num_channels=out_ch)
+        self.relu2 = nn.LeakyReLU(0.01, inplace=True)
+
+    def forward(self, x):
+        x = self.relu1(self.gn1(self.conv1(x)))
+        x = self.relu2(self.gn2(self.conv2(x)))
+        return x
+
+class BeamletUNet3D(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1, base_features=32, num_groups=8):
+        super(BeamletUNet3D, self).__init__()
+
+        # Encoder
+        self.enc1 = DoubleConv(in_channels, base_features, num_groups=num_groups)
+        self.enc2 = DoubleConv(base_features, base_features * 2, num_groups=num_groups)
+        self.enc3 = DoubleConv(base_features * 2, base_features * 4, num_groups=num_groups)
+        self.enc4 = DoubleConv(base_features * 4, base_features * 8, num_groups=num_groups)
+
+        self.pool = nn.MaxPool3d(2)
+
+        # Bottleneck
+        self.bottleneck = DoubleConv(base_features * 8, base_features * 16, num_groups=num_groups)
+
+        # Decoder
+        self.upconv4 = nn.ConvTranspose3d(base_features * 16, base_features * 8, kernel_size=2, stride=2)
+        self.dec4 = DoubleConv(base_features * 16, base_features * 8, num_groups=num_groups)
+
+        self.upconv3 = nn.ConvTranspose3d(base_features * 8, base_features * 4, kernel_size=2, stride=2)
+        self.dec3 = DoubleConv(base_features * 8, base_features * 4, num_groups=num_groups)
+
+        self.upconv2 = nn.ConvTranspose3d(base_features * 4, base_features * 2, kernel_size=2, stride=2)
+        self.dec2 = DoubleConv(base_features * 4, base_features * 2, num_groups=num_groups)
+
+        self.upconv1 = nn.ConvTranspose3d(base_features * 2, base_features, kernel_size=2, stride=2)
+        self.dec1 = DoubleConv(base_features * 2, base_features, num_groups=num_groups)
+
+        # Output layer
+        self.conv_out = nn.Conv3d(base_features, out_channels, kernel_size=1)
+        self.activation = nn.ReLU()  # optional clamp to non-negative
+
+    def forward(self, x):
+        enc1 = self.enc1(x)
+        enc2 = self.enc2(self.pool(enc1))
+        enc3 = self.enc3(self.pool(enc2))
+        enc4 = self.enc4(self.pool(enc3))
+
+        bottleneck = self.bottleneck(self.pool(enc4))
+        # you can optionally keep a tiny dropout here:
+        # bottleneck = F.dropout3d(bottleneck, p=0.1, training=self.training)
+
+        dec4 = self.upconv4(bottleneck)
+        dec4 = torch.cat((dec4, enc4), dim=1)
+        dec4 = self.dec4(dec4)
+
+        dec3 = self.upconv3(dec4)
+        dec3 = torch.cat((dec3, enc3), dim=1)
+        dec3 = self.dec3(dec3)
+
+        dec2 = self.upconv2(dec3)
+        dec2 = torch.cat((dec2, enc2), dim=1)
+        dec2 = self.dec2(dec2)
+
+        dec1 = self.upconv1(dec2)
+        dec1 = torch.cat((dec1, enc1), dim=1)
+        dec1 = self.dec1(dec1)
+
+        out = self.conv_out(dec1)
+        # out = self.activation(out)  # enable if you want to force non-negative
+        return out
+
 
 # Defines DVH loss class
 class DVHLoss(nn.Module):
@@ -460,63 +602,210 @@ class BhattLoss(nn.Module):
         return bhattloss
 
 
-##Moment loss
+import torch.nn.functional as F
+
+class WeightedL1Loss(nn.Module):
+    def __init__(self, alpha=2.0, eps=1e-6):
+        super().__init__()
+        self.alpha = alpha
+        self.eps = eps
+
+    def forward(self, pred, target):
+        denom = torch.clamp(target.amax(dim=(2, 3, 4), keepdim=True), min=self.eps)
+        rel = target / denom
+        w = 1.0 + self.alpha * rel
+        loss = torch.abs(pred - target) * w
+        return loss.sum() / torch.clamp(w.sum(), min=self.eps)
+
+
+class MaskedWeightedL1Loss(nn.Module):
+    def __init__(self, alpha=2.0, eps=1e-6):
+        super().__init__()
+        self.alpha = alpha
+        self.eps = eps
+
+    def forward(self, pred, target, mask):
+        denom = torch.clamp(target.amax(dim=(2, 3, 4), keepdim=True), min=self.eps)
+        rel = target / denom
+        w = (1.0 + self.alpha * rel) * mask
+        loss = torch.abs(pred - target) * w
+        return loss.sum() / torch.clamp(w.sum(), min=self.eps)
+
 class MomentLoss(nn.Module):
-    def __init__(self):
-        super(MomentLoss, self).__init__()
-        self.loss = torch.nn.MSELoss()
+    """
+    Matches specified dose moments inside each ROI channel.
 
-    def __call__(self, predicted_dose, oar, dose):
+    Expected:
+      y_pred:    [B, 1, D, H, W]
+      y_true:    [B, 1, D, H, W]
+      mask_dict: dict[str, Tensor], each tensor shaped [B, C, D, H, W]
+                 Example:
+                   {
+                     "OARPTV": structures_tensor,   # channels = OARs + PTV
+                   }
+
+    Computes moments per patient, per channel, then averages.
+    """
+    def __init__(self, moments=(1, 2, 10), reduction="mean", eps=1e-6):
+        super().__init__()
+        self.moments = moments
+        self.reduction = reduction
+        self.eps = eps
+        self.loss = nn.MSELoss()
+
+    def _masked_moment(self, dose: torch.Tensor, mask: torch.Tensor, n: int) -> torch.Tensor:
         """
-        Calculate DVH loss: averaged over all OARs. Target hist is already computed
-            predicted dose (tensor) -- [N, C, D, H, W] C = 1
-            target hist (tensor)    -- [N, n_bins, n_oars]
-            target bins (tensor)    -- [N, n_bins]
-            oar (tensor)            -- [N, C, D, H, W] C == n_oars one hot encoded OAR including PTV
+        dose: [B,1,D,H,W]
+        mask: [B,1,D,H,W]
+        returns: [B] nth raw moment inside mask for each sample
         """
+        mask = (mask > 0.5).to(dose.dtype)
+        vol = mask.sum(dim=(1, 2, 3, 4)).clamp(min=self.eps)   # [B]
+        moment_n = torch.pow(
+            ((dose.pow(n) * mask).sum(dim=(1, 2, 3, 4)) / vol).clamp(min=self.eps),
+            1.0 / n
+        )
+        return moment_n
 
-        # Calculate predicted hist
-        vols = torch.sum(oar, axis=(2, 3, 4))
-        # n_bins = target_bins.shape[1]
-        # hist = torch.zeros_like(target_hist)
-        # bin_w = target_bins[0,1] - target_bins[0,0]
-        keys = ['Eso', 'Cord', 'Heart', 'Lung_L', 'Lung_R', 'PTV']
-        # moment = [[1, 2, 10], [1, 2, 10], [1, 2, 10], [1, 2, 10], [1, 2, 10], [2, 4, 6]]
-        # momentOfStructure = dict(zip(keys, moment))
-        momentOfStructure = {'Eso': {'moments': [1, 2, 10], 'weights': [1, 1, 1]},
-                             'Cord': {'moments': [1, 2, 10], 'weights': [1, 1, 1]},
-                             'Heart': {'moments': [1, 2, 10], 'weights': [1, 1, 1]},
-                             'Lung_L': {'moments': [1, 2, 10], 'weights': [1, 1, 1]},
-                             'Lung_R': {'moments': [1, 2, 10], 'weights': [1, 1, 1]},
-                             'PTV': {'moments': [2, 4, 6], 'weights': [1, 1, 1]}}
-        # momentOfStructure = dict([(k, v) for k in keys for v in values])
-        oarPredMoment = []
-        oarRealMoment = []
-        pres = 60
-        epsilon = 0.00001  # Added epsilon as the loss function can become sqrt(0)
-        for i in range(oar.shape[1]):
-            moments = momentOfStructure[keys[i]]['moments']
-            weights = momentOfStructure[keys[i]]['weights']
-            for j in range(len(moments)):
-                gEUDa = moments[j]
-                weight = weights[j]
-                oarpreddose = predicted_dose * oar[:, i, :, :, :]
-                oarRealDose = dose * oar[:, i, :, :, :]
-                if i < (oar.shape[1] - 1):
-                    # oarPredMomenta = torch.pow((1 / vols[0, i]) * (torch.sum(torch.pow(oarpreddose-pres, gEUDa), axis=(2, 3, 4))) + epsilon, 1 / gEUDa)
-                    # oarRealMomenta = torch.pow((1 / vols[0, i]) * (torch.sum(torch.pow(oarRealDose - pres, gEUDa), axis=(2, 3, 4))) + epsilon, 1 / gEUDa)
-                    # print(oarPredMomenta)
-                    # Use (1 / (oar[:, i, ...] == 1).sum()) to count the number of voxels
-                    # else:
-                    oarPredMomenta = weight * torch.pow((1 / vols[0, i]) * (torch.sum(torch.pow(oarpreddose, gEUDa), axis=(2, 3, 4))) + epsilon, 1 / gEUDa)
-                    oarRealMomenta = weight * torch.pow((1 / vols[0, i]) * (torch.sum(torch.pow(oarRealDose, gEUDa), axis=(2, 3, 4))) + epsilon, 1 / gEUDa)
-                    oarPredMoment.append(oarPredMomenta)
-                    oarRealMoment.append(oarRealMomenta)
-        oarPredMoment = torch.stack(oarPredMoment)
-        oarRealMoment = torch.stack(oarRealMoment)
-        # print(oarPredMoment)
-        # oarPredMoment = oarPredMoment + oarPredMomenta
+    def forward(self,
+                y_pred: torch.Tensor,
+                y_true: torch.Tensor,
+                mask_dict: dict[str, torch.Tensor]) -> torch.Tensor:
+        losses = []
 
-        return self.loss(oarPredMoment, oarRealMoment)  # self.loss(oarPredMoment, oarRealMoment)
-        # #self.loss(oarPredMoment, torch.zeros_like(oarPredMoment))
-        # #torch.sum(oarPredMoment)#, torch.zeros_like(oarPredMoment))
+        for n in self.moments:
+            for m in mask_dict.values():
+                # m: [B,C,D,H,W] or [B,1,D,H,W]
+                for c in range(m.size(1)):
+                    mask_c = m[:, c:c+1, ...]  # [B,1,D,H,W]
+
+                    # part for skipping empty masks; if vol=0, both moments become 0 and loss becomes 0, so they are automatically skipped in the final averaging
+                    mask_bin = (mask_c > 0.5).to(y_true.dtype)
+                    vol = mask_bin.sum(dim=(1, 2, 3, 4))  # [B]
+
+                    valid = vol > 0
+                    if not valid.any():
+                        continue
+
+                    pred_m = self._masked_moment(y_pred, mask_c, n)  # [B]
+                    true_m = self._masked_moment(y_true, mask_c, n)  # [B]
+
+                    # skip empty-mask samples automatically because both moments become 0
+                    losses.append(torch.abs(pred_m - true_m).mean())
+                    # losses.append(self.loss(pred_m[valid], true_m[valid])) # use valid to skip empty-mask samples in average
+
+        if len(losses) == 0:
+            return y_true.new_tensor(0.0)
+
+        loss = torch.stack(losses).mean()
+        if self.reduction == "mean":
+            return loss
+        return loss * y_true.numel()
+
+
+def _central_diff(x: torch.Tensor, dim: int):
+    """
+    Central finite difference along spatial dimension dim:
+      dim = 0 -> depth
+      dim = 1 -> height
+      dim = 2 -> width
+
+    x shape: [B, 1, D, H, W]
+    output shape: same as x
+    """
+    # F.pad for 5D tensors uses:
+    # (W_left, W_right, H_left, H_right, D_left, D_right)
+    pad = [0, 0, 0, 0, 0, 0]
+
+    if dim == 0:      # depth
+        pad[4] = 1
+        pad[5] = 1
+    elif dim == 1:    # height
+        pad[2] = 1
+        pad[3] = 1
+    elif dim == 2:    # width
+        pad[0] = 1
+        pad[1] = 1
+    else:
+        raise ValueError("dim must be 0, 1, or 2")
+
+    x_pad = F.pad(x, pad, mode="replicate")
+
+    # spatial dims of x are (2, 3, 4)
+    spatial_axis = dim + 2
+
+    forward = x_pad.narrow(spatial_axis, 2, x.size(spatial_axis))
+    backward = x_pad.narrow(spatial_axis, 0, x.size(spatial_axis))
+    return (forward - backward) / 2.0
+
+
+def _gradient_3d(x: torch.Tensor):
+    """
+    Returns stacked spatial gradients:
+    shape = [3, B, 1, D, H, W]
+    """
+    return torch.stack([_central_diff(x, d) for d in range(3)], dim=0)
+
+
+class DualGradientL2Loss(nn.Module):
+    """
+    Dual gradient loss:
+      - edge term emphasizes regions with large GT gradients
+      - flat term matches gradients everywhere more uniformly
+
+    Total = lambda_edge * L_edge + lambda_flat * L_flat
+    """
+    def __init__(self,
+                 gamma_edge: int = 25,
+                 gamma_flat: int = 0,
+                 lambda_edge: float = 0.1,
+                 lambda_flat: float = 0.05,
+                 reduction: str = "mean"):
+        super().__init__()
+        self.gamma_edge = gamma_edge
+        self.gamma_flat = gamma_flat
+        self.lambda_edge = lambda_edge
+        self.lambda_flat = lambda_flat
+        self.reduction = reduction
+
+    @staticmethod
+    def _sharp_term(gp: torch.Tensor, gg: torch.Tensor, gamma: int):
+        """
+        gp, gg shape: [3, B, 1, D, H, W]
+        """
+        diff2 = (gp - gg).pow(2).sum(0)   # [B,1,D,H,W]
+        weight = (gg.pow(2).sum(0).sqrt() + 1e-6).pow(gamma)
+        weight = weight.clamp(max=6)
+        return diff2 * weight
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        gp = _gradient_3d(y_pred)
+        gg = _gradient_3d(y_true)
+
+        l_edge = self._sharp_term(gp, gg, self.gamma_edge)
+        l_flat = self._sharp_term(gp, gg, self.gamma_flat)
+
+        loss = self.lambda_edge * l_edge + self.lambda_flat * l_flat
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        else:
+            raise ValueError("reduction must be 'mean' or 'sum'")
+
+class BerHuLoss(nn.Module):
+    def __init__(self, delta=1.0, eps=1e-8):
+        super().__init__()
+        self.delta = delta
+        self.eps = eps
+
+    def forward(self, pred, true, mask):
+        e = (pred - true) * mask
+        ae = e.abs()
+        loss = torch.where(
+            ae <= self.delta,
+            ae,
+            (e * e + self.delta * self.delta) / (2 * self.delta)
+        )
+        return (loss * mask).sum() / (mask.sum() + self.eps)

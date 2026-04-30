@@ -28,6 +28,93 @@ from skimage.transform import resize
 import traceback
 
 
+# remember to modify this function in future if you want to add more sites or use protocol_name to determine prescription dose
+def get_site_config(site: str):
+    if site.lower() == 'lung':
+        disease_struct_names = ['cord', 'esophagus', 'heart', 'lungs_not_gtv', 'ptv']
+        default_prescription_gy = 60
+    elif site.lower() == 'prostate':
+        disease_struct_names = ['bladder', 'rectum', 'femur_l', 'femur_r', 'ptv']
+        default_prescription_gy = 70.2
+    else:
+        raise ValueError("site must be either 'lung' or 'prostate'")
+
+    labels = {name: i + 1 for i, name in enumerate(disease_struct_names[:-1])}
+    labels['ptv'] = 1
+
+    return disease_struct_names, labels, default_prescription_gy
+
+def get_structure_masks(structs: pp.Structures, ct_shape, labels, disease_struct_names, case=''):
+    struct_names = structs.structures_dict['name']
+    struct_names_upper = [s.upper() for s in struct_names]
+
+    oar_mask = np.zeros(ct_shape, np.uint8)
+    ptv_mask = np.zeros_like(oar_mask)
+
+    for k in disease_struct_names:
+        if k == 'lungs_not_gtv':
+            if 'LUNGS_NOT_GTV' in struct_names_upper:
+                ind = struct_names_upper.index('LUNGS_NOT_GTV')
+                anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
+            else: # create lungs not gtv for some patients
+                anatomy_mask = np.zeros(ct_shape, dtype=bool)
+
+                if 'LUNG_L' in struct_names_upper:
+                    ind_l = struct_names_upper.index('LUNG_L')
+                    anatomy_mask = np.logical_or(
+                        anatomy_mask,
+                        structs.structures_dict['structure_mask_3d'][ind_l] > 0
+                    )
+
+                if 'LUNG_R' in struct_names_upper:
+                    ind_r = struct_names_upper.index('LUNG_R')
+                    anatomy_mask = np.logical_or(
+                        anatomy_mask,
+                        structs.structures_dict['structure_mask_3d'][ind_r] > 0
+                    )
+
+                if 'GTV' in struct_names_upper:
+                    ind_gtv = struct_names_upper.index('GTV')
+                    gtv_mask = structs.structures_dict['structure_mask_3d'][ind_gtv] > 0
+                    anatomy_mask = np.logical_and(anatomy_mask, ~gtv_mask)
+
+            oar_mask[np.where(anatomy_mask > 0)] = labels[k]
+
+        elif k.upper() in struct_names_upper:
+            ind = struct_names_upper.index(k.upper())
+            anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
+
+            if k == 'ptv':
+                ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
+            else:
+                oar_mask[np.where(anatomy_mask > 0)] = labels[k]
+        else:
+            print(f'Structure {k} not found for case {case}. Leaving it as zero mask.')
+
+    return oar_mask, ptv_mask
+
+# def get_structure_masks(structs: pp.Structures, ct_shape, labels, disease_struct_names, case=''):
+#     struct_names = structs.structures_dict['name']
+#     struct_names_upper = [s.upper() for s in struct_names]
+#
+#     oar_mask = np.zeros(ct_shape, np.uint8)
+#     ptv_mask = np.zeros_like(oar_mask)
+#
+#     for k in disease_struct_names:
+#         if k.upper() in struct_names_upper:
+#             ind = struct_names_upper.index(k.upper())
+#             anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
+#
+#             if k == 'ptv':
+#                 ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
+#             else:
+#                 oar_mask[np.where(anatomy_mask > 0)] = labels[k]
+#         else:
+#             print(f'Structure {k} not found for case {case}. Leaving it as zero mask.')
+#
+#     return oar_mask, ptv_mask
+
+
 def get_dataset(in_dir, case, suffix):
     filename = os.path.join(in_dir, case + suffix)
     img = None
@@ -208,48 +295,64 @@ def get_dvh(dose, oar, ptv):
     return hist_numpy, bins_np
 
 
-def process_case(ct_portpy, meta_data, ct, dose, oar, ptv, beamlet, out_dir, case):
-    oar_copy = oar.copy()
-    oar_copy[np.where(ptv == 1)] = 6
+def process_case(ct_portpy, meta_data, ct, oar, ptv, beamlet, out_dir, case,
+                 prescription_gy, dose = None, body=None):
+    # oar_copy = oar.copy()
+    # oar_copy[np.where(ptv == 1)] = 6
 
     start, end = get_crop_settings_calc_box(ct_portpy, meta_data=meta_data)
 
     ct = crop_resize_img(ct, start, end, is_mask=False)
     oar = crop_resize_img(oar, start, end, is_mask=True)
     ptv = crop_resize_img(ptv, start, end, is_mask=True)
-    dose = crop_resize_img(dose, start, end, is_mask=False)
+    if dose is not None:
+        dose = crop_resize_img(dose, start, end, is_mask=False)
+    if body is not None:
+        body = crop_resize_img(body, start, end, is_mask=True)
     beamlet = crop_resize_img(beamlet, start, end, is_mask=False)
-    beamlet[np.where(ptv == 1)] = 60  # PTV volume set to prescribed dose
 
-    # Scale PTV volume (region) in dose to have average prescibed 60 Gy
+    beamlet[np.where(ptv == 1)] = prescription_gy
 
-    num_ptv = np.sum(ptv)
-    dose_copy = dose.copy()
-    dose_copy *= ptv
-    sum = np.sum(dose_copy)
-    scale_factor = (60 * num_ptv) / sum
+    # correct version with bug fix
+    if dose is not None:
+        # num_ptv = np.sum(ptv)
+        # ptv_sum = np.sum(dose * ptv)
+        #
+        # if num_ptv > 0 and ptv_sum > 0:
+        #     ptv_mean = ptv_sum / num_ptv
+        #     scale_factor = prescription_gy / ptv_mean
+        #     dose = dose * scale_factor
 
-    dose_copy *= scale_factor
-
-    dose[np.where(ptv == 1)] = dose_copy[np.where(ptv == 1)]
+        dose = np.clip(dose, a_min=0, a_max=1.2*prescription_gy).astype(np.float32)
 
     ct = np.clip(ct, a_min=-1000, a_max=3071)
     ct = (ct + 1000) / 4071
     ct = ct.astype(np.float32)
 
-    dose = np.clip(dose, a_min=0, a_max=70)
+    beamlet = beamlet.astype(np.float32)
 
-    # hist, bins = get_dvh(dose, oar, ptv)
+    save_dict = {
+        "CT": ct,
+        "DOSE": dose,
+        "OAR": oar,
+        "PTV": ptv,
+        "BEAM": beamlet,
+        "PRESCRIPTION_GY": np.float32(prescription_gy),
+    }
+    if body is not None:
+        save_dict["BODY"] = body.astype(np.uint8)
 
     filename = os.path.join(out_dir, case)
-    np.savez(filename, CT=ct, DOSE=dose, OAR=oar, PTV=ptv, BEAM=beamlet)
+    np.savez(filename, **save_dict)
 
 
-def data_preprocess(in_dir, out_dir):
+def data_preprocess(in_dir, out_dir, site: str='lung', protocol_name: str = None, beam_ids = None, technique_name: str = 'imrt'):
     """
     in_dir: raw data input directory
     out_dir: processed data out directory
-
+    site: anatomical site. Default is lung. In future, can add more sites and modify code accordingly.
+    protocol_name: protocol name to determine prescription dose. Default is None, which means it will use the prescription dose from metadata. In future, can modify code to use protocol_name to determine prescription dose.
+    dose_clip_max_gy: maximum dose in Gy to clip the dose array. Default is None, which means it will use 1.2 times the prescription dose as the maximum dose for clipping. Can modify this in future to use a fixed value or a value based on protocol_name.
     """
     if not os.path.isabs(in_dir):
         base_dir = os.getcwd()  # get current running directory
@@ -262,21 +365,18 @@ def data_preprocess(in_dir, out_dir):
 
     cases = os.listdir(in_dir)
 
-    labels = {
-        'cord': 1,
-        'esophagus': 2,
-        'heart': 3,
-        'lung_l': 4,
-        'lung_r': 5,
-        'ptv': 1
-    }  # PTV will be stored separately as its extent is not mutually exclusive with other anatomies
-
+    disease_struct_names, labels, default_prescription_gy = get_site_config(site)
     for idx, case in enumerate(cases):
+        # if dose file does not exist in raw data dir, skip it
+        dose_file_path = os.path.join(in_dir, case, 'DicomFiles', 'rt_dose_echo_{}.dcm'.format(technique_name.lower()))
+        if not os.path.exists(dose_file_path):
+            print('Dose file does not exist for case {}. Skipping...'.format(case))
+            continue
         # process all the nrrd files
         try:
 
-            if 'Lung_Patient' in case:
-                if case == 'Lung_Phantom_Patient_1' or case == 'Lung_Patient_8':
+            if site.lower() in case.lower():
+                if case == 'Lung_Phantom_Patient_1':
                     # These patient doesnt include some structures. Modify code in future
                     continue
                 print('Processing case {}: {} of {} ...'.format(case, idx + 1, len(cases)))
@@ -284,41 +384,52 @@ def data_preprocess(in_dir, out_dir):
                 data = pp.DataExplorer(data_dir=in_dir)
                 data.patient_id = case
                 meta_data = data.load_metadata()
+                if protocol_name is not None:
+                    clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
+                    prescription_gy = clinical_criteria.get_prescription()
+                else:
+                    prescription_gy = default_prescription_gy
                 # Load ct and structure set for the above patient using CT and Structures class
                 ct = pp.CT(data)
                 ct_arr = ct.ct_dict['ct_hu_3d'][0]
                 structs = pp.Structures(data)
-                beams = pp.Beams(data)
+                beams = pp.Beams(data, beam_ids=beam_ids)
                 inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
                 beams_1d = inf_matrix.A * np.ones((inf_matrix.A.shape[1]))
                 beams_3d = inf_matrix.dose_1d_to_3d(dose_1d=beams_1d)
                 beams_3d = beams_3d.astype('float16')
 
                 # normalize beams_3d. Don't forget add these lines
-                beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 72
+                beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 1.2 * prescription_gy
                 planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
-                                                                     dose_file_name=os.path.join(in_dir, case, 'rt_dose_echo_imrt.dcm'))
+                                                                     dose_file_name=os.path.join(in_dir, case, 'DicomFiles', 'rt_dose_echo_{}.dcm'.format(technique_name.lower())))
 
-                # oars = ['Cord', 'Esophagus', 'Heart', 'Lung_L', 'Lung_R', 'PTV']
-                oars = ['cord', 'esophagus', 'heart', 'lung_l', 'lung_r', 'ptv']
-                target_oars = dict.fromkeys(oars, -1)  # Will store index of target OAR contours from dicom dataset
+                oar_mask, ptv_mask = get_structure_masks(
+                    structs=structs,
+                    ct_shape=ct_arr.shape,
+                    labels=labels,
+                    disease_struct_names=disease_struct_names,
+                    case=case
+                )
 
-                oar_mask = np.zeros(ct_arr.shape, np.uint8)
-                ptv_mask = np.zeros_like(oar_mask)
+                # skip patient only if ptv is missing
+                if np.sum(ptv_mask) == 0:
+                    print(f'PTV not found for case {case}. Skipping this case.')
+                    continue
+                body_mask = structs.get_structure_mask_3d('BODY').astype(np.uint8)
+                process_case(
+                    ct_portpy=ct,
+                    meta_data=meta_data,
+                    ct=ct_arr,
+                    dose=planner_dose_3d,
+                    oar=oar_mask,
+                    ptv=ptv_mask,
+                    beamlet=beams_3d,
+                    out_dir=out_dir,
+                    case=case,
+                    prescription_gy=prescription_gy,
+                    body=body_mask)
 
-                for k, v in target_oars.items():
-                    # anatomy_mask = np.zeros_like(oar_mask)
-                    ind = structs.structures_dict['name'].index(k.upper())
-                    anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
-
-                    if k == 'ptv':
-                        ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
-                    else:
-                        oar_mask[np.where(anatomy_mask > 0)] = labels[k]
-
-                # print('Processing case {}: {} of {} ...'.format(case, idx+1, len(cases)))
-                process_case(ct_portpy=ct, meta_data=meta_data, ct=ct_arr, dose=planner_dose_3d, oar=oar_mask, ptv=ptv_mask, beamlet=beams_3d, out_dir=out_dir,
-                             case=case)
         except:
             print('Processing of case {} failed'.format(case))
             print(str(traceback.format_exc()))
