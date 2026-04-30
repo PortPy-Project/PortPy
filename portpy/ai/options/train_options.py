@@ -53,6 +53,25 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--pool_size', type=int, default=50, help='the size of image buffer that stores previously generated images')
         parser.add_argument('--lr_policy', type=str, default='linear', help='learning rate policy. [linear | step | plateau | cosine]')
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
-
+        parser.add_argument('--dose_loss', type=str, default='mae', choices=['mae', 'mednext_hybrid','mae_moment'])
+        parser.add_argument('--lambda_L1', type=float, default=1.0)
+        parser.add_argument('--lambda_wL1', type=float, default=1.0)
+        parser.add_argument('--lambda_masked_wL1', type=float, default=1.0)
+        parser.add_argument('--lambda_moment', type=float, default=0.1)
+        parser.add_argument('--mednext_model_id', type=str, default='B',
+                            choices=['S', 'B', 'M', 'L'],
+                            help='MedNeXt model size')
+        parser.add_argument('--mednext_kernel_size', type=int, default=3,
+                            choices=[3, 5],
+                            help='MedNeXt depthwise kernel size')
+        parser.add_argument('--upkern_pretrained_path', type=str, default='',
+                            help='Path to pretrained kernel-3 checkpoint to initialize kernel-5 model')
+        parser.add_argument('--load_upkern', action='store_true',
+                            help='Use UpKern to initialize a kernel-5 MedNeXt from a kernel-3 checkpoint')
+        parser.add_argument("--lambda_bg", type=float, default=0.0005)
+        parser.add_argument("--beamlet_y_max", type=float, default=0.7)
+        parser.add_argument("--d1_norm", type=float, default=1600.0)
+        parser.add_argument("--d2_norm", type=float, default=600.0)
+        parser.add_argument("--d1_out_norm", type=float, default=800.0)
         self.isTrain = True
         return parser

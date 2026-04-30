@@ -34,7 +34,34 @@ class TestOptions(BaseOptions):
         parser.add_argument('--num_test', type=int, default=50, help='how many test images to run')
         # rewrite devalue values
         parser.set_defaults(model='test')
+        parser.add_argument('--dose_loss', type=str, default='mae', choices=['mae', 'mednext_hybrid','mae_moment'])
+        parser.add_argument('--lambda_L1', type=float, default=1.0)
+        parser.add_argument('--lambda_wL1', type=float, default=1.0)
+        parser.add_argument('--lambda_masked_wL1', type=float, default=1.0)
+        parser.add_argument('--lambda_moment', type=float, default=0.1)
         # To avoid cropping, the load_size should be the same as crop_size
         parser.set_defaults(load_size=parser.get_default('crop_size'))
+        parser.add_argument('--mednext_model_id', type=str, default='B',
+                            choices=['S', 'B', 'M', 'L'],
+                            help='MedNeXt model size')
+        parser.add_argument('--mednext_kernel_size', type=int, default=3,
+                            choices=[3, 5],
+                            help='MedNeXt depthwise kernel size')
+        parser.add_argument('--upkern_pretrained_path', type=str, default='',
+                            help='Path to pretrained kernel-3 checkpoint to initialize kernel-5 model')
+        parser.add_argument('--load_upkern', action='store_true',
+                            help='Use UpKern to initialize a kernel-5 MedNeXt from a kernel-3 checkpoint')
+        parser.add_argument("--lambda_bg", type=float, default=0.0005)
+        parser.add_argument("--beamlet_y_max", type=float, default=0.7)
+        parser.add_argument("--d1_norm", type=float, default=1600.0)
+        parser.add_argument("--d2_norm", type=float, default=600.0)
+        parser.add_argument("--d1_out_norm", type=float, default=800.0)
+        parser.add_argument(
+            "--test_task",
+            type=str,
+            default="dose_prediction",
+            choices=["dose_prediction", "beamlet_dose_prediction"],
+            help="Task-specific testing behavior."
+        )
         self.isTrain = False
         return parser

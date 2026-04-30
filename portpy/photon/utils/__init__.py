@@ -27,3 +27,4 @@ from .write_rt_plan_imrt import write_rt_plan_imrt
 from .write_rt_plan_vmat import write_rt_plan_vmat
 from .create_ct_dose_voxel_map import create_ct_dose_voxel_map
 from .download_portpy_data import download_portpy_data
+from .scorecard import load_scorecard_json, adapt_scorecard_prescription, compute_total_quality_score

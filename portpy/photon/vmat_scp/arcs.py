@@ -140,8 +140,6 @@ class Arcs:
             end_beamlet_idxs = []
             num_rows_list = []
             num_cols_list = []
-            start_leaf_pairs = []
-            end_leaf_pairs = []
             min_positions_x = []
             max_positions_x = []
 
@@ -152,8 +150,6 @@ class Arcs:
                 beam['reduced_2d_grid'] = reduced_2d_grid
                 beam['num_rows'] = reduced_2d_grid.shape[0]
                 beam['num_cols'] = reduced_2d_grid.shape[1]
-                beam['start_leaf_pair'] = np.max(beam['MLC_leaf_idx'][0])
-                beam['end_leaf_pair'] = np.min(beam['MLC_leaf_idx'][0])
                 beam['start_beamlet_idx'] = np.min(reduced_2d_grid[reduced_2d_grid >= 0])
                 beam['end_beamlet_idx'] = np.max(reduced_2d_grid)
                 beam['min_position_x_mm'] = np.min(beam['position_x_mm'][0])
@@ -164,8 +160,8 @@ class Arcs:
                 end_beamlet_idxs.append(beam['end_beamlet_idx'])
                 num_rows_list.append(beam['num_rows'])
                 num_cols_list.append(beam['num_cols'])
-                start_leaf_pairs.append(beam['start_leaf_pair'])
-                end_leaf_pairs.append(beam['end_leaf_pair'])
+                # start_leaf_pairs.append(beam['start_leaf_pair'])
+                # end_leaf_pairs.append(beam['end_leaf_pair'])
                 min_positions_x.append(beam['min_position_x_mm'])
                 max_positions_x.append(beam['max_position_x_mm'])
 
@@ -173,18 +169,94 @@ class Arcs:
             arc['num_beams'] = len(beams_list)
             arc['start_beamlet_idx'] = start_beamlet_idxs[0]  # First beam
             arc['end_beamlet_idx'] = end_beamlet_idxs[-1]  # Last beam
-            arc['total_rows'] = np.sum(num_rows_list)
-            arc['max_rows'] = np.max(num_rows_list)
-            arc['max_cols'] = np.max(num_cols_list)
-            arc['start_leaf_pair'] = np.max(start_leaf_pairs)
-            arc['end_leaf_pair'] = np.min(end_leaf_pairs)
+            arc['total_bev_rows'] = np.sum(num_rows_list)
             arc['min_position_x_mm'] = np.min(min_positions_x)
             arc['max_position_x_mm'] = np.max(max_positions_x)
 
-        # align beams if beams are off in x direction
+
+        # align rows and leaves
         for i, arc in enumerate((arcs_dict['arcs'])):
+            start_leaf_pairs = []
+            end_leaf_pairs = []
             for j, beam in enumerate(arc['vmat_opt']):
-                beam['offset_x'] = (beam['min_position_x_mm'] - arc['min_position_x_mm']) / self._inf_matrix.beamlet_width_mm
+                beam['leaf_pair_row_match'] = []
+                beam_id = beam['beam_id']
+                ind = self._inf_matrix._beams.beams_dict['ID'].index(beam_id)
+                # ecl_leaf_y = self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][ind]
+                # hard coded. change it for other machine
+                ecl_leaf_y = [-200, -190, -180, -170, -160, -150, -140, -130, -120, -110, -100, -95, -90, -85, -80, -75,
+                              -70, -65, -60, -55, -50, -45, -40, -35, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25,
+                              30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120, 130, 140, 150, 160,
+                              170, 180, 190, 200]
+                if ecl_leaf_y[0] < 0:
+                    ecl_leaf_y = ecl_leaf_y[::-1] # reverse it in case is it is negative on top to match it with eclipse
+                self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][ind] = ecl_leaf_y
+                beam['mlc_leaf_thickness'] = np.abs(np.diff(ecl_leaf_y))
+                total_lp = len(beam['mlc_leaf_thickness'])
+                beam['leaf_pairs'] = list(range(total_lp, 0, -1))
+                for r in range(beam['num_rows']):
+                    row_start_beamlet = beam['reduced_2d_grid'][r][beam['reduced_2d_grid'][r] >= 0][0]
+                    stand_row_start_beamlet = row_start_beamlet - beam['start_beamlet_idx']
+                    start_leaf_num = np.where(ecl_leaf_y == (
+                            beam['position_y_mm'][0][stand_row_start_beamlet] + beam['height_mm'][0][
+                        stand_row_start_beamlet] / 2))[0][0]
+                    stop_leaf_num = np.where(ecl_leaf_y == (
+                            beam['position_y_mm'][0][stand_row_start_beamlet] - beam['height_mm'][0][
+                        stand_row_start_beamlet] / 2))[0][0]
+                    beam['leaf_pair_row_match'].append(np.arange(total_lp-start_leaf_num, total_lp-stop_leaf_num, -1))
+                beam['start_leaf_pair'] = np.max([lr for lr in beam['leaf_pair_row_match']])
+                beam['end_leaf_pair'] = np.min([lr for lr in beam['leaf_pair_row_match']])
+                start_leaf_pairs.append(beam['start_leaf_pair'])
+                end_leaf_pairs.append(beam['end_leaf_pair'])
+            arc['start_leaf_pair'] = np.max(start_leaf_pairs)
+            arc['end_leaf_pair'] = np.min(end_leaf_pairs)
+
+        # align beams if beams are off in x and y direction
+        for i, arc in enumerate((arcs_dict['arcs'])):
+            beamlet_res_y = self._inf_matrix.beamlet_height_mm
+            beamlet_res_x = self._inf_matrix.beamlet_width_mm
+            for j, beam in enumerate(arc['vmat_opt']):
+                beam['offset_x'] = (beam['min_position_x_mm'] - arc['min_position_x_mm']) / beamlet_res_x
+
+                offset_y = 0
+                if arc['start_leaf_pair'] > beam['start_leaf_pair']:
+                    s = arc['start_leaf_pair']
+                    total_lp = len(beam['mlc_leaf_thickness'])
+                    while s > beam['start_leaf_pair']:
+                        leaf_no = total_lp - s  # total_lp+1 - s in MATLAB
+                        if beamlet_res_y > beam['mlc_leaf_thickness'][leaf_no]:
+                            c = 0
+                            while beamlet_res_y >= np.sum(beam['mlc_leaf_thickness'][leaf_no:leaf_no + c + 1]):
+                                c += 1
+                                if leaf_no + c + 1 > total_lp:  # safety check
+                                    break
+                            s = s - c
+                        else:
+                            s = s - 1
+                        offset_y += 1
+                beam['offset_y'] = offset_y
+            all_rows = max(beam['num_rows'] + beam['offset_y'] for beam in arc['vmat_opt'])
+            all_cols = int((arc['max_position_x_mm'] - arc['min_position_x_mm']) / beamlet_res_x) + 1 # Adding 1 since we are measure from center to center of beamlets
+            arc['all_rows'] = all_rows
+            arc['all_cols'] = all_cols
+
+            # Create leafPair grouping
+            leaf_pairs = []
+            r = arc['start_leaf_pair']
+            while r >= arc['end_leaf_pair']:
+                mlc_leaf_thickness = arc['vmat_opt'][0]['mlc_leaf_thickness']
+                total_lp = len(mlc_leaf_thickness)
+                leaf_no =  - r  # convert to 0-based index from top
+                c = 0
+                # Group consecutive leaf pairs to match beamlet resolution
+                while (leaf_no + c + 1 < total_lp) and \
+                        (beamlet_res_y >= sum(mlc_leaf_thickness[leaf_no:leaf_no + c + 2])):
+                    c += 1
+                group = list(range(r, r - c - 1, -1))  # descending from r to r-c
+                leaf_pairs.append(group)
+                r = r - c - 1
+
+            arc['leaf_pairs'] = leaf_pairs
 
     def get_initial_leaf_pos(self, initial_leaf_pos='BEV'):
 
@@ -198,7 +270,20 @@ class Arcs:
         for i, arc in enumerate((arcs_dict['arcs'])):
             beams_list = arc['vmat_opt']
             for j, beam in enumerate(beams_list):
-
+                # reduced_2d_grid = self._inf_matrix.get_bev_2d_grid(beam_id=beam['beam_id'])
+                # reduced_2d_grid = reduced_2d_grid[~np.all(reduced_2d_grid == -1, axis=1), :]  # remove rows which are not in BEV
+                # beam['reduced_2d_grid'] = reduced_2d_grid
+                # beam['num_rows'] = reduced_2d_grid.shape[0]
+                # # beam_id_ind = self._inf_matrix._beams.get_all_beam_ids().index(beam['beam_id'])
+                # # beam['start_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.max(beam['position_y_mm']))[0][0]
+                # # beam['end_leaf_pair'] = np.where(self._inf_matrix._beams.beams_dict['MLC_leaves_pos_y_mm'][beam_id_ind] == np.min(beam['position_y_mm']))[0][0]
+                # beam['start_leaf_pair'] = np.amax(beam['MLC_leaf_idx'][0])  # commented temporary. Hai to add it to metadata
+                # beam['end_leaf_pair'] = np.amin(beam['MLC_leaf_idx'][0])
+                # beam['num_cols'] = beam['reduced_2d_grid'].shape[1]
+                # beam['start_beamlet_idx'] = np.unique(np.sort(reduced_2d_grid[reduced_2d_grid >= 0]))[0]
+                # beam['end_beamlet_idx'] = np.amax(reduced_2d_grid)
+                # beam['min_position_x_mm'] = np.min(beam['position_x_mm'][0])
+                # beam['max_position_x_mm'] = np.max(beam['position_x_mm'][0])
                 beam['leaf_pos_bev'] = []
                 beam['leaf_pos_left'] = []
                 beam['leaf_pos_right'] = []
@@ -602,7 +687,7 @@ class Arcs:
                     if beam['bound_ind_left'][r]:
                         bound_ind = beam['bound_ind_left'][r]
                         col = np.where(np.isin(reduced_2d_grid[r, :], bound_ind))[0]
-                        beam['leaf_pos_b'][r][0] = max(col) - int(sum(int_sol[r, col]))
+                        beam['leaf_pos_b'][r][0] = max(col) - int(np.floor(sum(int_sol[r, col])))
                         beam['leaf_pos_f'][r][0] = max(col) - int(np.ceil(sum(int_sol[r, col])))
                     else:
                         beam['leaf_pos_b'][r][0] = beam['leaf_pos_left'][r]
@@ -611,7 +696,7 @@ class Arcs:
                     if beam['bound_ind_right'][r]:
                         bound_ind = beam['bound_ind_right'][r]
                         col = np.where(np.isin(reduced_2d_grid[r, :], bound_ind))[0]
-                        beam['leaf_pos_b'][r][1] = min(col) + int(sum(int_sol[r, col]))
+                        beam['leaf_pos_b'][r][1] = min(col) + int(np.floor(sum(int_sol[r, col])))
                         beam['leaf_pos_f'][r][1] = min(col) + int(np.ceil(sum(int_sol[r, col])))
                     else:
                         beam['leaf_pos_b'][r][1] = beam['leaf_pos_right'][r]
@@ -627,15 +712,24 @@ class Arcs:
         arcs = self.arcs_dict['arcs']
         leaf_pos_mu_l = sol['leaf_pos_mu_l']
         leaf_pos_mu_r = sol['leaf_pos_mu_r']
+        sum_all_rows = np.sum([arc['all_rows'] * arc['num_beams'] for arc in arcs])
         count = 0
         beam_so_far = 0
         for a, arc in enumerate(arcs):
             for b, beam in enumerate(arc['vmat_opt']):
-                num_rows = beam['num_rows']
+                beam['beam_area_in_beamlet'] = 0
                 beam_mu = sol['int_v'][beam_so_far + b]
-                beam['cont_leaf_pos_in_beamlet'] = np.zeros((num_rows, 2))
-                for r in range(num_rows):
-                    beam['cont_leaf_pos_in_beamlet'][r, 0] = np.round(leaf_pos_mu_l[count] / (beam_mu + 0.000000000001), 4)
-                    beam['cont_leaf_pos_in_beamlet'][r, 1] = np.round(leaf_pos_mu_r[count] / (beam_mu + 0.000000000001), 4)
-                    count = count + 1
+                beam['cont_leaf_pos_in_beamlet'] = np.zeros((arc['all_rows'], 2))
+                for r in range(arc['all_rows']):
+                    if sum_all_rows != len(leaf_pos_mu_l) and ((r < beam['offset_y']) or (r >= beam['offset_y'] + beam['num_rows'])):
+                        beam['cont_leaf_pos_in_beamlet'][r, 0] = 0 # dummy parking for out bev leafs when we exclude them in SCP optimization
+                        beam['cont_leaf_pos_in_beamlet'][r, 1] = 0.5/self._inf_matrix.beamlet_width_mm*1.01
+                    else:
+                        beam['cont_leaf_pos_in_beamlet'][r, 0] = np.round(leaf_pos_mu_l[count] / (beam_mu + 0.000000000001), 4)
+                        beam['cont_leaf_pos_in_beamlet'][r, 1] = np.round(leaf_pos_mu_r[count] / (beam_mu + 0.000000000001), 4)
+                        count = count + 1
+                for r in range(beam['num_rows']):
+                    idx = r + beam['offset_y']
+                    width = beam['cont_leaf_pos_in_beamlet'][idx, 1] - beam['cont_leaf_pos_in_beamlet'][idx, 0]
+                    beam['beam_area_in_beamlet'] += width
             beam_so_far += arc['num_beams']

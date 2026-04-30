@@ -194,12 +194,16 @@ class Structures:
 
         # getting kernel size for expansion or shrinking
         if margin_mm > 0:
-            num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
-
+            # num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
+            res_xyz = np.asarray(self._ct_voxel_resolution_xyz_mm)
+            res_zyx = res_xyz[[2, 1, 0]]
+            num_voxels = np.round(margin_mm / res_zyx).astype(int)
+            num_voxels = np.maximum(num_voxels, 1)
             kernel = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
             # creating different iterations along z and xy directions
-            num_iterations = int(num_voxels[0] / num_voxels[2])
-            iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
+            ratio = num_voxels[0] / num_voxels[2] if num_voxels[2] > 0 else 1
+            num_iterations = max(1, int(np.round(ratio)))
+            iterations_in_one_step = max(1, int(np.round(num_voxels[0] / num_iterations)))
             # margin_mask_3d = ndimage.binary_dilation(mask_3d, struct_name=struct).astype(mask_3d.dtype)
             for i in range(num_iterations):
                 if i == 0:
@@ -242,11 +246,17 @@ class Structures:
 
 
         # getting kernel size for expansion or shrinking
-        num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
+
+        # num_voxels = np.round(margin_mm / np.asarray(self._ct_voxel_resolution_xyz_mm)).astype(int)
+        res_xyz = np.asarray(self._ct_voxel_resolution_xyz_mm)
+        res_zyx = res_xyz[[2, 1, 0]]
+        num_voxels = np.round(margin_mm / res_zyx).astype(int)
+        num_voxels = np.maximum(num_voxels, 1)
         struct = ndimage.generate_binary_structure(rank=3, connectivity=2)  # ball kernel
         # creating different iterations along z and xy directions
-        num_iterations = int(num_voxels[0] / num_voxels[2])
-        iterations_in_one_step = int(np.round(num_voxels[0] / num_iterations))
+        ratio = num_voxels[0] / num_voxels[2] if num_voxels[2] > 0 else 1
+        num_iterations = max(1, int(np.round(ratio)))
+        iterations_in_one_step = max(1, int(np.round(num_voxels[0] / num_iterations)))
         for i in range(num_iterations):
             if i == 0:
                 margin_mask_3d = ndimage.binary_erosion(mask_3d, structure=struct,

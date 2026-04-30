@@ -52,6 +52,9 @@ coverage.xml
 docs/_build/
 /data/
 /ai_data/
+/ai_data_lungs_old/
+/ai_data1/
+/ai_beamlet_data/
 /checkpoints/
 /results/
 /metadata/

@@ -79,9 +79,18 @@ class Visualizer():
         self.win_size = opt.display_winsize
         self.name = opt.name
         self.saved = False
+        self.use_visdom = False
         if self.display_id > 0:
-            import visdom
-            self.vis = visdom.Visdom(port=opt.display_port, use_incoming_socket=False)
+            try:
+                import visdom
+                self.vis = visdom.Visdom(port=opt.display_port, use_incoming_socket=False)
+                if self.vis.check_connection():
+                    self.use_visdom = True
+                else:
+                    print(f'Visdom server not reachable on port {opt.display_port}. Continuing without Visdom.')
+            except Exception as e:
+                print(f'Could not initialize Visdom: {e}. Continuing without Visdom.')
+
             self.display_single_pane_ncols = opt.display_ncols
 
         if self.use_html:
@@ -184,6 +193,9 @@ class Visualizer():
             self.plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
         self.plot_data['X'].append(epoch + counter_ratio)
         self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
+        if not getattr(self, 'use_visdom', False):
+            return
+
         try:
             self.vis.line(
                 X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
@@ -195,7 +207,8 @@ class Visualizer():
                     'ylabel': 'loss'},
                 win=self.display_id)
         except VisdomExceptionBase:
-            self.create_visdom_connections()
+            print('Visdom connection lost. Skipping Visdom plotting.')
+            self.use_visdom = False
 
     # losses: same format as |losses| of plot_current_losses
     def print_current_losses(self, epoch, iters, losses, t_comp, t_data):

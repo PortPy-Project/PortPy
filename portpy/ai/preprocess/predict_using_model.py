@@ -20,7 +20,10 @@ import numpy as np
 import os
 from skimage.transform import resize
 import portpy.photon as pp
-import argparse
+# import argparse
+from portpy.ai.preprocess.data_preprocess import get_site_config, get_structure_masks, process_case
+from portpy.ai.test import test
+from portpy.ai.infer_runner import InferenceRunner
 
 
 def get_dataset(in_dir, case, suffix):
@@ -204,61 +207,30 @@ def attach_slices(pred_dose, ct_img, start, end):
     return dose
 
 
-def process_case(ct_portpy, meta_data, ct, oar, ptv, beamlet, out_dir, case, dose=None):
-    oar_copy = oar.copy()
-    oar_copy[np.where(ptv == 1)] = 6
+def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/infer', model_name='portpy_test_1', checkpoints_dir='../checkpoints', results_dir=r'../results',
+                        netG = 'unet_128', site='lung', protocol_name=None, beam_ids=None, infer_runner: InferenceRunner = None):
+    """
 
-    start, end = get_crop_settings_calc_box(ct_portpy, meta_data=meta_data)
-
-    ct = crop_resize_img(ct, start, end, is_mask=False)
-    oar = crop_resize_img(oar, start, end, is_mask=True)
-    ptv = crop_resize_img(ptv, start, end, is_mask=True)
-    beamlet = crop_resize_img(beamlet, start, end, is_mask=False)
-    beamlet[np.where(ptv == 1)] = 60  # PTV volume set to prescribed dose
-
-    if dose is not None:
-        dose = crop_resize_img(dose, start, end, is_mask=False)
-        # Scale PTV volume (region) in dose to have average prescibed 60 Gy
-
-        num_ptv = np.sum(ptv)
-        dose_copy = dose.copy()
-        dose_copy *= ptv
-        sum = np.sum(dose_copy)
-        scale_factor = (60 * num_ptv) / sum
-
-        dose_copy *= scale_factor
-
-        dose[np.where(ptv == 1)] = dose_copy[np.where(ptv == 1)]
-        dose = np.clip(dose, a_min=0, a_max=70)
-
-    ct = np.clip(ct, a_min=-1000, a_max=3071)
-    ct = (ct + 1000) / 4071
-    ct = ct.astype(np.float32)
-
-    # hist, bins = get_dvh(dose, oar, ptv)
-
-    filename = os.path.join(out_dir, case)
-    np.savez(filename, CT=ct, DOSE=dose, OAR=oar, PTV=ptv, BEAM=beamlet)
-
-
-def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/test', model_name='portpy_test_1', checkpoints_dir='../checkpoints', results_dir=r'../results'):
-
+    :param patient_id: Patient ID for which to run inference. Should match the patient ID in the input directory.
+    :param in_dir: input directory containing the DICOM files for the patient. Should be organized in the same way as the input directory for training (i.e. with subdirectories for CT, structures, beams, etc.)
+    :param out_dir: output directory to save the preprocessed data for inference. This will be created if it doesn't exist. The preprocessed data will be saved in a subdirectory called 'infer' within this directory.
+    :param model_name: model name to use for inference. This should match the name of the model used during training and the name of the subdirectory in the checkpoints directory where the model weights are saved.
+    :param checkpoints_dir: directory where the model checkpoints are saved. The function will look for the latest checkpoint in the subdirectory corresponding to the model name.
+    :param results_dir: results directory where the predicted dose will be saved. The predicted dose will be saved in a subdirectory corresponding to the model name, under 'test_latest/npz_images'.
+    :param netG: network architecture to use for inference. This should match the architecture used during training (e.g. 'unet_128', 'mednext').
+    :param site: disease site for which to run inference. This will be used to determine the relevant structures and labels for preprocessing the data. Should match the site used during training (e.g. 'lung', 'prostate').
+    :param protocol_name: protocol name to use for inference. This will be used to determine the prescription dose for the case, which will be used to rescale the predicted dose. If not provided, the default prescription dose for the site will be used.
+    :param beam_ids: beam IDs to use for inference. This will be used to determine which beams to include in the influence matrix calculation. If not provided, planner beams will be included.
+    :param infer_runner: InferenceRunner instance to use for running inference. If not provided, the function will run inference using the test function directly. This allows for flexibility in how inference is run, such as using a custom runner that handles batching or distributed inference.
+    :return:
+    """
     gt_dir = os.path.join(results_dir, model_name, "test_latest", "npz_images")  # directory to save predicted results
     # directory to save preprocessed data
 
     # create test directory in out_dir
-    out_dir = os.path.join(out_dir, 'test')
+    out_dir = os.path.join(out_dir, 'infer')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-
-    labels = {
-        'cord': 1,
-        'esophagus': 2,
-        'heart': 3,
-        'lung_l': 4,
-        'lung_r': 5,
-        'ptv': 1
-    }  # PTV will be stored separately as its extent is not mutually exclusive with other anatomies
 
         # preprocess data
     print('Processing case {}...'.format(patient_id))
@@ -272,36 +244,48 @@ def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/test', model_nam
     structs = pp.Structures(data)
     ct_img = get_ct_image(ct)
 
-    beams = pp.Beams(data)
+    beams = pp.Beams(data, beam_ids=beam_ids)
     inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
     beams_1d = inf_matrix.A * np.ones((inf_matrix.A.shape[1]))
     beams_3d = inf_matrix.dose_1d_to_3d(dose_1d=beams_1d)
     beams_3d = beams_3d.astype('float16')
 
+    disease_struct_names, labels, default_prescription_gy = get_site_config(site)
+
+    if protocol_name is not None:
+        clinical_criteria = pp.ClinicalCriteria(data, protocol_name=protocol_name)
+        prescription_gy = clinical_criteria.get_prescription()
+    else:
+        prescription_gy = default_prescription_gy
+
     # rescale beams_3d between 0 to 72(max dose) 1.2*prescription
-    beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 72
+    beams_3d = ((beams_3d - np.amin(beams_3d)) / (np.amax(beams_3d) - np.amin(beams_3d))) * 1.2*prescription_gy
 
-    # oars = ['Cord', 'Esophagus', 'Heart', 'Lung_L', 'Lung_R', 'PTV']
-    oars = ['cord', 'esophagus', 'heart', 'lung_l', 'lung_r', 'ptv']
-    target_oars = dict.fromkeys(oars, -1)  # Will store index of target OAR contours from dicom dataset
 
-    oar_mask = np.zeros(ct_arr.shape, np.uint8)
-    ptv_mask = np.zeros_like(oar_mask)
 
-    for k, v in target_oars.items():
-        # anatomy_mask = np.zeros_like(oar_mask)
-        ind = structs.structures_dict['name'].index(k.upper())
-        anatomy_mask = structs.structures_dict['structure_mask_3d'][ind]
+    oar_mask, ptv_mask = get_structure_masks(
+        structs=structs,
+        ct_shape=ct_arr.shape,
+        labels=labels,
+        disease_struct_names=disease_struct_names,
+        case=patient_id
+    )
 
-        if k == 'ptv':
-            ptv_mask[np.where(anatomy_mask > 0)] = labels[k]
-        else:
-            oar_mask[np.where(anatomy_mask > 0)] = labels[k]
-
+    if np.sum(ptv_mask) == 0:
+        raise ValueError(f'PTV not found for case {patient_id}. Cannot run inference.')
     # print('Processing case {}: {} of {} ...'.format(case, idx+1, len(cases)))
-    process_case(ct_portpy=ct, meta_data=meta_data, ct=ct_arr, oar=oar_mask, ptv=ptv_mask,
-                 beamlet=beams_3d, out_dir=out_dir,
-                 case=patient_id)
+    process_case(
+        ct_portpy=ct,
+        meta_data=meta_data,
+        ct=ct_arr,
+        oar=oar_mask,
+        ptv=ptv_mask,
+        beamlet=beams_3d,
+        out_dir=out_dir,
+        case=patient_id,
+        prescription_gy=prescription_gy,
+        dose=None
+    )
 
     # get crop settings
     start, end = get_crop_settings_calc_box(ct, meta_data=meta_data)
@@ -309,10 +293,45 @@ def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/test', model_nam
     # create prediction
     test_file_path = os.path.join(os.path.dirname(__file__), "..")
     # print('Testing script is located at {}'.format(test_file_path))
-    test_file_path = os.path.join(test_file_path, 'test.py')
-    os.system(
-        'python {} --dataroot {} --netG unet_128 --name {} --checkpoints_dir {} --phase test --model test --eval --input_nc 8 --output_nc 1 --results_dir {} --direction AtoB --dataset_mode single --norm batch'.format(test_file_path, out_dir, model_name, checkpoints_dir, results_dir))
+    # test_file_path = os.path.join(test_file_path, 'test.py')
+    # os.system(
+    #     'python {} --dataroot {} --netG unet_128 --name {} --checkpoints_dir {} --phase test --model test --eval --input_nc 8 --output_nc 1 --results_dir {} --direction AtoB --dataset_mode single --norm batch'.format(test_file_path, out_dir, model_name, checkpoints_dir, results_dir))
 
+    # test({
+    #     "dataroot": out_dir,
+    #     "netG": netG,
+    #     "name": model_name,
+    #     "checkpoints_dir": checkpoints_dir,
+    #     "phase": "test",
+    #     "model": "test",
+    #     "eval": True,
+    #     "input_nc": 8,
+    #     "output_nc": 1,
+    #     "results_dir": results_dir,
+    #     "direction": "AtoB",
+    #     "dataset_mode": "single",
+    #     "norm": "batch",
+    # })
+    infer_args = {
+        "dataroot": out_dir,
+        "netG": netG,
+        "name": model_name,
+        "checkpoints_dir": checkpoints_dir,
+        "phase": "test",
+        "model": "test",
+        "eval": True,
+        "input_nc": 8,
+        "output_nc": 1,
+        "results_dir": results_dir,
+        "direction": "AtoB",
+        "dataset_mode": "single",
+        "norm": "batch",
+    }
+
+    if infer_runner is None:
+        test(infer_args)
+    else:
+        infer_runner.run(out_dir)
     # read predicted dose in down sampled resolution
     filename = os.path.join(gt_dir, patient_id + '_CT2DOSE.nrrd')
     pred_dose = sitk.ReadImage(filename)
