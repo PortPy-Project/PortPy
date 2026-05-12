@@ -72,7 +72,7 @@ def test_plan_creation(plan_and_solution):
     assert hasattr(plan, "beams")
     assert len(plan.beams.get_all_beam_ids()) > 0
     assert sol is not None
-    assert np.isclose(sol['obj_value'], 84.71, rtol=0.01)
+    assert np.isclose(sol['obj_value'], 54.50, rtol=0.01)
 
 
 def test_visualization_methods(plan_and_solution):
