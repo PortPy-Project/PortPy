@@ -1629,6 +1629,11 @@
       "portpy_patient_id": "Lung_Patient_201",
       "subject_id": "LUNG1-157",
       "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_202",
+      "subject_id": "LUNG1-068",
+      "collection_id": "NSCLC-Radiomics"
     }
   ]
 }
