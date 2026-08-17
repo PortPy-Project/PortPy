@@ -60,3 +60,6 @@ docs/_build/
 /metadata/
 /examples/hugging_face_data/
 .DS_Store
+
+# internal-only equivalence test (kept local, not pushed to GitHub)
+tests/test_modules_match_original.py

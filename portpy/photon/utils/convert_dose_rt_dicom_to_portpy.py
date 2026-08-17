@@ -44,8 +44,8 @@ def read_dicom_dose(dir_name: str = None, dose_file_name: str = None):
     rt_dose = arr_dose * dose_img.DoseGridScaling
     rt_dose_itk = sitk.GetImageFromArray(rt_dose)
     if 'Phantom' in dose_file_name:
-        # There is issue for phantom patient. CT and dose dicom images have different origin w.r.t eclipse.
-        # Eclipse have different origin
+        # There is issue for phantom patient. CT and dose dicom images have different origin w.r.t the commercial TPS.
+        # The commercial TPS has different origin
         dose_img.ImagePositionPatient[0] = dose_img.ImagePositionPatient[0] - 65.63
     rt_dose_itk.SetOrigin(dose_img.ImagePositionPatient)
     rt_dose_itk.SetSpacing([float(dose_img.PixelSpacing[0]), float(dose_img.PixelSpacing[1]),

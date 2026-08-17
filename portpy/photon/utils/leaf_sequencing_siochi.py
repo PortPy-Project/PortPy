@@ -43,7 +43,8 @@ def leaf_sequencing_siochi(my_plan: Plan, sol: dict, num_of_levels: int = 40) ->
 
     beams = my_plan.beams
     inf_matrix = my_plan.inf_matrix
-    leaf_sequencing = {}
+    # keys are the per-beam gantry angles, plus 'optimal_intensity' at the end
+    leaf_sequencing: dict = {}
     w_approx = np.zeros(inf_matrix.A.shape[1])
     for b, beam_id in enumerate(beams.get_all_beam_ids()):
         gantry_angle = beams.get_gantry_angle(beam_id=beam_id)
@@ -165,7 +166,18 @@ def leaf_sequencing_siochi(my_plan: Plan, sol: dict, num_of_levels: int = 40) ->
         leaf_shapes = shapes[0:k, :, :]
         leaf_weight = shapes_weight[0:k] / num_of_levels * cal_fac
 
-        y_leaf_pos = beams.beams_dict['MLC_leaves_pos_y_mm'][0]
+        # y_leaf_pos = beams.beams_dict['MLC_leaves_pos_y_mm'][0]
+        # The stored field holds leaf centers whose units and rounding vary between datasets,
+        # so it cannot be matched against beamlet rows. Use leaf edges the same way Arcs does.
+        # hard coded. change it for other machine
+        ecl_leaf_y = [-200, -190, -180, -170, -160, -150, -140, -130, -120, -110, -100, -95, -90, -85, -80, -75,
+                      -70, -65, -60, -55, -50, -45, -40, -35, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25,
+                      30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120, 130, 140, 150, 160,
+                      170, 180, 190, 200]
+        if ecl_leaf_y[0] < 0:
+            ecl_leaf_y = ecl_leaf_y[::-1]  # reverse it in case is it is negative on top to match it with eclipse
+        ecl_leaf_y = np.array(ecl_leaf_y, dtype=float)
+        y_leaf_pos = (ecl_leaf_y[:-1] + ecl_leaf_y[1:]) / 2  # center of each leaf pair
         sum_of_beam = np.zeros((numRows, numCols))
         for l in range(leaf_shapes.shape[0]):
             leaf_pos = np.empty((len(y_leaf_pos), 2), dtype='object')
@@ -180,7 +192,7 @@ def leaf_sequencing_siochi(my_plan: Plan, sol: dict, num_of_levels: int = 40) ->
                     last_beamlet = inf_matrix.get_beamlet_info(row[-1])
                     left_leaf_position = first_beamlet['position_x_mm'][0] - first_beamlet['width_mm'][0]/2
                     right_leaf_position = last_beamlet['position_x_mm'][0] + last_beamlet['width_mm'][0] / 2
-                    ind = np.where(y_leaf_pos == int(first_beamlet['position_y_mm'][0]))[0][0]
+                    ind = int(np.argmin(np.abs(y_leaf_pos - first_beamlet['position_y_mm'][0])))
                     ind_rev = len(y_leaf_pos) - ind - 1
                     leaf_pos[ind_rev, 0] = left_leaf_position
                     leaf_pos[ind_rev, 1] = right_leaf_position

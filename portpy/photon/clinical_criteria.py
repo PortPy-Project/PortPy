@@ -137,7 +137,24 @@ class ClinicalCriteria:
 
         if isinstance(all_criteria, dict):
             all_criteria = [all_criteria]
-        return all_criteria
+
+        # Drop invalid limit/goal entries (negative or non-resolvable string); keep
+        # resolvable 'prescription_gy' expressions. A criterion is dropped only if it
+        # has no valid limit/goal left.
+        filtered = []
+        for crit in all_criteria:
+            constraints = crit.get('constraints', {})
+            bad = [k for k in constraints
+                   if ('limit' in k or 'goal' in k) and not self._limit_goal_is_valid(constraints[k])]
+            if not bad:
+                filtered.append(crit)
+                continue
+            new_constraints = {k: v for k, v in constraints.items() if k not in bad}
+            if any(('limit' in k or 'goal' in k) for k in new_constraints):
+                new_crit = deepcopy(crit)
+                new_crit['constraints'] = new_constraints
+                filtered.append(new_crit)
+        return filtered
 
     def check_criterion_exists(self, criterion, return_ind:bool = False):
             criterion_exist = False
@@ -202,6 +219,22 @@ class ClinicalCriteria:
         elif 'perc' in key:
             return value*self.get_prescription()/100
 
+    def _limit_goal_is_valid(self, value) -> bool:
+        """Whether a limit/goal value should be kept.
+
+        Filters out negative values and non-resolvable strings (e.g. 'N/A', '', '-'),
+        while keeping resolvable 'prescription_gy' expressions (e.g. '1.1*prescription_gy').
+        """
+        try:
+            if isinstance(value, str):
+                if "prescription_gy" not in value:
+                    return False
+                prescription_gy = self.get_prescription()
+                value = eval(value)
+            return float(value) >= 0
+        except Exception:
+            return False
+
     @staticmethod
     def convert_dvh_to_dose_gy_vol_perc(my_plan, old_criteria):
         """
@@ -241,6 +274,22 @@ class ClinicalCriteria:
                     new_key = key.replace('perc', 'gy')
                     criteria['parameters'][new_key] = criteria['parameters'].pop(key)
                     criteria['parameters'][new_key] = value / 100 * my_plan.get_prescription()
+
+        # 'coldest' (MATLAB CV/DC): the specified volume is the COLD portion, so
+        # complement it (100 - vol%) to get the equivalent hot-volume DVH constraint.
+        # dose_volume is HOTTEST by default. E.g. '>=700cc receives <15Gy' is entered
+        # as dose_volume_V, dose_gy=15, coldest=True, limit_volume_cc=700 -> after
+        # cc->%, V(15Gy) <= 100 - 700cc%. bound_type stays 'upper'.
+        if criteria['parameters'].get('coldest', False):
+            if criteria['type'] == 'dose_volume_V':
+                for key in list(criteria['constraints'].keys()):
+                    val = criteria['constraints'][key]
+                    if 'volume_perc' in key and isinstance(val, (int, float)):
+                        criteria['constraints'][key] = 100 - val
+            elif criteria['type'] == 'dose_volume_D':
+                val = criteria['parameters'].get('volume_perc')
+                if isinstance(val, (int, float)):
+                    criteria['parameters']['volume_perc'] = 100 - val
         return criteria
 
 
@@ -275,6 +324,11 @@ class ClinicalCriteria:
                 if len(my_plan.inf_matrix.get_opt_voxels_idx(constraint['parameters']['structure_name'])) == 0:
                     continue
                 updated_constraint = self.convert_dvh_to_dose_gy_vol_perc(my_plan, constraint)
+                # drop invalid limit/goal (negative or non-resolvable string) so their
+                # rows are skipped below; keep resolvable 'prescription_gy' expressions
+                updated_constraint['constraints'] = {
+                    k: v for k, v in updated_constraint['constraints'].items()
+                    if not (('limit' in k or 'goal' in k) and not self._limit_goal_is_valid(v))}
                 dvh_updated_list.append(updated_constraint)
         import pandas as pd
         df = pd.DataFrame()
@@ -409,7 +463,7 @@ class ClinicalCriteria:
                     crit_struct = criterion['parameters']['structure_name']
                     if crit_struct == structure_name or crit_struct.startswith(structure_name + "_"):
                         limit_key = self.matching_keys(criterion['constraints'], 'limit')
-                        if limit_key:
+                        if limit_key and self._limit_goal_is_valid(criterion['constraints'][limit_key]):
                             max_tol = max(max_tol, self.dose_to_gy(limit_key, criterion['constraints'][limit_key]))
                             found = True
 

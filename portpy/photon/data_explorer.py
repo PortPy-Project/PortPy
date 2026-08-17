@@ -372,6 +372,54 @@ class DataExplorer:
         return json_data
 
     @staticmethod
+    def load_config_octree_params(params_name: str = 'default') -> dict:
+        """
+        Returns the octree sampling params config json as a dictionary.
+
+        :param params_name: octree params set name (file
+            config_files/octree_sampling_params/octree_sampling_params_<params_name>.json)
+        :return: dictionary with keys octree, ptv_size_thresholds_cc, default_organ_res,
+            dict_org_resolution_{small,medium,large,x_large}
+        """
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'octree_sampling_params',
+                             'octree_sampling_params_' + params_name + '.json')
+        json_data = DataExplorer.load_json(fname)
+        return json_data
+
+    @staticmethod
+    def get_octree_params_by_ptv_size(ptv_volume_cc: float, params_name: str = 'default',
+                                      config: dict = None) -> dict:
+        """
+        Select octree params for ``Structures(octree_params=...)`` by PTV-volume tier.
+
+        Picks a resolution tier (small/medium/large/x_large) from ``ptv_size_thresholds_cc``
+        based on the combined PTV volume, and returns the octree block with the matching
+        per-structure ``dictOrganRes``. Structure matching (structure_name_map) is NOT handled
+        here -- the caller supplies its own map to ``Structures``.
+
+        :param ptv_volume_cc: combined PTV volume in cc.
+        :param params_name: octree params set name (used only when ``config`` is None).
+        :param config: pre-loaded octree config dict; when None the shipped default
+            (params_name) is loaded. A caller (e.g. ECHO) can pass its own config to override.
+        :return: octree_params = {max_depth, default_body_mm, z_pad_cm, dictOrganRes}
+        """
+        cfg = config if config is not None else DataExplorer.load_config_octree_params(params_name)
+        thresholds = cfg['ptv_size_thresholds_cc']
+        tier = None
+        if ptv_volume_cc and ptv_volume_cc > 0:
+            tier = next((t for t, (lo, hi) in thresholds.items()
+                         if float(lo) <= ptv_volume_cc < float(hi)), None)
+        if tier is None:
+            print('[get_octree_params_by_ptv_size] WARNING: PTV volume {} cc not resolvable to a '
+                  'tier, defaulting to medium'.format(ptv_volume_cc))
+            tier = 'medium'
+        octree_params = dict(cfg['octree'])
+        octree_params['dictOrganRes'] = dict(cfg['dict_org_resolution_' + tier])
+        print('[get_octree_params_by_ptv_size] PTV volume={:.1f} cc -> tier={}'.format(
+            float(ptv_volume_cc or 0.0), tier))
+        return octree_params
+
+    @staticmethod
     def load_config_tcia_patients() -> dict:
         """
         Returns TCIA patients metadata
