@@ -50,12 +50,23 @@ def make_sitk_image_from_array_on_fixed_grid(arr_zyx, origin_xyz_mm, spacing_xyz
     img.SetDirection(direction_xyz)
     return img
 
-def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm):
+def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm, direction_xyz=None):
+    """Place a predicted patch back on the CT grid.
+
+    :param pred_zyx: predicted volume on the sampling grid, (z,y,x)
+    :param ct_img: SimpleITK CT image defining the output grid
+    :param origin_xyz_mm: origin of the sampling grid, mm
+    :param spacing_xyz_mm: voxel size of the sampling grid, mm
+    :param direction_xyz: flattened 3x3 orientation of the sampling grid. None means
+        world-aligned, which is the patient grid; BEV patches are rotated along the
+        source->beamlet ray and must pass their own direction.
+    :return: prediction resampled onto the CT grid, (z,y,x) float32
+    """
     pred_img = make_sitk_image_from_array_on_fixed_grid(
         pred_zyx,
         origin_xyz_mm=origin_xyz_mm,
         spacing_xyz_mm=spacing_xyz_mm,
-        direction_xyz=np.eye(3).reshape(-1).tolist()
+        direction_xyz=direction_xyz
     )
 
     resampler = sitk.ResampleImageFilter()
@@ -84,15 +95,41 @@ def deterministic_beam_ids(data, patient_id):
     )
     return beam_ids
 
-def load_unet_model(ckpt_path, device):
-    model = UNet3D(in_channels=4, out_channels=1).to(device)
+def load_unet_model(ckpt_path, device, netG="beamlet_unet",
+                    in_channels=4, out_channels=1, ngf=32):
+    """Load a trained beamlet-dose model for inference.
+
+    The architecture comes from the same ``define_G`` registry that training uses, so
+    any ``netG`` trainable through ``train()`` can be loaded back here -- including the
+    ray-aligned models ('ray_unet3d', 'ray_attention_resunet3d'). Pass the same
+    netG/input_nc/output_nc/ngf the checkpoint was trained with.
+
+    :param ckpt_path: path to a state_dict or a Lightning checkpoint
+    :param device: torch device to load onto
+    :param netG: architecture name, as in the training options
+    :param in_channels: number of input channels the checkpoint expects
+    :param out_channels: number of output channels
+    :param ngf: base feature width
+    :return: the model in eval mode
+    """
+    from portpy.ai.models.networks3d import define_G
+
+    model = define_G(in_channels, out_channels, ngf, netG, gpu_ids=[]).to(device)
     ckpt = torch.load(ckpt_path, map_location=device)
 
     if isinstance(ckpt, dict) and "state_dict" in ckpt:
         state = {k.replace("model.", "", 1): v for k, v in ckpt["state_dict"].items()}
-        model.load_state_dict(state, strict=False)
     else:
-        model.load_state_dict(ckpt, strict=False)
+        state = ckpt
+
+    # strict=False tolerates the wrapper prefixes different trainers add. A real
+    # architecture mismatch still raises (size mismatch on the first conv), so what
+    # gets through here is only a partially matching checkpoint -- worth reporting.
+    incompatible = model.load_state_dict(state, strict=False)
+    if incompatible.missing_keys or incompatible.unexpected_keys:
+        print(f"Warning: {len(incompatible.missing_keys)} missing and "
+              f"{len(incompatible.unexpected_keys)} unexpected keys loading {ckpt_path}. "
+              f"Check netG/in_channels match how the checkpoint was trained.")
 
     model.eval()
     return model
@@ -108,6 +145,9 @@ def build_predicted_influence_matrix_for_patient(
     batch_size=4,
     num_workers=0,
     local_data_dir=None,  # add this parameter for on-the-fly preprocessing
+    grid="patient",
+    mask_mode="body",
+    col_threshold_frac=0.0,
 ):
     """Build the predicted influence matrix A_pred for a single patient using the provided model.
     :param patient_id: The ID of the patient to process.
@@ -120,6 +160,9 @@ def build_predicted_influence_matrix_for_patient(
     :param batch_size: The batch size to use for processing beamlet samples.
     :param num_workers: The number of worker processes to use for data loading.
     :param local_data_dir: Optional local directory to use for on-the-fly preprocessing if beamlet data is missing. This allows the function to preprocess the necessary data if it hasn't been preprocessed yet, without requiring the caller to handle that logic.
+    :param grid: sampling grid to use if the beamlet data has to be preprocessed on the fly, 'patient' or 'bev'. Already-preprocessed data carries its own grid, so this only matters for that fallback.
+    :param mask_mode: where the predicted dose is kept. 'body' (default) keeps it inside the BODY mask, needs no target dose, and matches what RayUNetPredictor does. 'gt_dose' keeps it where the sample's target dose is nonzero, which requires the reference influence matrix and therefore only works for patients that already have one.
+    :param col_threshold_frac: if > 0, zero any value below this fraction of the beamlet's own peak after masking (RayUNetPredictor uses 0.005). Intended with mask_mode='body'; leave at 0 to keep a column exactly as the model produced it.
 
     """
 
@@ -136,6 +179,7 @@ def build_predicted_influence_matrix_for_patient(
             patient_ids=[patient_id],
             local_data_dir=local_data_dir,  # reuse your existing variable
             out_root=os.path.join(data_root, split),
+            grid=grid,
         )
     ds_opt = SimpleNamespace(
         dataroot=data_root,
@@ -166,12 +210,25 @@ def build_predicted_influence_matrix_for_patient(
 
             preds = model(xb)
 
-            mask = torch.maximum(hot_mask, scatter_mask)
+            if mask_mode == "gt_dose":
+                # Keep the prediction where the target dose is nonzero. HOT_MASK and
+                # SCATTER_MASK are both derived from the sample's target, so this mode
+                # needs the reference A and only applies to patients that have one.
+                mask = torch.maximum(hot_mask, scatter_mask)
+            elif mask_mode == "body":
+                # Keep the prediction inside the BODY, the same rule RayUNetPredictor
+                # applies (zero_outside_body + col_threshold_frac). Needs no target.
+                mask = batch["BODY"].to(device, non_blocking=True)
+            else:
+                raise ValueError("mask_mode must be 'gt_dose' or 'body', got %r" % mask_mode)
 
             for k in range(preds.size(0)):
                 col = int(meta["col"][k])
 
-                y_max = 0.7
+                # Invert the training scaling y_norm = y / y_max * 10. The two grids
+                # were trained with different y_max: 0.7 on the patient grid, 0.9 on
+                # the BEV patch (matching unscale=0.07 / 0.09 in the predictors).
+                y_max = 0.9 if "direction_3x3" in meta else 0.7
                 unscale = y_max / 10.0
 
                 pred3 = preds[k, 0].detach().cpu().numpy()
@@ -179,6 +236,11 @@ def build_predicted_influence_matrix_for_patient(
 
                 m3 = mask[k, 0].detach().cpu().numpy()
                 pred3 = pred3 * m3
+
+                if col_threshold_frac > 0 and pred3.max() > 0:
+                    # Drop low-level in-body values below a fraction of this beamlet's
+                    # own peak (RayUNetPredictor uses 0.005).
+                    pred3[pred3 < col_threshold_frac * pred3.max()] = 0.0
 
                 origin_xyz_mm = meta["origin_xyz_mm"][k]
                 spacing_xyz_mm = meta["spacing_xyz_mm"][k]
@@ -195,6 +257,16 @@ def build_predicted_influence_matrix_for_patient(
                 spacing_xyz_mm = np.asarray(spacing_xyz_mm, dtype=np.float32).ravel()
                 size_xyz = np.asarray(size_xyz).astype(int).ravel()
 
+                # Present only for BEV samples, whose patch is rotated along the ray.
+                direction_xyz = None
+                if "direction_3x3" in meta:
+                    direction_xyz = meta["direction_3x3"][k]
+                    if hasattr(direction_xyz, "cpu"):
+                        direction_xyz = direction_xyz.cpu().numpy()
+                    direction_xyz = np.asarray(
+                        direction_xyz, dtype=np.float64
+                    ).reshape(3, 3).flatten().tolist()
+
                 expected_zyx = (int(size_xyz[2]), int(size_xyz[1]), int(size_xyz[0]))
                 if tuple(pred3.shape) != expected_zyx:
                     raise ValueError(
@@ -206,6 +278,7 @@ def build_predicted_influence_matrix_for_patient(
                     ct_img=ct_img,
                     origin_xyz_mm=origin_xyz_mm,
                     spacing_xyz_mm=spacing_xyz_mm,
+                    direction_xyz=direction_xyz,
                 )
 
                 pred_col_1d = inf_matrix.dose_3d_to_1d(dose_3d=pred_full_3d).astype(np.float32)

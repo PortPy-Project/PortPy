@@ -249,7 +249,7 @@ class Beams:
         :return: beamlet width in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
-        return np.squeeze(beamlets['width_mm'][0])[0]
+        return np.min(np.squeeze(beamlets['width_mm'][0]))
 
     def get_beamlet_height(self) -> float:
         """
@@ -257,7 +257,7 @@ class Beams:
         :return: beamlet height in the original beam
         """
         beamlets = self.beams_dict['beamlets'][0]
-        return np.squeeze(beamlets['height_mm'][0])[0]
+        return np.min(np.squeeze(beamlets['height_mm'][0]))
 
     def get_all_beam_ids(self) -> List[int]:
         return self.beams_dict['ID']

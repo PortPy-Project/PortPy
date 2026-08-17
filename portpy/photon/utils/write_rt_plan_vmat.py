@@ -230,13 +230,16 @@ def write_rt_plan_vmat(my_plan: Plan, out_rt_plan_file: str, in_rt_plan_file: st
             leaf_pos = np.empty((total_lp, 2), dtype='object')
             stop = int(beam['start_leaf_pair']) - 1  # We are doing it in reverse way since rt plan have reverse index list
             for r in range(beam['num_rows']):
-                start = stop - len(beam['MLC_leaf_idx'][0][0])
+                # leaf pairs covered by this row, matched from the beamlet and leaf edges
+                # in Arcs. Per row, so rows spanning different numbers of leaves work.
+                num_leaf_pairs = len(beam['leaf_pair_row_match'][r])
+                start = stop - num_leaf_pairs
                 if beam['field_size'][r] < 0.5:
                     leaf_pos[start:stop, 1] = [0]
                 else:
                     leaf_pos[start:stop, 0] = [beam['bank_b'][r]]
                     leaf_pos[start:stop, 1] = [beam['bank_a'][r]]
-                stop = stop - len(beam['MLC_leaf_idx'][0][0])
+                stop = stop - num_leaf_pairs
 
             leaf_pos[:, 0][leaf_pos[:, 0] == None] = 0.5
             leaf_pos[:, 1][leaf_pos[:, 1] == None] = 0.5

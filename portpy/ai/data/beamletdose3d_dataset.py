@@ -26,6 +26,12 @@ import numpy as np
 import torch
 
 import glob
+
+# BEV samples must be normalized exactly as RayUNetPredictor normalizes its inputs,
+# so the channel builders are imported from the inference package rather than
+# re-stated here. Both modules are numpy-only at import time.
+from portpy.ai.inference.ray_geometry import compute_ray_patch_d1_d2_split
+from portpy.ai.inference.inf_matrix_predictor import CT_NORMALIZERS, DEFAULT_NORM
 class BeamletDose3DDataset(BaseDataset):
     """Dataset for 3D dose prediction from beamlet features.
             Expects a directory structure:
@@ -46,7 +52,8 @@ class BeamletDose3DDataset(BaseDataset):
         The dataset normalizes CT and beamlet features, and can extract patches if needed.
     """
     def __init__(self, opt, transform=None, patch_size=32, ct_clip=(-1000.0, 3071.0), beams_quantile=0.99, eps=1e-6,
-                 patient_id=None):   # NEW: patient_id filter for loading a particular patient during inference
+                 patient_id=None,   # NEW: patient_id filter for loading a particular patient during inference
+                 bev_channels=('ct', 'd1', 'd1_out'), bev_ct_norm='density', bev_y_max=0.9):
         # Support both:
         # 1) PortPy workflow: opt has dataroot and phase
         # 2) build_apred workflow: opt is directly a root path string
@@ -65,6 +72,12 @@ class BeamletDose3DDataset(BaseDataset):
         self.beams_quantile = beams_quantile
         self.eps = eps
         self.patient_id = patient_id
+        # BEV config -- must match the RayUNetPredictor arguments used at inference
+        # (see examples/python_files/inf_matrix_portpy_beams_voxels_cross_eval.py:
+        #  channels=('ct','d1','d1_out'), ct_norm='density', unscale=0.09 = y_max/10).
+        self.bev_channels = tuple(bev_channels)
+        self.bev_ct_norm = bev_ct_norm
+        self.bev_y_max = float(bev_y_max)
 
         # # collect all beamlet files
         self.samples = []
@@ -138,37 +151,71 @@ class BeamletDose3DDataset(BaseDataset):
         item = np.load(bl_path, allow_pickle=True)
         pid = str(item['patient_id'])
         bi = int(item['beam_id'])
-        ct = self._get_ct(pid)
-        # beams = self._get_open_beam(pid, bi)
-        d_mm_max = float(item.get('d_mm_max', 2000.0))
-
-        d1 = torch.from_numpy(item['d1'].astype(np.float32)) * (d_mm_max / 65535.0)
-        d2 = torch.from_numpy(item['d2'].astype(np.float32)) * (d_mm_max / 65535.0)
-
-        body_mask = torch.from_numpy(item['body_mask'].astype(np.float32))
-        t_entry_mm = float(item.get('t_entry', 0.0))
-        d1_out = body_mask * t_entry_mm
 
         y = torch.from_numpy(item['target'].astype(np.float32))
         mask = y > 0
+        body_mask = torch.from_numpy(item['body_mask'].astype(np.float32))
 
-        # normalize
-        ct_norm = self._normalize_ct(ct)
-        # beams_norm = self._normalize_beams(beams, mask)
-        d2_norm = d2/600 # global max normalization
+        if 'direction_3x3' in item.files:
+            # ---------------- BEV (ray-aligned patch) ----------------
+            # Mirrors RayUNetPredictor._build_input exactly: same distance channels
+            # from the same function, same normalizers, same channel order. The
+            # sample stores only CT/body/target plus the patch geometry, because
+            # d1/d2/d1_out are pure functions of that geometry.
+            ct_hu = item['ct'].astype(np.float32)
+            body_np = item['body_mask'].astype(np.uint8)
+            view = tuple(np.asarray(item['view_size_mm'], dtype=np.float64).ravel())
+            out = tuple(int(v) for v in np.asarray(item['out_size']).ravel())
+            x0_mm = float(item['x0_mm'])
+            t_entry = float(item['t_entry'])
 
-        d1_out_norm = d1_out/800
-        d1_norm = d1 / 1600  # global max normalization
-        # ratio tau with d2/d1_in for hot and scatter ~0.5. If tau star from plots ~0.06. for all mask ~2
+            d1, d2, d1_out, _ = compute_ray_patch_d1_d2_split(
+                body_np, t_entry if t_entry > 0 else None,
+                view_size_mm=view, out_size=out, x0_mm=x0_mm)
 
-        # y_max = y.max()
-        y_max = 0.7
-        y_norm = y / y_max*10
-        alpha = 0.1  # 1% of peak (since already normalized and multiplied by 10)
-        hot_mask = (y_norm >= alpha).float() * mask
-        scatter_mask = (y_norm < alpha).float() * mask
+            raw = {'ct': ct_hu, 'd1': d1, 'd2': d2, 'd1_out': d1_out,
+                   'body': body_np.astype(np.float32)}
+            norm = dict(DEFAULT_NORM)
+            norm['ct'] = CT_NORMALIZERS[self.bev_ct_norm]
+            x_model = torch.from_numpy(
+                np.stack([norm[c](raw[c]) for c in self.bev_channels], axis=0).astype(np.float32))
 
-        x_norm = torch.stack([ct_norm, d2_norm, d1_norm, d1_out_norm, hot_mask, scatter_mask, body_mask], dim=0) #rpl_norm, beams_norm, d1_in_norm,
+            y_max = self.bev_y_max          # training used y_norm = y / 0.9 * 10
+            y_norm = y / y_max * 10
+            alpha = 0.1
+            hot_mask = (y_norm >= alpha).float() * mask
+            scatter_mask = (y_norm < alpha).float() * mask
+            x_norm = x_model
+        else:
+            # ---------------- patient grid (unchanged) ----------------
+            ct = self._get_ct(pid)
+            # beams = self._get_open_beam(pid, bi)
+            d_mm_max = float(item.get('d_mm_max', 2000.0))
+
+            d1 = torch.from_numpy(item['d1'].astype(np.float32)) * (d_mm_max / 65535.0)
+            d2 = torch.from_numpy(item['d2'].astype(np.float32)) * (d_mm_max / 65535.0)
+
+            t_entry_mm = float(item.get('t_entry', 0.0))
+            d1_out = body_mask * t_entry_mm
+
+            # normalize
+            ct_norm = self._normalize_ct(ct)
+            # beams_norm = self._normalize_beams(beams, mask)
+            d2_norm = d2/600 # global max normalization
+
+            d1_out_norm = d1_out/800
+            d1_norm = d1 / 1600  # global max normalization
+            # ratio tau with d2/d1_in for hot and scatter ~0.5. If tau star from plots ~0.06. for all mask ~2
+
+            # y_max = y.max()
+            y_max = 0.7
+            y_norm = y / y_max*10
+            alpha = 0.1  # 1% of peak (since already normalized and multiplied by 10)
+            hot_mask = (y_norm >= alpha).float() * mask
+            scatter_mask = (y_norm < alpha).float() * mask
+
+            x_norm = torch.stack([ct_norm, d2_norm, d1_norm, d1_out_norm, hot_mask, scatter_mask, body_mask], dim=0) #rpl_norm, beams_norm, d1_in_norm,
+            x_model = x_norm[0:4]
 
         # x_patch, y_patch, mask_patch = extract_patch(x, y, mask, patch_size=self.patch_size)
         # return x_patch, y_patch
@@ -179,8 +226,13 @@ class BeamletDose3DDataset(BaseDataset):
                 "spacing_xyz_mm": item["spacing_xyz_mm"].astype(np.float32),
                 "size_xyz": item["size_xyz"].astype(np.int16)
                 }
+        # BEV patches are rotated, so the grid orientation has to travel with the sample
+        # for the prediction to be placed back on the CT grid correctly.
+        if "direction_3x3" in item.files:
+            meta["direction_3x3"] = item["direction_3x3"].astype(np.float32)
         return {
-            "A": x_norm[0:4].float(),  # CT, d2, d1, d1_out
+            # patient grid: CT, d2, d1, d1_out. BEV: the bev_channels stack (CT, d1, d1_out).
+            "A": x_model.float(),
             "B": y_norm.unsqueeze(0).float(),
             "HOT_MASK": hot_mask.unsqueeze(0).float(),
             "SCATTER_MASK": scatter_mask.unsqueeze(0).float(),

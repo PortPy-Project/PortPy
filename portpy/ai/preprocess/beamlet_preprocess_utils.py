@@ -953,6 +953,15 @@ def patch_pred_to_ct_grid(pred_patch_zyx: np.ndarray,
     full_pred_zyx = sitk.GetArrayFromImage(full_pred_sitk).astype(np.float32)
     return full_pred_zyx
 
+
+# NOTE: the BEV / ray-aligned patch geometry lives in
+# portpy.ai.inference.ray_geometry (build_ray_grid_with_beam_axes,
+# compute_ray_patch_d1_d2_split, source_lps_from_beam, beamlet_center_lps,
+# estimate_body_entry_distance_mm, resample_to_grid). The BEV preprocess imports
+# it from there so training data is built by the SAME code the RayUNetPredictor
+# uses at inference time -- do not re-implement it here.
+
+
 # import torch
 # import torch.nn.functional as F
 # import numpy as np

@@ -16,6 +16,7 @@
 # ----------------------------------------------------------------------
 
 from scipy import interpolate
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 import webbrowser
@@ -76,7 +77,11 @@ class Evaluation:
         if clinical_criteria is None:
             clinical_criteria = my_plan.clinical_criteria
         # df = pd.DataFrame.from_dict(clinical_criteria.clinical_criteria_dict['criteria'])
-        df = pd.json_normalize(clinical_criteria.clinical_criteria_dict['criteria'])
+        # get_criteria() drops invalid limits/goals (negative or non-resolvable string,
+        # e.g. -1 or 'N/A') while keeping resolvable 'prescription_gy' expressions.
+        # _coldest_to_hot() complements 'coldest' (CV/DC) dose-volume to hot-volume.
+        criteria = Evaluation._coldest_to_hot(my_plan, clinical_criteria.get_criteria())
+        df = pd.json_normalize(criteria)
         if df.empty:
             dose_volume_V_ind = []
         else:
@@ -376,9 +381,18 @@ class Evaluation:
         if np.array_equal(x, np.array([0])) and np.array_equal(y, np.array([0])):
             return 0
         f = interpolate.interp1d(100 * y, x)
+        vol_axis = 100 * y
+
         if volume_per > 100.1:
             print('Warning: Volume Percentage: {} for structure {} is invalid'.format(volume_per, struct))
             return 0
+
+        if volume_per > np.max(vol_axis):
+            return 0.0
+
+        if volume_per < np.min(vol_axis):
+            return float(np.max(x))
+
         return f(volume_per)
 
     @staticmethod
@@ -408,6 +422,8 @@ class Evaluation:
         if dose_value_gy > max(x1):
             print('Warning: dose_1d value {} is greater than max dose_1d for {}'.format(dose_value_gy, struct))
             return 0
+        if dose_value_gy < np.min(x1):
+            return float(100 * np.max(y1))
         else:
             return f(dose_value_gy)
 
@@ -591,6 +607,37 @@ class Evaluation:
             return total_score, score_df
         else:
             return total_score
+
+    @staticmethod
+    def _coldest_to_hot(my_plan: Plan, criteria: list) -> list:
+        """Complement 'coldest' (CV/DC) dose-volume criteria to their equivalent
+        HOT-volume metric, in native units, so the standard hot-volume evaluation
+        and coloring apply unchanged (consistent with the optimizer's complement).
+
+        e.g. dose_volume_V, coldest=True, limit_volume_cc=700 on a 1000cc structure
+        ('>=700cc receives <D') -> limit_volume_cc = 300 (hot volume receiving >=D).
+        Non-coldest criteria are returned untouched.
+        """
+        criteria = deepcopy(criteria)
+        for crit in criteria:
+            params = crit.get('parameters', {})
+            if not params.get('coldest'):
+                continue
+            struct = params.get('structure_name')
+            total_cc = my_plan.structures.get_volume_cc(structure_name=struct) \
+                if struct in my_plan.structures.get_structures() else None
+            if crit.get('type') == 'dose_volume_V':
+                for k, v in list(crit.get('constraints', {}).items()):
+                    if isinstance(v, (int, float)) and 'volume_perc' in k:
+                        crit['constraints'][k] = 100 - v
+                    elif isinstance(v, (int, float)) and 'volume_cc' in k and total_cc:
+                        crit['constraints'][k] = total_cc - v
+            elif crit.get('type') == 'dose_volume_D':
+                if isinstance(params.get('volume_perc'), (int, float)):
+                    params['volume_perc'] = 100 - params['volume_perc']
+                elif isinstance(params.get('volume_cc'), (int, float)) and total_cc:
+                    params['volume_cc'] = total_cc - params['volume_cc']
+        return criteria
 
     @staticmethod
     def add_dvh_to_frame(my_plan: Plan, df: pd.DataFrame, new_column_name: str, old_column_name: str, unit: str, dvh_type=None):
