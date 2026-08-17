@@ -29,6 +29,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # CPU-only torch (small wheel, no CUDA) so the portpy.ai tests run
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install .[test]
 
       - name: Run tests

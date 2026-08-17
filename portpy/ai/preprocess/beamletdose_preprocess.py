@@ -22,6 +22,7 @@ import traceback
 
 import numpy as np
 import torch
+import SimpleITK as sitk
 import portpy.photon as pp
 
 
@@ -37,6 +38,20 @@ from portpy.ai.preprocess.beamlet_preprocess_utils import (
     build_fast_dose_1d_to_3d_mapper,
     fast_dose_1d_to_3d,
     split_d1_in_out,
+)
+
+# BEV (ray-aligned) grid. Imported from the INFERENCE package on purpose: this is
+# the exact geometry RayUNetPredictor uses, so training samples and prediction-time
+# inputs are built by the same code and cannot drift apart.
+from portpy.ai.inference.ray_geometry import (
+    get_rotation_matrix as ray_get_rotation_matrix,
+    get_ct_sitk_image,
+    resample_to_grid,
+    estimate_body_entry_distance_mm,
+    build_ray_grid_with_beam_axes,
+    compute_ray_patch_d1_d2_split,
+    source_lps_from_beam,
+    beamlet_center_lps,
 )
 
 # # -----------------------------
@@ -143,12 +158,69 @@ def beamletdose_preprocess(
         target_spacing_xyz_mm=(2.5, 2.5, 2.5),
         target_size_xyz=(224, 192, 96),
         use_patient_level_ct_box=True,
-        d_mm_max=2000.0):
+        d_mm_max=2000.0,
+        grid="patient",
+        bev_view_size_mm=(512.0, 128.0, 128.0),
+        bev_out_size=(256, 64, 64)):
+    """
+    Write per-beamlet training samples for the beamlet dose model.
+
+    Two sampling grids are available and they produce the same npz fields, so the same
+    dataset, model and training loop are used either way:
+
+    - ``grid='patient'`` (default): one world-aligned box per patient
+      (``target_size_xyz`` at ``target_spacing_xyz_mm``), shared by every beamlet. The
+      beam direction is carried only by the d1/d2 channels. The CT is written once per
+      patient as ``ct.npz``.
+    - ``grid='bev'``: one ray-aligned patch PER BEAMLET, with its x axis along the
+      source->beamlet ray, so the network sees the dose in its natural frame. The grid
+      is built by ``portpy.ai.inference.ray_geometry`` -- the same code
+      ``RayUNetPredictor`` uses at inference time -- so training inputs and prediction
+      inputs cannot drift apart. The CT differs per beamlet and is stored in each
+      sample (clipped int16 HU) instead of once per patient. The d1/d2/d1_out distance
+      channels are NOT stored: they are pure functions of the patch geometry and are
+      recomputed identically by the dataset and by the predictor via
+      ``compute_ray_patch_d1_d2_split``.
+
+    :param patient_ids: list of PortPy patient ids
+    :param meta_stage_root: staging dir for the metadata-only Hugging Face download
+    :param data_stage_root: staging dir for the selected-beam Hugging Face download
+    :param out_root: output root; one folder per patient is created under it
+    :param local_data_dir: use already-downloaded PortPy data instead of Hugging Face
+    :param target_spacing_xyz_mm: patient-grid voxel size, mm (``grid='patient'``)
+    :param target_size_xyz: patient-grid size in voxels (``grid='patient'``)
+    :param use_patient_level_ct_box: share one CT box across beams (``grid='patient'``)
+    :param d_mm_max: full scale of the uint16 quantization used for d1/d2, mm
+    :param grid: ``'patient'`` or ``'bev'``
+    :param bev_view_size_mm: BEV patch extent (depth, width, height), mm. Default
+        matches the ray-UNet configuration used in
+        ``examples/python_files/inf_matrix_portpy_beams_voxels_cross_eval.py``.
+    :param bev_out_size: BEV patch size in voxels (Nx, Ny, Nz), x along the ray. Each
+        entry must be divisible by 8 (the ray UNet uses num_levels=3). The default
+        (256, 64, 64) over (512, 128, 128) mm gives 2 mm isotropic voxels.
+    :return: None; samples are written under ``out_root``
+
+    :Example:
+
+    >>> beamletdose_preprocess(patient_ids=['Lung_Patient_94'],
+    ...                        local_data_dir='../../data',
+    ...                        out_root='../../ai_beamlet_data',
+    ...                        grid='bev')
+    """
     # -----------------------------
     # MAIN
     # -----------------------------
     if out_root is None:
         raise ValueError("out_root must be provided.")
+
+    if grid not in ("patient", "bev"):
+        raise ValueError("grid must be 'patient' or 'bev', got {!r}".format(grid))
+
+    if grid == "bev" and any(int(n) % 8 for n in bev_out_size):
+        raise ValueError(
+            "bev_out_size {} must be divisible by 8 on every axis (the ray UNet runs "
+            "num_levels=3, i.e. 3 pooling stages).".format(tuple(bev_out_size))
+        )
 
     if meta_stage_root is not None:
         ensure_dir(meta_stage_root)
@@ -234,6 +306,14 @@ def beamletdose_preprocess(
             valid_3d = inf_matrix.dose_1d_to_3d(dose_1d=valid_1d)
             dose_mapper = build_fast_dose_1d_to_3d_mapper(inf_matrix)
 
+            if grid == "bev":
+                # Built once per patient: the ray patches resample straight off the
+                # CT grid, and the BODY entry ray-march reuses the cached array.
+                ct_sitk = get_ct_sitk_image(ct)
+                body_mask_ct_zyx = structs.get_structure_mask_3d("BODY").astype(np.uint8)
+                body_sitk = sitk.GetImageFromArray(body_mask_ct_zyx)
+                body_sitk.CopyInformation(ct_sitk)
+
             # local output dirs
             p_dir = os.path.join(out_root, pid)
             beams_dir = os.path.join(p_dir, "beams")
@@ -245,8 +325,9 @@ def beamletdose_preprocess(
 
             # -----------------------------
             # Save patient CT once if enabled
+            # (BEV has a different CT crop per beamlet, so it is stored per sample)
             # -----------------------------
-            if use_patient_level_ct_box:
+            if use_patient_level_ct_box and grid != "bev":
                 first_beam_id = inf_matrix.beamlets_dict[0]["beam_id"]
                 first_iso_list = beams.get_iso_center(first_beam_id)
 
@@ -309,6 +390,124 @@ def beamletdose_preprocess(
                     [iso_list["x_mm"], iso_list["y_mm"], iso_list["z_mm"]],
                     dtype=np.float32
                 )
+
+                if grid == "bev":
+                    # One ray-aligned patch per BEAMLET, built with the SAME functions
+                    # RayUNetPredictor calls at inference time (portpy.ai.inference.
+                    # ray_geometry), so training inputs and prediction inputs match.
+                    R = ray_get_rotation_matrix(gantry, couch, 0.0 if collimator is None
+                                                else float(collimator))
+                    source = source_lps_from_beam(iso, R, SAD_mm)
+
+                    start_beamlet = inf_matrix.beamlets_dict[i]["start_beamlet_idx"]
+                    end_beamlet = inf_matrix.beamlets_dict[i]["end_beamlet_idx"] + 1
+                    print("start beamlet is:", start_beamlet)
+                    print("end beamlet is:", end_beamlet)
+
+                    sx = float(bev_view_size_mm[0]) / int(bev_out_size[0])
+                    iso_index = int(bev_out_size[0]) // 2
+
+                    for col in range(start_beamlet, end_beamlet):
+                        if col % 100 == 0:
+                            print("Beamlet #:", col)
+
+                        local_idx = col - start_beamlet
+                        b_x = float(np.asarray(
+                            inf_matrix.beamlets_dict[i]["position_x_mm"][0][local_idx]).squeeze())
+                        b_y = float(np.asarray(
+                            inf_matrix.beamlets_dict[i]["position_y_mm"][0][local_idx]).squeeze())
+
+                        center = beamlet_center_lps(b_x, b_y, R, iso)
+
+                        # Put the beamlet/isocentre plane at the middle of the patch,
+                        # never starting behind the source.
+                        den = float(np.linalg.norm(center - source))
+                        x0_mm = max(0.0, den - iso_index * sx)
+
+                        origin, spacing, direction = build_ray_grid_with_beam_axes(
+                            source_lps=source,
+                            target_lps=center,
+                            R_lps_to_bcs=R,
+                            view_size_mm=bev_view_size_mm,
+                            out_size=bev_out_size,
+                            x0_mm=x0_mm,
+                        )
+
+                        ct_patch = sitk.GetArrayFromImage(resample_to_grid(
+                            ct_sitk, origin, spacing, direction, bev_out_size,
+                            default_value=-1000.0, interp=sitk.sitkLinear)).astype(np.float32)
+
+                        body_patch = (sitk.GetArrayFromImage(resample_to_grid(
+                            body_sitk, origin, spacing, direction, bev_out_size,
+                            default_value=0.0,
+                            interp=sitk.sitkNearestNeighbor)) > 0.5).astype(np.uint8)
+
+                        beamlet_values = inf_matrix.A[:, col]
+                        if not isinstance(beamlet_values, np.ndarray):
+                            beamlet_values = beamlet_values.toarray().ravel()
+                        beamlet_values = np.asarray(beamlet_values, dtype=np.float32).ravel().copy()
+                        max_val = float(np.max(beamlet_values))
+                        if max_val == 0:
+                            print(f"Warning: beamlet {col} has all-zero dose values.")
+                        else:
+                            # Drop the 0.1%-of-peak fog, as the research preprocess does.
+                            beamlet_values[beamlet_values <= 0.001 * max_val] = 0.0
+
+                        beamlet_3d = fast_dose_1d_to_3d(beamlet_values, dose_mapper)
+                        dose_sitk = sitk.GetImageFromArray(beamlet_3d.astype(np.float32))
+                        dose_sitk.CopyInformation(ct_sitk)
+                        target_patch = sitk.GetArrayFromImage(resample_to_grid(
+                            dose_sitk, origin, spacing, direction, bev_out_size,
+                            default_value=0.0, interp=sitk.sitkLinear)).astype(np.float32)
+
+                        t_entry = estimate_body_entry_distance_mm(
+                            body_sitk, source, center, mask_zyx=body_mask_ct_zyx)
+
+                        # d1/d2/d1_out are pure functions of (view, out, x0, t_entry,
+                        # body) and are recomputed identically in the dataset and in
+                        # RayUNetPredictor, so they are not stored.
+                        bl_path = os.path.join(beamlets_dir, f"bl_beam{beam_id}_col{col}.npz")
+                        np.savez_compressed(
+                            bl_path,
+                            patient_id=np.array(pid),
+                            beam_id=np.int32(beam_id),
+                            col=np.int32(col),
+                            local_idx=np.int32(local_idx),
+                            gantry=np.float32(gantry),
+                            sad_mm=np.float32(SAD_mm),
+                            ssd_mm=np.float32(SSD_mm),
+                            # CT kept as float32 HU. The research preprocess stored a
+                            # rounded int16 instead; that costs half the disk but makes
+                            # the normalized CT channel differ from what
+                            # RayUNetPredictor computes by ~1.4e-4 (0.5 HU x the RED
+                            # slope), so the training input would not be bit-identical
+                            # to the inference input.
+                            ct=ct_patch.astype(np.float32),
+                            body_mask=body_patch,
+                            target=target_patch,
+                            # ray-patch geometry: everything needed to rebuild the grid,
+                            # recompute the distance channels, and back-project the output
+                            origin_xyz_mm=np.asarray(origin, dtype=np.float32),
+                            spacing_xyz_mm=np.asarray(spacing, dtype=np.float32),
+                            size_xyz=np.asarray(bev_out_size, dtype=np.int16),
+                            direction_3x3=np.asarray(direction, dtype=np.float32),
+                            view_size_mm=np.asarray(bev_view_size_mm, dtype=np.float32),
+                            out_size=np.asarray(bev_out_size, dtype=np.int16),
+                            x0_mm=np.float32(x0_mm),
+                            t_entry=np.float32(0.0 if t_entry is None else t_entry),
+                            d_mm_max=np.float32(d_mm_max),
+                            # beam / beamlet geometry
+                            iso_xyz_mm=np.asarray(iso, dtype=np.float32),
+                            source_lps=np.asarray(source, dtype=np.float32),
+                            beamlet_center_lps=np.asarray(center, dtype=np.float32),
+                            beamlet_center_x_mm=np.float32(b_x),
+                            beamlet_center_y_mm=np.float32(b_y),
+                        )
+
+                    print("##############################################################")
+                    print("                       END OF BEAM", i)
+                    print("##############################################################")
+                    continue
 
                 beam_center = np.asarray([body_cx_mm, body_cy_mm, iso[2]], dtype=np.float32)
 

@@ -232,7 +232,9 @@ plt.show()
 # for lungs
 import json
 
-with open("SC_Lung(60Gy)_2022MAAS_ExampleV2.json", "r") as f:
+scorecard_path = os.path.join(os.path.dirname(pp.__file__), "config_files", "scorecard",
+                              "SC_Lung(60Gy)_2022MAAS_ExampleV2.json")  # scorecard shipped with PortPy
+with open(scorecard_path, "r") as f:
     lung_scorecard = json.load(f)
 
 alias_map = {

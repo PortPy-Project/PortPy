@@ -393,11 +393,14 @@ class InfluenceMatrix:
                     self.beamlet_height_mm > data_beamlet_height or self._down_sample_xyz is not None:
                 inf_matrix_sparse = self.A
             else:
-                # deepcopy so that it doesnt modify
-                inf_matrix_sparse = deepcopy(self._beams.beams_dict['influenceMatrixSparse'])
-                # if 'influenceMatrixSparse' in self._beams.beams_dict:
-                del self._beams.beams_dict['influenceMatrixSparse']
+                # pop: take ownership without the (previous) full deepcopy -- the original
+                # was deleted right after copying anyway
+                inf_matrix_sparse = self._beams.beams_dict.pop('influenceMatrixSparse')
 
+            # collect per-beam blocks and hstack ONCE after the loop: incremental
+            # hstack re-copies the accumulated matrix every beam (quadratic; very slow
+            # for many-beam VMAT, e.g. 191 beams)
+            beam_blocks = []
             for ind in range(len(self.beamlets_dict)):
                 opt_beamlets = self.beamlets_dict[ind]['opt_beamlets_ids']
 
@@ -409,7 +412,7 @@ class InfluenceMatrix:
                              range(len(opt_beamlets))], format='csr')
                     else:
                         if self._down_sample_xyz is None:
-                            inf_matrix = inf_matrix_sparse[ind][:, opt_beamlets]
+                            beam_blocks.append(inf_matrix_sparse[ind][:, opt_beamlets])
                 else:
                     if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing influence matrix for beam {}'.format(ind))
@@ -420,8 +423,9 @@ class InfluenceMatrix:
                             [inf_matrix, inf_matrix_2], format='csr')
                     else:
                         if self._down_sample_xyz is None:
-                            inf_matrix = sparse.hstack(
-                                [inf_matrix, inf_matrix_sparse[ind][:, opt_beamlets]], format='csr')
+                            beam_blocks.append(inf_matrix_sparse[ind][:, opt_beamlets])
+            if beam_blocks:
+                inf_matrix = sparse.hstack(beam_blocks, format='csr')
             # if del_org_matrix:
             if self._down_sample_xyz is not None:
                 if self.beamlet_width_mm <= data_beamlet_width or self.beamlet_height_mm <= data_beamlet_height:
@@ -436,9 +440,11 @@ class InfluenceMatrix:
             if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height or self._down_sample_xyz is not None:
                 inf_matrix_full = self.A
             else:
-                inf_matrix_full = self._beams.beams_dict['influenceMatrixFull']
-                del self._beams.beams_dict['influenceMatrixFull']
+                inf_matrix_full = self._beams.beams_dict.pop('influenceMatrixFull')
 
+            # collect per-beam blocks and hstack ONCE after the loop: incremental
+            # np.hstack re-copies the accumulated dense matrix every beam (quadratic)
+            beam_blocks = []
             for ind in range(len(self.beamlets_dict)):
                 opt_beamlets = self.beamlets_dict[ind]['opt_beamlets_ids']
 
@@ -450,7 +456,7 @@ class InfluenceMatrix:
                              range(len(opt_beamlets))])
                     else:
                         if self._down_sample_xyz is None:
-                            inf_matrix = inf_matrix_full[ind][:, opt_beamlets]
+                            beam_blocks.append(inf_matrix_full[ind][:, opt_beamlets])
                 else:
                     if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height:
                         print('parsing full influence matrix for beam {}'.format(ind))
@@ -460,7 +466,9 @@ class InfluenceMatrix:
                         inf_matrix = np.hstack([inf_matrix, inf_matrix_2])
                     else:
                         if self._down_sample_xyz is None:
-                            inf_matrix = np.hstack([inf_matrix, inf_matrix_full[ind][:, opt_beamlets]])
+                            beam_blocks.append(inf_matrix_full[ind][:, opt_beamlets])
+            if beam_blocks:
+                inf_matrix = np.hstack(beam_blocks)
 
                 # down sampling voxels
             if self._down_sample_xyz is not None:
@@ -645,8 +653,6 @@ class InfluenceMatrix:
                 self.beamlets_dict[ind]['position_y_mm'][0] = beamlets['position_y_mm'][0][opt_beamlets]
                 self.beamlets_dict[ind]['width_mm'][0] = beamlets['width_mm'][0][opt_beamlets]
                 self.beamlets_dict[ind]['height_mm'][0] = beamlets['height_mm'][0][opt_beamlets]
-                if 'MLC_leaf_idx' in beamlets:
-                    self.beamlets_dict[ind]['MLC_leaf_idx'][0] = beamlets['MLC_leaf_idx'][0][opt_beamlets]
             del self.beamlets_dict[ind]['id']
             # my_plan.beams_dict.setdefault('opt_beamlets_ids', []).append(standInd[1:])
 

@@ -161,6 +161,19 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         )
     elif netG == "beamlet_unet":
         net = BeamletUNet3D(input_nc, output_nc)
+    elif netG == "ray_unet3d":
+        # BEV / ray-aligned patch model. Same class RayUNetPredictor loads, so a
+        # checkpoint trained here is directly usable by build_ray_unet_predictor
+        # (model_type='unet3d', in_channels=3, base_features=ngf).
+        from portpy.ai.models.unet3d import UNet3D as RayUNet3D
+        net = RayUNet3D(in_channels=input_nc, out_channels=output_nc,
+                        base_features=ngf, num_groups=8)
+    elif netG == "ray_attention_resunet3d":
+        # As above for build_ray_unet_predictor(model_type='attention_resunet3d').
+        from portpy.ai.models.attention_resunet3d import AttentionResUNet3D
+        net = AttentionResUNet3D(in_channels=input_nc, out_channels=output_nc,
+                                 base_features=ngf, num_groups=8,
+                                 use_cbam=False, num_levels=3)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
 
