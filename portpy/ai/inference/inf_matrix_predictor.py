@@ -370,18 +370,18 @@ def build_ray_unet_predictor(ct, structs, ckpt_path, device=None,
     view_size_mm, out_size, batch_size, couch_deg, collimator_deg, ...).
     """
     import torch
-    from ..models.attention_resunet3d import load_checkpoint
+    from ..models.checkpoint_io import load_checkpoint
 
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
     if model_type == 'attention_resunet3d':
-        from ..models.attention_resunet3d import AttentionResUNet3D
+        from ..models.beamlet_ray_attention_resunet3d import AttentionResUNet3D
         model = AttentionResUNet3D(in_channels=in_channels, out_channels=1,
                                    base_features=base_features, num_groups=num_groups,
                                    use_cbam=use_cbam, num_levels=num_levels).to(device)
     else:
-        from ..models.unet3d import UNet3D
+        from ..models.beamlet_ray_unet3d import UNet3D
         model = UNet3D(in_channels=in_channels, out_channels=1,
                        base_features=base_features, num_groups=num_groups).to(device)
     model = load_checkpoint(model, ckpt_path, device)
@@ -644,6 +644,7 @@ class PatientGridPredictor(BeamletDosePredictor):
 
 
 def build_patient_grid_predictor(ct, structs, ckpt_path, device=None,
+                                  model_type='unet3d', model_cfg=None,
                                   in_channels=4, base_features=32, num_groups=8,
                                   spacing_xyz_mm=(2.5, 2.5, 2.5),
                                   size_xyz=(224, 192, 96),
@@ -656,20 +657,49 @@ def build_patient_grid_predictor(ct, structs, ckpt_path, device=None,
     Load a fix_sampling UNet3D(in_channels=4) checkpoint and wrap it in a
     PatientGridPredictor ready for InfluenceMatrix(..., predictor=...).
 
+    model_type : 'unet3d' (default), 'vit3d' or 'swin_unetr3d'. Must match the
+                 architecture the checkpoint was trained with.
+    model_cfg  : dict of constructor overrides for the transformer backbones, e.g.
+                 dict(embed_dim=288, depth=8, num_heads=8) for a parameter-matched
+                 ViT. None means the published defaults (ViT-B / Swin f96).
     iso_xyz_mm : isocenter (x,y,z mm) used to centre the patient grid in Z.
                  If None, uses the CT mid-plane z.  For standard IMRT all
                  beams share one isocenter so passing it here is preferred.
     """
     import torch
-    from ..models.attention_resunet3d import load_checkpoint
-    from ..models.unet3d import UNet3D
+    from ..models.checkpoint_io import load_checkpoint
+    from ..models.beamlet_unet3d import BeamletUNet3D
     from .patient_grid_geometry import get_body_center_xy_mm
 
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model = UNet3D(in_channels=in_channels, out_channels=1,
-                   base_features=base_features, num_groups=num_groups).to(device)
+    # The transformer backbones need the grid they will see. size_xyz is (Nx, Ny, Nz)
+    # and the sampled volume is (Nz, Ny, Nx), so img_size is size_xyz reversed -- derived
+    # here rather than hardcoded, so it cannot drift from the grid the predictor samples.
+    cfg = dict(model_cfg or {})
+    img_size = tuple(int(v) for v in reversed(tuple(size_xyz)))
+    if model_type == 'vit3d':
+        from ..models.beamlet_vit3d import BeamletViT3D
+        kw = dict(in_channels=in_channels, out_channels=1, img_size=img_size,
+                  patch_size=16, embed_dim=768, depth=12, num_heads=12,
+                  base_features=base_features, num_groups=num_groups)
+        kw.update(cfg)
+        model = BeamletViT3D(**kw).to(device)
+    elif model_type == 'swin_unetr3d':
+        # window_size divides every stage of the default (96,192,224) grid exactly; on a
+        # different grid the model raises rather than silently mis-tiling, so override it
+        # through model_cfg together with size_xyz.
+        from ..models.beamlet_swin_unetr3d import BeamletSwinUNETR3D
+        kw = dict(in_channels=in_channels, out_channels=1, img_size=img_size,
+                  patch_size=2, window_size=(6, 6, 7), feature_size=96,
+                  depths=(2, 2, 18, 2), num_heads=(3, 6, 12, 24),
+                  base_features=base_features, num_groups=num_groups)
+        kw.update(cfg)
+        model = BeamletSwinUNETR3D(**kw).to(device)
+    else:
+        model = BeamletUNet3D(in_channels=in_channels, out_channels=1,
+                              base_features=base_features, num_groups=num_groups).to(device)
     model = load_checkpoint(model, ckpt_path, device)
     model.eval()
 

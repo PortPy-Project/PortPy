@@ -210,6 +210,48 @@ class VmatScpOptimization(Optimization):
                     obj += [(1 / cp.sum(voxels_vol_cc)) * (obj_funcs[i]['weight'] * cp.sum_squares(cp.multiply(cp.sqrt(voxels_vol_cc), inf_int[voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[voxels, :] @ cp.multiply(
                             bound_v_l, map_adj_bound) + inf_bound_r[voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + self.delta[voxels])))]
                     print('Objective function type: {}, structure:{}, weight:{} created..'.format(obj_funcs[i]['type'], struct, obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'linear-overdose':
+                # Linear counterpart of quadratic-overdose: the slack enters the
+                # objective linearly and is NOT volume weighted, so that a mixed-integer
+                # benchmark using the same objective stays an MILP rather than an MIQP.
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    dO = 'dO_{}_{:.2f}'.format(struct, dose_gy)
+                    voxels = st.get_opt_voxels_idx(struct)
+                    self.vars[dO] = cp.Variable(len(voxels), pos=True)
+                    obj += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(self.vars[dO]))]
+                    constraints += [inf_int[voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[voxels, :] @ cp.multiply(bound_v_l, map_adj_bound)
+                                    + inf_bound_r[voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + self.delta[voxels] <= dose_gy + self.vars[dO]]
+                    print('Objective function type: {} , structure:{}, dose_gy:{}, weight:{} created..'.format(
+                        obj_funcs[i]['type'], struct, dose_gy, obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'linear-underdose':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    voxels = st.get_opt_voxels_idx(struct)
+                    dU = 'dU_{}_{:.2f}'.format(struct, dose_gy)
+                    self.vars[dU] = cp.Variable(len(voxels), pos=True)
+                    obj += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(self.vars[dU]))]
+                    constraints += [inf_int[voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[voxels, :] @ cp.multiply(
+                        bound_v_l, map_adj_bound) + inf_bound_r[voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + self.delta[voxels] >= dose_gy - self.vars[dU]]
+                    print('Objective function type: {} , structure:{}, dose_gy:{}, weight:{} created..'.format(
+                        obj_funcs[i]['type'], struct, dose_gy, obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'linear':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    voxels = st.get_opt_voxels_idx(struct)
+                    obj += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(inf_int[voxels, :] @ cp.multiply(int_v, map_adj_int) + inf_bound_l[voxels, :] @ cp.multiply(
+                            bound_v_l, map_adj_bound) + inf_bound_r[voxels, :] @ cp.multiply(bound_v_r, map_adj_bound) + self.delta[voxels]))]
+                    print('Objective function type: {}, structure:{}, weight:{} created..'.format(obj_funcs[i]['type'], struct, obj_funcs[i]['weight']))
             elif obj_funcs[i]['type'] == 'aperture_regularity_quadratic':
                 apt_reg_m = self.cvxpy_params['apt_reg_m']
                 card_ar = self.cvxpy_params['card_ar']
@@ -517,6 +559,43 @@ class VmatScpOptimization(Optimization):
                     voxels = inf_matrix.get_opt_voxels_idx(struct)
                     voxels_vol_cc = inf_matrix.get_opt_voxels_volume_cc(struct)
                     obj_actual += [(1 / cp.sum(voxels_vol_cc)) * (obj_funcs[i]['weight'] * cp.sum_squares(cp.multiply(cp.sqrt(voxels_vol_cc), inf_apt[voxels, :] @ beam_mu)))]
+                    print('Actual objective function type: {}, structure:{}, weight:{} created..'.format(obj_funcs[i]['type'],
+                                                                                                  struct, obj_funcs[i][
+                                                                                                      'weight']))
+            elif obj_funcs[i]['type'] == 'linear-overdose':
+                # Linear counterpart of quadratic-overdose, not volume weighted.
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose_')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    dO = 'actual_dO_{}_{:.2f}'.format(struct, dose_gy)
+                    self.vars[dO] = cp.Variable(len(voxels), pos=True)
+                    obj_actual += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(self.vars[dO]))]
+                    constraints_actual += [inf_apt[voxels, :] @ beam_mu <= dose_gy + self.vars[dO]]
+                    print('Actual objective function type: {} , structure:{}, dose_gy:{}, weight:{} created..'.format(obj_funcs[i]['type'], struct, dose_gy, obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'linear-underdose':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    dU = 'actual_dU_{}_{:.2f}'.format(struct, dose_gy)
+                    self.vars[dU] = cp.Variable(len(voxels), pos=True)
+                    obj_actual += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(self.vars[dU]))]
+                    constraints_actual += [inf_apt[voxels, :] @ beam_mu >= dose_gy - self.vars[dU]]
+                    print('Actual objective function type: {} , structure:{}, dose_gy:{}, weight:{} created..'.format(obj_funcs[i]['type'], struct, dose_gy, obj_funcs[i]['weight']))
+            elif obj_funcs[i]['type'] == 'linear':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_actual += [(1 / len(voxels)) * (obj_funcs[i]['weight'] * cp.sum(inf_apt[voxels, :] @ beam_mu))]
                     print('Actual objective function type: {}, structure:{}, weight:{} created..'.format(obj_funcs[i]['type'],
                                                                                                   struct, obj_funcs[i][
                                                                                                       'weight']))
@@ -1162,6 +1241,45 @@ class VmatScpOptimization(Optimization):
                     voxels = inf_matrix.get_opt_voxels_idx(struct)
                     voxels_cc = inf_matrix.get_opt_voxels_volume_cc(struct)
                     sol['quad_{}'.format(struct)] = (1 / np.sum(voxels_cc)) * obj_funcs[i]['weight'] * np.sum(voxels_cc * (sol['act_dose_v'][voxels] ** 2))
+                    sol['quadratic_obj'] += sol['quad_{}'.format(struct)]
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear-overdose':
+                # Linear counterpart of quadratic-overdose, not volume weighted. This
+                # feeds sol['actual_obj_value'], which drives accept/reject, so it has
+                # to be kept in step with the intermediate and actual problems above.
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(
+                            struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_value = (1 / len(voxels)) * obj_funcs[i]['weight'] * np.sum(
+                        np.maximum(0, (sol['act_dose_v'][voxels] - dose_gy)))
+                    sol['overdose_obj_norm'] += obj_value / obj_funcs[i]['weight']
+                    sol['overdose_obj'] += obj_value
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear-underdose':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    key = self.matching_keys(obj_funcs[i], 'dose')
+                    dose_gy = self.dose_to_gy(key, obj_funcs[i][key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_value = (1 / len(voxels)) * obj_funcs[i]['weight'] * np.sum(
+                        np.maximum(0, (dose_gy - sol['act_dose_v'][voxels])))
+                    sol['underdose_obj_norm'] += obj_value / obj_funcs[i]['weight']
+                    sol['underdose_obj'] += obj_value
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    sol['quad_{}'.format(struct)] = (1 / len(voxels)) * obj_funcs[i]['weight'] * np.sum(sol['act_dose_v'][voxels])
                     sol['quadratic_obj'] += sol['quad_{}'.format(struct)]
                     obj_ind = obj_ind + 1
             elif obj_funcs[i]['type'] == 'aperture_regularity_quadratic':

@@ -21,17 +21,32 @@ from portpy.ai.test import test
 # same training loop. They need separate data/checkpoint folders because the samples
 # have different shapes, so a model trained on one grid cannot read the other.
 GRID = "patient"   # or "bev"
+# Backbone: "unet3d" (default), or the transformer baselines "vit3d"
+# and "swin_unetr3d".
+MODEL = "unet3d"
 
-in_dir = "../../data"
+netG = f"beamlet_ray_{MODEL}" if GRID == "bev" else f"beamlet_{MODEL}"
+run_name = f"portpy_beamlet_{MODEL}"
+
+in_dir = "../../data" # portpy data directory
 beamlet_data_root = f"../../ai_beamlet_data_{GRID}"
 checkpoints_dir = "../../checkpoints"
 results_dir = "../../results"
+
+# Benchmark train/validation/test split, by patient number
+lung_train = list(range(2, 81)) + list(range(101, 181))
+lung_val = list(range(81, 91)) + list(range(181, 191))
+lung_test = list(range(91, 101)) + list(range(191, 201))
+
+prostate_train = list(range(1, 104))
+prostate_val = list(range(104, 117))
+prostate_test = list(range(117, 130))
 
 patients = [f"Lung_Patient_{i}" for i in range(2, 201)]
 # add prostate patients if desired:
 # patients += [f"Prostate_Patient_{i}" for i in range(1, 130)]
 
-# below script will download the necessary metadata and preprocess the beamlet dose data from hugging face for the selected patients, saving the processed data to `beamlet_ai_data` directory.
+# below script will download the necessary metadata and preprocess the beamlet dose data from hugging face for the selected patients, saving the processed data to the `beamlet_data_root` directory.
 beamletdose_preprocess(
     patient_ids=patients,
     meta_stage_root="../../PortPy_MetadataOnly",
@@ -39,7 +54,7 @@ beamletdose_preprocess(
     out_root=beamlet_data_root,
     grid=GRID,
 )
-#OR if you have already have the data downloaded for selected patients, you can preprocess and save the data to `beamlet_ai_data` directory using the same function above but with `meta_stage_root` and `data_stage_root` pointing to your local directories where the metadata and data are stored.
+#OR if you have already have the data downloaded for selected patients, you can preprocess and save the data to the `beamlet_data_root` directory using the same function above but with `meta_stage_root` and `data_stage_root` pointing to your local directories where the metadata and data are stored.
 # beamletdose_preprocess(
 #     patient_ids=patients,
 #     local_data_dir=in_dir,
@@ -50,10 +65,11 @@ beamletdose_preprocess(
 # bev_out_size must be divisible by 16 because the UNet pools 4 times. Defaults are
 # view (512, 64, 64) mm over (256, 32, 32) voxels, i.e. 2 mm along the ray.
 
-# Manually split:
-# beamlet_ai_data/train/Lung_Patient_x
-# beamlet_ai_data/val/Lung_Patient_x
-# beamlet_ai_data/test/Lung_Patient_x
+# Manually split the preprocessed patients into beamlet_data_root (ai_beamlet_data_patient
+# or ai_beamlet_data_bev), using the benchmark split defined above:
+#   <beamlet_data_root>/train/Lung_Patient_x   <- lung_train
+#   <beamlet_data_root>/val/Lung_Patient_x     <- lung_val
+#   <beamlet_data_root>/test/Lung_Patient_x    <- lung_test
 
 
 # -----------------------------
@@ -62,16 +78,12 @@ beamletdose_preprocess(
 train_options = {
     "dataroot": beamlet_data_root,
     "checkpoints_dir": checkpoints_dir,
-    "name": "portpy_beamlet_unet",
+    "name": run_name,
     "model": "beamletdose3d",
     "dataset_mode": "beamletdose3d",
-    # BEV trains the ray-UNet so the checkpoint loads straight into
-    # build_ray_unet_predictor (same config as
-    # inf_matrix_portpy_beams_voxels_cross_eval.py: 3 channels, base_features=32).
-    # Use "ray_attention_resunet3d" for the attention variant.
-    "netG": "ray_unet3d" if GRID == "bev" else "beamlet_unet",
+    "netG": netG,
     "input_nc": 3 if GRID == "bev" else 4,
-    "ngf": 32 if GRID == "bev" else 64,
+    "ngf": 32,
     "output_nc": 1,
     "norm": "batch",
     "batch_size": 2,
@@ -98,12 +110,12 @@ test_options = {
     "dataroot": beamlet_data_root,
     "checkpoints_dir": checkpoints_dir,
     "results_dir": results_dir,
-    "name": "portpy_beamlet_unet",
+    "name": run_name,
     "model": "beamletdose3d",
     "dataset_mode": "beamletdose3d",
-    "netG": "ray_unet3d" if GRID == "bev" else "beamlet_unet",
+    "netG": netG,
     "input_nc": 3 if GRID == "bev" else 4,
-    "ngf": 32 if GRID == "bev" else 64,
+    "ngf": 32,
     "output_nc": 1,
     "phase": "test",
     "eval": True,
@@ -138,7 +150,7 @@ ct_img = get_ct_image(ct)
 
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-ckpt_path = os.path.join(checkpoints_dir, "portpy_beamlet_unet", "best_mae_net_G.pth")
+ckpt_path = os.path.join(checkpoints_dir, run_name, "best_mae_net_G.pth")
 # Reuse the training options so the architecture cannot drift from the checkpoint.
 model = load_unet_model(ckpt_path, device,
                         netG=train_options["netG"],
@@ -157,6 +169,9 @@ A_pred = build_predicted_influence_matrix_for_patient(
     batch_size=2,
     num_workers=0,
     grid=GRID,  # only used if the beamlet data still has to be preprocessed here
+    # BEV columns are sampled straight at the optimization voxels, so the same
+    # per-column threshold the ray predictor uses applies here too.
+    col_threshold_frac=0.005 if GRID == "bev" else 0.0,
 )
 
 
@@ -256,7 +271,7 @@ plt.show()
 # rescale it first with portpy.photon.utils.adapt_scorecard_prescription.
 import json
 
-scorecard_path = os.path.join(os.path.dirname(pp.__file__), "config_files", "scorecard",
+scorecard_path = os.path.join(os.path.dirname(os.path.dirname(pp.__file__)), "config_files", "scorecard",
                               "SC_Lung(60Gy)_2022MAAS_ExampleV2.json")
 with open(scorecard_path, "r") as f:
     scorecard_json = json.load(f)
@@ -267,20 +282,22 @@ alias_map = {
     "TOTAL LUNG - GTV": "LUNGS_NOT_GTV",
 }
 
-gt_score, gt_df = pp.Evaluation.compute_total_quality_score(
+gt_score, gt_df = pp.Evaluation.get_plan_score(
     plan=plan_gt,
     dose_1d=dose_gt_1d,
     scorecard_json=scorecard_json,
     prescription_gy=60.0,
     alias_map=alias_map,
+    return_score_df=True,
 )
 
-pred_score, pred_df = pp.Evaluation.compute_total_quality_score(
+pred_score, pred_df = pp.Evaluation.get_plan_score(
     plan=plan_gt,
     dose_1d=dose_pred_1d,
     scorecard_json=scorecard_json,
     prescription_gy=60.0,
     alias_map=alias_map,
+    return_score_df=True,
 )
 
 print("GT total score  :", gt_score)

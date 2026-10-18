@@ -8,12 +8,6 @@
 		"dose_gy": "prescription_gy"
     },
     {
-		"type": "linear-overdose",
-		"structure_name": "CORD",
-		"weight": 100,
-		"dose_gy": 50
-    },
-    {
 		"type": "quadratic-underdose",
 		"structure_name": "PTV",
         "weight": 100000,

@@ -113,6 +113,20 @@ def get_crop_settings_calc_box(ct: pp.CT, meta_data):
     end_xyz = ct_img.TransformPhysicalPointToIndex(cal_box_xyz_end)  # X,Y,Z
     start_zyx = [start_xyz[2], start_xyz[1], start_xyz[0]]
     end_zyx = [end_xyz[2], end_xyz[1], end_xyz[0]]
+    # When the calc box extends past the CT by even one voxel,
+    # TransformPhysicalPointToIndex returns a NEGATIVE index. Left unclamped it reaches the
+    # crop as a PYTHON NEGATIVE SLICE, e.g. img[..., -1:509] on a 512-wide axis means
+    # 511:509 = EMPTY, so the prediction is written into a zero-width region and the dose
+    # comes back ALL ZEROS with no error raised (measured on Lung_Patient_82 and _182:
+    # crop (35, 277, 0) and (35, 330, 0) here vs (35, 277, 486) and (35, 330, 509) in
+    # data_preprocess, which already carries this clamp).
+    # Axis 0 is sliced INCLUSIVELY (end[0]+1) so its limit is size-1; axes 1 and 2 are
+    # exclusive, so theirs is size.
+    size_zyx = ct_img.GetSize()[::-1]  # SimpleITK reports (x, y, z)
+    start_zyx = [max(0, v) for v in start_zyx]
+    end_zyx = [min(end_zyx[0], size_zyx[0] - 1),
+               min(end_zyx[1], size_zyx[1]),
+               min(end_zyx[2], size_zyx[2])]
     return start_zyx, end_zyx
 
 
@@ -208,7 +222,8 @@ def attach_slices(pred_dose, ct_img, start, end):
 
 
 def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/infer', model_name='portpy_test_1', checkpoints_dir='../checkpoints', results_dir=r'../results',
-                        netG = 'unet_128', site='lung', protocol_name=None, beam_ids=None, infer_runner: InferenceRunner = None):
+                        netG = 'unet_128', site='lung', protocol_name=None, beam_ids=None, infer_runner: InferenceRunner = None,
+                        epoch: str = 'latest'):
     """
 
     :param patient_id: Patient ID for which to run inference. Should match the patient ID in the input directory.
@@ -216,7 +231,8 @@ def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/infer', model_na
     :param out_dir: output directory to save the preprocessed data for inference. This will be created if it doesn't exist. The preprocessed data will be saved in a subdirectory called 'infer' within this directory.
     :param model_name: model name to use for inference. This should match the name of the model used during training and the name of the subdirectory in the checkpoints directory where the model weights are saved.
     :param checkpoints_dir: directory where the model checkpoints are saved. The function will look for the latest checkpoint in the subdirectory corresponding to the model name.
-    :param results_dir: results directory where the predicted dose will be saved. The predicted dose will be saved in a subdirectory corresponding to the model name, under 'test_latest/npz_images'.
+    :param results_dir: results directory where the predicted dose will be saved. The predicted dose will be saved in a subdirectory corresponding to the model name, under 'test_<epoch>/npz_images'.
+    :param epoch: which saved checkpoint to load, e.g. 'latest' (default) or 'best_mae'. It also selects the output subfolder. Ignored when infer_runner is given, in which case the runner's own epoch is used.
     :param netG: network architecture to use for inference. This should match the architecture used during training (e.g. 'unet_128', 'mednext').
     :param site: disease site for which to run inference. This will be used to determine the relevant structures and labels for preprocessing the data. Should match the site used during training (e.g. 'lung', 'prostate').
     :param protocol_name: protocol name to use for inference. This will be used to determine the prescription dose for the case, which will be used to rescale the predicted dose. If not provided, the default prescription dose for the site will be used.
@@ -224,7 +240,14 @@ def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/infer', model_na
     :param infer_runner: InferenceRunner instance to use for running inference. If not provided, the function will run inference using the test function directly. This allows for flexibility in how inference is run, such as using a custom runner that handles batching or distributed inference.
     :return:
     """
-    gt_dir = os.path.join(results_dir, model_name, "test_latest", "npz_images")  # directory to save predicted results
+    # The inference run writes into "<phase>_<epoch>", so this must use the SAME
+    # epoch or we look in the wrong folder. When a runner is supplied it is the
+    # authority -- read the epoch off it rather than duplicating the setting,
+    # otherwise the two silently diverge (e.g. runner writes test_best_mae while
+    # this reads test_latest, and every patient fails with a missing .nrrd).
+    if infer_runner is not None:
+        epoch = getattr(infer_runner.opt, 'epoch', epoch)
+    gt_dir = os.path.join(results_dir, model_name, "test_{}".format(epoch), "npz_images")  # directory to save predicted results
     # directory to save preprocessed data
 
     # create test directory in out_dir
@@ -318,6 +341,7 @@ def predict_using_model(patient_id, in_dir, out_dir=r'./dataset/infer', model_na
         "name": model_name,
         "checkpoints_dir": checkpoints_dir,
         "phase": "test",
+        "epoch": epoch,
         "model": "test",
         "eval": True,
         "input_nc": 8,

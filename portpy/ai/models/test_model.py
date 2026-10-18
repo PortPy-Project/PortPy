@@ -60,8 +60,16 @@ class TestModel(BaseModel):
         self.visual_names = ['real_CT', 'fake_Dose']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
         self.model_names = ['G']  # only generator is needed.
+        # The MedNeXt options must match the ones used at TRAINING time, or the
+        # rebuilt network will not accept the checkpoint (e.g. mednext_duo is
+        # trained with 16 base filters, not the 32 of MedNeXt-B).
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,
+                                      mednext_model_id=getattr(opt, 'mednext_model_id', 'B'),
+                                      mednext_kernel_size=getattr(opt, 'mednext_kernel_size', 3),
+                                      mednext_n_channels=getattr(opt, 'mednext_n_channels', 32),
+                                      mednext_sites=tuple(getattr(opt, 'mednext_sites', ('lung', 'prostate'))),
+                                      netG_cfg=getattr(opt, 'netG_cfg', None))
 
         # assigns the model to self.netG_[suffix] so that it can be loaded
         # please see <BaseModel.load_networks>
@@ -78,9 +86,14 @@ class TestModel(BaseModel):
         self.real_CT = input['A'].to(self.device)
         self.image_paths = input['A_paths']
 
+        # Treatment site of this batch. Multi-site models route it to a per-site
+        # decoder; every other generator accepts and ignores it.
+        site = input.get('SITE', None)
+        self.site = site[0] if isinstance(site, (list, tuple)) else site
+
     def forward(self):
         """Run forward pass."""
-        self.fake_Dose = self.netG(self.real_CT)  # G(real)
+        self.fake_Dose = self.netG(self.real_CT, site=self.site)  # G(real)
 
     def optimize_parameters(self):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""

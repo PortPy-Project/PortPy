@@ -104,6 +104,11 @@ class DosePred3DDataset(BaseDataset):
             # print(OAR.max())
         out = {'A': A, 'B': B, 'A_paths': AB_path, 'B_paths': AB_path}
 
+        # Treatment site, taken from the PortPy patient id in the file name
+        # (Lung_Patient_*.npz / Prostate_Patient_*.npz). Multi-site models such
+        # as MedNeXt-Duo use it to pick the decoder; single-site models ignore it.
+        out['SITE'] = os.path.basename(AB_path).split('_')[0].lower()
+
         if body is not None:
             body_t = torch.from_numpy(body.astype(np.float32))
             body_t = torch.unsqueeze(body_t, dim=0)

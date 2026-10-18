@@ -232,7 +232,7 @@ plt.show()
 # for lungs
 import json
 
-scorecard_path = os.path.join(os.path.dirname(pp.__file__), "config_files", "scorecard",
+scorecard_path = os.path.join(os.path.dirname(os.path.dirname(pp.__file__)), "config_files", "scorecard",
                               "SC_Lung(60Gy)_2022MAAS_ExampleV2.json")  # scorecard shipped with PortPy
 with open(scorecard_path, "r") as f:
     lung_scorecard = json.load(f)
@@ -245,20 +245,22 @@ technique_name = 'imrt'
 refernce_dose_1d = planner_dose_3d = pp.convert_dose_rt_dicom_to_portpy(ct=ct,
                                                                      dose_file_name=os.path.join(in_dir, patient_id, 'DicomFiles', 'rt_dose_echo_{}.dcm'.format(technique_name.lower())))  # reference dose for score calculation
 pred_dose_opt_1d = inf_matrix.A @ sol['optimal_intensity'] * my_plan.get_num_of_fractions() # optimized dose for score calculation
-gt_score, gt_df = pp.Evaluation.compute_total_quality_score(
+gt_score, gt_df = pp.Evaluation.get_plan_score(
     plan=my_plan,
     dose_1d=refernce_dose_1d,
     scorecard_json=lung_scorecard,
     prescription_gy=60.0,
-    alias_map=alias_map
+    alias_map=alias_map,
+    return_score_df=True
 )
 
-pred_score, pred_df = pp.Evaluation.compute_total_quality_score(
+pred_score, pred_df = pp.Evaluation.get_plan_score(
     plan=my_plan,
     dose_1d=pred_dose_opt_1d,
     scorecard_json=lung_scorecard,
     prescription_gy=60.0,
-    alias_map=alias_map
+    alias_map=alias_map,
+    return_score_df=True
 )
 
 print("GT total score  :", gt_score)

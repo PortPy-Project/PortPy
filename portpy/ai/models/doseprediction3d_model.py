@@ -77,7 +77,10 @@ class DosePrediction3DModel(BaseModel):
             self.model_names = ['G']
         # define networks (both generator and discriminator)
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG, opt.norm,
-                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids, mednext_model_id=opt.mednext_model_id, mednext_kernel_size=opt.mednext_kernel_size)
+                                      not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids, mednext_model_id=opt.mednext_model_id, mednext_kernel_size=opt.mednext_kernel_size,
+                                      mednext_n_channels=getattr(opt, 'mednext_n_channels', 32),
+                                      mednext_sites=tuple(getattr(opt, 'mednext_sites', ('lung', 'prostate'))),
+                                      netG_cfg=getattr(opt, 'netG_cfg', None))
 
 
         self.criterionMAE = torch.nn.L1Loss()
@@ -131,9 +134,15 @@ class DosePrediction3DModel(BaseModel):
         if self.prescription_gy is not None:
             self.prescription_gy = self.prescription_gy.to(self.device)
 
+        # Treatment site of this batch ('lung' / 'prostate'). Batches are
+        # single-site. Multi-site models route it to a per-site decoder; every
+        # other generator accepts and ignores it.
+        site = input.get('SITE', None)
+        self.site = site[0] if isinstance(site, (list, tuple)) else site
+
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.fake_Dose = self.netG(self.real_CT)  # pred_dose = netG(CT)
+        self.fake_Dose = self.netG(self.real_CT, site=self.site)  # pred_dose = netG(CT)
 
     def backward_G(self):
         """Calculate generator loss"""

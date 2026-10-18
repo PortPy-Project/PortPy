@@ -50,7 +50,8 @@ def make_sitk_image_from_array_on_fixed_grid(arr_zyx, origin_xyz_mm, spacing_xyz
     img.SetDirection(direction_xyz)
     return img
 
-def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm, direction_xyz=None):
+def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm,
+                             direction_xyz=None, interp=None):
     """Place a predicted patch back on the CT grid.
 
     :param pred_zyx: predicted volume on the sampling grid, (z,y,x)
@@ -60,6 +61,8 @@ def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm, di
     :param direction_xyz: flattened 3x3 orientation of the sampling grid. None means
         world-aligned, which is the patient grid; BEV patches are rotated along the
         source->beamlet ray and must pass their own direction.
+    :param interp: SimpleITK interpolator, e.g. sitk.sitkBSpline for cubic. None
+        means linear.
     :return: prediction resampled onto the CT grid, (z,y,x) float32
     """
     pred_img = make_sitk_image_from_array_on_fixed_grid(
@@ -71,7 +74,7 @@ def resample_pred_to_ct_grid(pred_zyx, ct_img, origin_xyz_mm, spacing_xyz_mm, di
 
     resampler = sitk.ResampleImageFilter()
     resampler.SetReferenceImage(ct_img)
-    resampler.SetInterpolator(sitk.sitkLinear)
+    resampler.SetInterpolator(sitk.sitkLinear if interp is None else interp)
     resampler.SetDefaultPixelValue(0.0)
     pred_full_img = resampler.Execute(pred_img)
     return sitk.GetArrayFromImage(pred_full_img).astype(np.float32)
@@ -95,14 +98,15 @@ def deterministic_beam_ids(data, patient_id):
     )
     return beam_ids
 
-def load_unet_model(ckpt_path, device, netG="beamlet_unet",
-                    in_channels=4, out_channels=1, ngf=32):
+def load_unet_model(ckpt_path, device, netG="beamlet_unet3d",
+                    in_channels=4, out_channels=1, ngf=32, netG_cfg=None):
     """Load a trained beamlet-dose model for inference.
 
     The architecture comes from the same ``define_G`` registry that training uses, so
-    any ``netG`` trainable through ``train()`` can be loaded back here -- including the
-    ray-aligned models ('ray_unet3d', 'ray_attention_resunet3d'). Pass the same
-    netG/input_nc/output_nc/ngf the checkpoint was trained with.
+    any ``netG`` trainable through ``train()`` can be loaded back here -- the patient-grid
+    models ('beamlet_unet3d', 'beamlet_vit3d', 'beamlet_swin_unetr3d') and the ray-aligned
+    ones ('beamlet_ray_unet3d', 'beamlet_ray_attention_resunet3d'). Pass the same
+    netG/input_nc/output_nc/ngf/netG_cfg the checkpoint was trained with.
 
     :param ckpt_path: path to a state_dict or a Lightning checkpoint
     :param device: torch device to load onto
@@ -110,11 +114,14 @@ def load_unet_model(ckpt_path, device, netG="beamlet_unet",
     :param in_channels: number of input channels the checkpoint expects
     :param out_channels: number of output channels
     :param ngf: base feature width
+    :param netG_cfg: constructor overrides used at training time, for the transformer
+        backbones (dict or JSON string); None means their published defaults
     :return: the model in eval mode
     """
     from portpy.ai.models.networks3d import define_G
 
-    model = define_G(in_channels, out_channels, ngf, netG, gpu_ids=[]).to(device)
+    model = define_G(in_channels, out_channels, ngf, netG, gpu_ids=[],
+                     netG_cfg=netG_cfg).to(device)
     ckpt = torch.load(ckpt_path, map_location=device)
 
     if isinstance(ckpt, dict) and "state_dict" in ckpt:
@@ -148,6 +155,8 @@ def build_predicted_influence_matrix_for_patient(
     grid="patient",
     mask_mode="body",
     col_threshold_frac=0.0,
+    bev_ct_norm="density",
+    bev_y_max=0.9,
 ):
     """Build the predicted influence matrix A_pred for a single patient using the provided model.
     :param patient_id: The ID of the patient to process.
@@ -163,6 +172,8 @@ def build_predicted_influence_matrix_for_patient(
     :param grid: sampling grid to use if the beamlet data has to be preprocessed on the fly, 'patient' or 'bev'. Already-preprocessed data carries its own grid, so this only matters for that fallback.
     :param mask_mode: where the predicted dose is kept. 'body' (default) keeps it inside the BODY mask, needs no target dose, and matches what RayUNetPredictor does. 'gt_dose' keeps it where the sample's target dose is nonzero, which requires the reference influence matrix and therefore only works for patients that already have one.
     :param col_threshold_frac: if > 0, zero any value below this fraction of the beamlet's own peak after masking (RayUNetPredictor uses 0.005). Intended with mask_mode='body'; leave at 0 to keep a column exactly as the model produced it.
+    :param bev_ct_norm: CT normalization for BEV samples, 'density' (relative electron density, the default) or 'hu'. This must match what the checkpoint was trained with -- a mismatch produces wrong dose silently rather than an error. Ignored for patient-grid samples, which carry their own normalization.
+    :param bev_y_max: training dose scaling for BEV samples (y_norm = y / bev_y_max * 10). Used both to build the sample and to invert the scaling afterwards, so the two always agree. Ignored for patient-grid samples, which use 0.7.
 
     """
 
@@ -185,7 +196,8 @@ def build_predicted_influence_matrix_for_patient(
         dataroot=data_root,
         phase=split,
     )
-    ds = BeamletDose3DDataset(ds_opt, patient_id=patient_id)
+    ds = BeamletDose3DDataset(ds_opt, patient_id=patient_id,
+                              bev_ct_norm=bev_ct_norm, bev_y_max=bev_y_max)
 
     print(f"{patient_id}: {len(ds)} beamlet samples")
     dl = torch.utils.data.DataLoader(
@@ -200,6 +212,7 @@ def build_predicted_influence_matrix_for_patient(
 
     n_vox, n_cols = inf_matrix.A.shape
     A_pred = np.zeros((n_vox, n_cols), dtype=np.float32)
+    target_xyz = None   # opt-voxel world coordinates, filled on the first BEV sample
 
     with torch.no_grad():
         for batch in dl:
@@ -225,10 +238,10 @@ def build_predicted_influence_matrix_for_patient(
             for k in range(preds.size(0)):
                 col = int(meta["col"][k])
 
-                # Invert the training scaling y_norm = y / y_max * 10. The two grids
-                # were trained with different y_max: 0.7 on the patient grid, 0.9 on
-                # the BEV patch (matching unscale=0.07 / 0.09 in the predictors).
-                y_max = 0.9 if "direction_3x3" in meta else 0.7
+                # Invert the training scaling y_norm = y / y_max * 10. The BEV value
+                # comes from the dataset, so the two cannot drift apart; the patient
+                # grid was trained with 0.7 (unscale 0.07 / 0.09 in the predictors).
+                y_max = ds.bev_y_max if "direction_3x3" in meta else 0.7
                 unscale = y_max / 10.0
 
                 pred3 = preds[k, 0].detach().cpu().numpy()
@@ -236,11 +249,6 @@ def build_predicted_influence_matrix_for_patient(
 
                 m3 = mask[k, 0].detach().cpu().numpy()
                 pred3 = pred3 * m3
-
-                if col_threshold_frac > 0 and pred3.max() > 0:
-                    # Drop low-level in-body values below a fraction of this beamlet's
-                    # own peak (RayUNetPredictor uses 0.005).
-                    pred3[pred3 < col_threshold_frac * pred3.max()] = 0.0
 
                 origin_xyz_mm = meta["origin_xyz_mm"][k]
                 spacing_xyz_mm = meta["spacing_xyz_mm"][k]
@@ -273,15 +281,39 @@ def build_predicted_influence_matrix_for_patient(
                         f"Prediction shape {pred3.shape} != expected {expected_zyx} for {patient_id}, col={col}"
                     )
 
-                pred_full_3d = resample_pred_to_ct_grid(
-                    pred_zyx=pred3,
-                    ct_img=ct_img,
-                    origin_xyz_mm=origin_xyz_mm,
-                    spacing_xyz_mm=spacing_xyz_mm,
-                    direction_xyz=direction_xyz,
-                )
+                if direction_xyz is not None:
+                    # BEV: sample the ray patch straight at the optimization-voxel
+                    # coordinates, the same way RayUNetPredictor.predict_beam_rows does.
+                    # Routing through the CT grid instead would add a second resampling
+                    # step, so the two would not agree.
+                    from scipy.ndimage import map_coordinates
 
-                pred_col_1d = inf_matrix.dose_3d_to_1d(dose_3d=pred_full_3d).astype(np.float32)
+                    if target_xyz is None:
+                        target_xyz = np.asarray(inf_matrix.get_voxel_coordinates(),
+                                                dtype=np.float64)
+                    D = np.asarray(direction_xyz, dtype=np.float64).reshape(3, 3)
+                    # world -> patch index: (ix,iy,iz) = ((world - origin) @ inv(D).T) / spacing
+                    ix = ((target_xyz - origin_xyz_mm) @ np.linalg.inv(D).T) / spacing_xyz_mm
+                    coords = np.stack([ix[:, 2], ix[:, 1], ix[:, 0]], axis=0)  # array is (Nz,Ny,Nx)
+                    pred_col_1d = map_coordinates(pred3, coords, order=3,
+                                                  mode="constant", cval=0.0).astype(np.float32)
+                    # clamp the cubic overshoot, as the predictor does
+                    pred_col_1d = np.clip(pred_col_1d, 0.0,
+                                          float(pred3.max())).astype(np.float32)
+                else:
+                    pred_full_3d = resample_pred_to_ct_grid(
+                        pred_zyx=pred3,
+                        ct_img=ct_img,
+                        origin_xyz_mm=origin_xyz_mm,
+                        spacing_xyz_mm=spacing_xyz_mm,
+                        direction_xyz=direction_xyz,
+                    )
+                    pred_col_1d = inf_matrix.dose_3d_to_1d(dose_3d=pred_full_3d).astype(np.float32)
+
+                if col_threshold_frac > 0 and pred_col_1d.size and pred_col_1d.max() > 0:
+                    # Drop low-level in-body values below a fraction of this beamlet's own
+                    # peak. The predictor applies this to the sampled column, not the patch.
+                    pred_col_1d[pred_col_1d < col_threshold_frac * pred_col_1d.max()] = 0.0
                 nz_idx = np.nonzero(pred_col_1d)[0]
                 if nz_idx.size:
                     A_pred[nz_idx, col] = pred_col_1d[nz_idx]

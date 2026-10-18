@@ -135,7 +135,7 @@ torch = pytest.importorskip("torch", reason="torch not installed (pip install po
 
 def test_unet3d_forward():
     """Tiny random-weight forward pass: shape and finiteness."""
-    from portpy.ai.models.unet3d import UNet3D
+    from portpy.ai.models.beamlet_ray_unet3d import UNet3D
 
     model = UNet3D(in_channels=3, out_channels=1, base_features=8, num_groups=4)
     model.eval()

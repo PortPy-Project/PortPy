@@ -62,8 +62,19 @@ class TrainOptions(BaseOptions):
                             choices=['S', 'B', 'M', 'L'],
                             help='MedNeXt model size')
         parser.add_argument('--mednext_kernel_size', type=int, default=3,
-                            choices=[3, 5],
+                            choices=[3, 5, 7],
                             help='MedNeXt depthwise kernel size')
+        parser.add_argument('--mednext_n_channels', type=int, default=32,
+                            help='MedNeXt base filter count for mednext_attn / mednext_duo '
+                                 '(32 = MedNeXt-B, 16 = the lightweight MedNeXt-Duo setting)')
+        parser.add_argument('--mednext_sites', type=str, nargs='+', default=['lung', 'prostate'],
+                            help='mednext_duo only: one decoder per treatment site, in order. '
+                                 'Must match the SITE values the dataset emits.')
+        parser.add_argument('--netG_cfg', type=str, default='',
+                            help="JSON dict of constructor overrides for netG, e.g. "
+                                 "'{\"embed_dim\": 288, \"depth\": 8, \"num_heads\": 8}' for a "
+                                 "beamlet_vit3d matched to beamlet_unet3d's 22.6 M params. "
+                                 "Empty means the model's published defaults.")
         parser.add_argument('--upkern_pretrained_path', type=str, default='',
                             help='Path to pretrained kernel-3 checkpoint to initialize kernel-5 model')
         parser.add_argument('--load_upkern', action='store_true',

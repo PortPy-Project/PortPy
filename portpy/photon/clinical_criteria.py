@@ -446,6 +446,11 @@ class ClinicalCriteria:
                     dvh_table.at[ind, 'low_dose_voxels'] = object  # fix issue with adding array to dataframe
                 dvh_table.at[ind, 'low_dose_voxels'] = low_dose_voxels
 
+        # pandas .at unwraps a LENGTH-1 ndarray to a 0-d array (len() of unsized
+        # object downstream); re-normalize every cell to a 1-D ndarray.
+        if 'low_dose_voxels' in dvh_table.columns:
+            dvh_table['low_dose_voxels'] = dvh_table['low_dose_voxels'].apply(np.atleast_1d)
+
         return self.dvh_table
 
     def get_max_tol(self, constraints_list: list = None):

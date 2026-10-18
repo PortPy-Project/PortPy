@@ -609,6 +609,43 @@ class Evaluation:
             return total_score
 
     @staticmethod
+    def get_plan_score(plan: Plan, dose_1d: np.ndarray, scorecard_json, prescription_gy=None,
+                       alias_map=None, return_score_df: bool = False):
+        """
+        Get the overall plan score of a dose distribution using a DVH scorecard.
+
+        This is the plan-level counterpart of the per-criterion getters such as
+        :meth:`get_max_dose`, :meth:`get_mean_dose` and :meth:`get_dose`. Each scorecard
+        criterion awards points by piecewise-linear interpolation of its tolerance bands at
+        the achieved metric value, clamped outside the band range, and the plan score is the
+        sum over the criteria whose structure is present in the plan. Criteria referring to a
+        structure the patient does not have are skipped rather than scored as zero, so the
+        maximum attainable score is patient specific. Higher is better.
+
+        :param plan: Object of class Plan
+        :param dose_1d: dose in 1d (in Gy, total dose over all fractions)
+        :param scorecard_json: scorecard as a dictionary, or a path to the scorecard JSON file.
+            Scorecards for lung and prostate ship with PortPy in config_files/scorecard
+        :param prescription_gy: prescription dose in Gy. Required only if a criterion is
+            defined in terms of prescription_gy. Defaults to the prescription implied by the
+            scorecard itself (dose per fraction x number of fractions)
+        :param alias_map: dictionary mapping scorecard structure names onto the names used in
+            the plan, e.g. {'SPINAL_CORD': 'CORD'}
+        :param return_score_df: Default to False and only the score is returned. If True,
+            additionally return the per-criterion dataframe, so a score can be traced back to
+            the criteria that produced it
+        :return: the overall plan score, or (score, dataframe) if return_score_df is True
+
+        :Example:
+
+        >>> Evaluation.get_plan_score(plan=my_plan, dose_1d=dose_1d, scorecard_json=scorecard)
+        """
+        return Evaluation.compute_total_quality_score(
+            plan=plan, dose_1d=dose_1d, scorecard_json=scorecard_json,
+            prescription_gy=prescription_gy, alias_map=alias_map,
+            return_score_df=return_score_df)
+
+    @staticmethod
     def _coldest_to_hot(my_plan: Plan, criteria: list) -> list:
         """Complement 'coldest' (CV/DC) dose-volume criteria to their equivalent
         HOT-volume metric, in native units, so the standard hot-volume evaluation

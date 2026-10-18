@@ -37,6 +37,8 @@ from portpy.ai.preprocess.beamlet_preprocess_utils import (
     compute_d1_d2_from_precomputed_geom,
     build_fast_dose_1d_to_3d_mapper,
     fast_dose_1d_to_3d,
+    build_dose_grid_mapper,
+    dose_1d_to_dose_grid_sitk,
     split_d1_in_out,
 )
 
@@ -161,7 +163,8 @@ def beamletdose_preprocess(
         d_mm_max=2000.0,
         grid="patient",
         bev_view_size_mm=(512.0, 128.0, 128.0),
-        bev_out_size=(256, 64, 64)):
+        bev_out_size=(256, 64, 64),
+        gt_dose_interp="nearest"):
     """
     Write per-beamlet training samples for the beamlet dose model.
 
@@ -198,6 +201,11 @@ def beamletdose_preprocess(
     :param bev_out_size: BEV patch size in voxels (Nx, Ny, Nz), x along the ray. Each
         entry must be divisible by 8 (the ray UNet uses num_levels=3). The default
         (256, 64, 64) over (512, 128, 128) mm gives 2 mm isotropic voxels.
+    :param gt_dose_interp: how the ground-truth dose reaches the sampling grid.
+        ``'nearest'`` (default) copies each optimization voxel into the CT voxels it
+        covers, which is blocky since they are coarser. ``'linear'`` / ``'bspline'``
+        rebuild the dose on the lattice the optimization voxels lie on and resample
+        once, giving a continuous target; use them for fresh data and a retrain.
     :return: None; samples are written under ``out_root``
 
     :Example:
@@ -299,12 +307,26 @@ def beamletdose_preprocess(
             body_cx_mm, body_cy_mm = get_body_center_xy_mm(structs, ct)
 
             beams = pp.Beams(data, beam_ids=beam_ids, load_inf_matrix_full=True)
-            inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams, is_full=True)
+            inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams, is_full=True, is_bev=True)
 
             # vox_coords = inf_matrix.get_voxel_coordinates()
             valid_1d = np.ones(inf_matrix.A.shape[0], dtype=np.float32)
             valid_3d = inf_matrix.dose_1d_to_3d(dose_1d=valid_1d)
             dose_mapper = build_fast_dose_1d_to_3d_mapper(inf_matrix)
+
+            # For anything other than 'nearest' the ground-truth dose is rebuilt on
+            # the lattice the optimization voxels actually live on (typically
+            # 2.93 x 2.93 x 3.0 mm) and resampled ONCE onto the target grid. The
+            # default 'nearest' path keeps the historical behaviour: copy each
+            # optimization voxel into every CT voxel it covers, which is
+            # piecewise-constant and therefore blocky at CT resolution.
+            dose_grid_mapper = None
+            if gt_dose_interp != "nearest":
+                dose_interp = (sitk.sitkBSpline if gt_dose_interp == "bspline"
+                               else sitk.sitkLinear)
+                dose_grid_mapper = build_dose_grid_mapper(inf_matrix, ct)
+                # the patient grid needs this too, and it is only built below for bev
+                ct_sitk = get_ct_sitk_image(ct)
 
             if grid == "bev":
                 # Built once per patient: the ray patches resample straight off the
@@ -449,16 +471,34 @@ def beamletdose_preprocess(
                         max_val = float(np.max(beamlet_values))
                         if max_val == 0:
                             print(f"Warning: beamlet {col} has all-zero dose values.")
-                        else:
-                            # Drop the 0.1%-of-peak fog, as the research preprocess does.
-                            beamlet_values[beamlet_values <= 0.001 * max_val] = 0.0
+                        # The research preprocess (only_ct_linux) dropped the
+                        # 0.1%-of-peak fog here, and the shipped BEV checkpoints were
+                        # trained that way. Disabled: the patient grid never did it, so
+                        # the two grids now use the same target. Re-enable only to
+                        # reproduce data matching those older checkpoints.
+                        # else:
+                        #     beamlet_values[beamlet_values <= 0.001 * max_val] = 0.0
 
-                        beamlet_3d = fast_dose_1d_to_3d(beamlet_values, dose_mapper)
-                        dose_sitk = sitk.GetImageFromArray(beamlet_3d.astype(np.float32))
-                        dose_sitk.CopyInformation(ct_sitk)
+                        if dose_grid_mapper is None:
+                            # historical path: blocky CT-grid dose, then linear to the patch
+                            beamlet_3d = fast_dose_1d_to_3d(beamlet_values, dose_mapper)
+                            dose_sitk = sitk.GetImageFromArray(beamlet_3d.astype(np.float32))
+                            dose_sitk.CopyInformation(ct_sitk)
+                            interp = sitk.sitkLinear
+                        else:
+                            # Go straight from the dose lattice to the patch. This is ONE
+                            # interpolation instead of two, and it never passes through the
+                            # piecewise-constant CT-grid array, so nothing is thrown away
+                            # before the resample. It also avoids building a ~35M-voxel
+                            # intermediate for every beamlet.
+                            dose_sitk = dose_1d_to_dose_grid_sitk(beamlet_values, dose_grid_mapper)
+                            interp = dose_interp
                         target_patch = sitk.GetArrayFromImage(resample_to_grid(
                             dose_sitk, origin, spacing, direction, bev_out_size,
-                            default_value=0.0, interp=sitk.sitkLinear)).astype(np.float32)
+                            default_value=0.0, interp=interp)).astype(np.float32)
+                        if dose_grid_mapper is not None:
+                            # b-spline can undershoot below zero near steep gradients
+                            np.clip(target_patch, 0.0, None, out=target_patch)
 
                         t_entry = estimate_body_entry_distance_mm(
                             body_sitk, source, center, mask_zyx=body_mask_ct_zyx)
@@ -640,7 +680,17 @@ def beamletdose_preprocess(
                     if not isinstance(beamlet_values, np.ndarray):
                         beamlet_values = beamlet_values.toarray().ravel()
 
-                    beamlet_3d = fast_dose_1d_to_3d(beamlet_values, dose_mapper)
+                    if dose_grid_mapper is None:
+                        beamlet_3d = fast_dose_1d_to_3d(beamlet_values, dose_mapper)
+                    else:
+                        # interpolate off the dose lattice instead of copying each
+                        # optimization voxel into the CT voxels it covers
+                        beamlet_3d = sitk.GetArrayFromImage(resample_to_grid(
+                            dose_1d_to_dose_grid_sitk(beamlet_values, dose_grid_mapper),
+                            ct_sitk.GetOrigin(), ct_sitk.GetSpacing(),
+                            ct_sitk.GetDirection(), ct_sitk.GetSize(),
+                            default_value=0.0, interp=dose_interp)).astype(np.float32)
+                        np.clip(beamlet_3d, 0.0, None, out=beamlet_3d)
                     beamlet_3d_down, _ = resample_masked_array_on_ct_grid_to_fixed_iso_box(
                         beamlet_3d,
                         valid_mask_zyx=valid_3d,

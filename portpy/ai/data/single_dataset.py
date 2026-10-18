@@ -80,7 +80,12 @@ class SingleDataset(BaseDataset):
 
         if prescription_gy is not None:
             out['PRESCRIPTION_GY'] = torch.tensor(prescription_gy, dtype=torch.float32)
-        return {'A': A, 'A_paths': A_path}
+        # Treatment site, taken from the PortPy patient id in the file name
+        # (Lung_Patient_*.npz / Prostate_Patient_*.npz). Multi-site models such
+        # as MedNeXt-Duo use it at inference to pick the decoder; single-site
+        # models accept and ignore it.
+        return {'A': A, 'A_paths': A_path,
+                'SITE': os.path.basename(A_path).split('_')[0].lower()}
 
     def __len__(self):
         """Return the total number of images in the dataset."""

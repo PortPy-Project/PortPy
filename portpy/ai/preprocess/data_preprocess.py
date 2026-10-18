@@ -161,6 +161,19 @@ def get_crop_settings_calc_box(ct: pp.CT, meta_data):
     end_xyz = ct_img.TransformPhysicalPointToIndex(cal_box_xyz_end)  # X,Y,Z
     start_zyx = [start_xyz[2], start_xyz[1], start_xyz[0]]
     end_zyx = [end_xyz[2], end_xyz[1], end_xyz[0]]
+
+    # The calc box can extend a voxel or two beyond the CT, in which case
+    # TransformPhysicalPointToIndex returns a NEGATIVE index. Left unclamped that
+    # becomes a Python negative slice (e.g. img[511:509]) which is EMPTY, and the
+    # later resize to 128 divides by a zero-length axis -- surfacing as a very
+    # unhelpful "cannot convert float NaN to integer" from scipy.ndimage.zoom.
+    # Clamp to the CT bounds. Axis 0 is sliced inclusively (end + 1), axes 1 and 2
+    # exclusively, hence the different upper limits.
+    size_zyx = ct_img.GetSize()[::-1]  # SimpleITK reports (x, y, z)
+    start_zyx = [max(0, v) for v in start_zyx]
+    end_zyx = [min(end_zyx[0], size_zyx[0] - 1),
+               min(end_zyx[1], size_zyx[1]),
+               min(end_zyx[2], size_zyx[2])]
     return start_zyx, end_zyx
 
 
@@ -346,13 +359,16 @@ def process_case(ct_portpy, meta_data, ct, oar, ptv, beamlet, out_dir, case,
     np.savez(filename, **save_dict)
 
 
-def data_preprocess(in_dir, out_dir, site: str='lung', protocol_name: str = None, beam_ids = None, technique_name: str = 'imrt'):
+def data_preprocess(in_dir, out_dir, site: str='lung', protocol_name: str = None, beam_ids = None, technique_name: str = 'imrt', patient_ids: list = None):
     """
     in_dir: raw data input directory
     out_dir: processed data out directory
     site: anatomical site. Default is lung. In future, can add more sites and modify code accordingly.
     protocol_name: protocol name to determine prescription dose. Default is None, which means it will use the prescription dose from metadata. In future, can modify code to use protocol_name to determine prescription dose.
     dose_clip_max_gy: maximum dose in Gy to clip the dose array. Default is None, which means it will use 1.2 times the prescription dose as the maximum dose for clipping. Can modify this in future to use a fixed value or a value based on protocol_name.
+    patient_ids: optional list of patient ids to process, e.g. ['Lung_Patient_181', ...].
+        Default None processes every case in in_dir. Use it to add a few patients to an
+        existing split without re-running the whole cohort.
     """
     if not os.path.isabs(in_dir):
         base_dir = os.getcwd()  # get current running directory
@@ -364,6 +380,12 @@ def data_preprocess(in_dir, out_dir, site: str='lung', protocol_name: str = None
         os.makedirs(out_dir)
 
     cases = os.listdir(in_dir)
+    if patient_ids is not None:
+        wanted = set(patient_ids)
+        missing = wanted - set(cases)
+        if missing:
+            print('Not found in {}: {}'.format(in_dir, sorted(missing)))
+        cases = [c for c in cases if c in wanted]
 
     disease_struct_names, labels, default_prescription_gy = get_site_config(site)
     for idx, case in enumerate(cases):

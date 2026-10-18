@@ -514,6 +514,80 @@ def fast_dose_1d_to_3d(dose_1d, mapper, dtype=np.float32):
     out[mapper["flat_valid_ct_idx"]] = dose_1d[mapper["flat_dose_idx"]]
     return out.reshape(mapper["ct_shape"])
 
+
+# --------------------------------------------------------------------------
+# Dose on its OWN lattice, for interpolated (non-blocky) resampling
+# --------------------------------------------------------------------------
+# `fast_dose_1d_to_3d` writes each optimization voxel verbatim into every CT
+# voxel it covers. The optimization voxels are coarser than the CT (e.g.
+# 2.93 x 2.93 x 3.0 mm vs 0.98 x 0.98 x 3.0 mm, i.e. 3 x 3 x 1), so the result is
+# piecewise-constant blocks. Interpolating THAT array cannot recover what the
+# nearest-neighbour step already threw away.
+#
+# These helpers instead rebuild the dose on the regular lattice the optimization
+# voxels actually live on, as a SimpleITK image, so it can be resampled once --
+# with linear or b-spline -- directly onto whatever grid is wanted.
+
+def build_dose_grid_mapper(inf_matrix, ct):
+    """Locate the regular lattice that the optimization voxels sit on.
+
+    Index positions are derived in CT INDEX space so that a non-identity CT
+    direction (some PortPy patients are stored flipped) is handled correctly.
+
+    :param inf_matrix: InfluenceMatrix whose opt_voxels_dict supplies the geometry
+    :param ct: PortPy CT object
+    :return: dict with the lattice index of every dose voxel plus the image
+        geometry (shape, origin, spacing, direction) of the dose grid
+    """
+    ov = inf_matrix.opt_voxels_dict
+    xyz = ov['voxel_coordinate_XYZ_mm']
+    xyz = np.asarray(xyz[0] if isinstance(xyz, (list, tuple)) else xyz, dtype=float)
+
+    # Derive the lattice straight from the stored coordinates. Do NOT compute it
+    # as dose_res / ct_res: both are rounded in the metadata (e.g. 0.98 vs the
+    # true 0.9765625), so that ratio is 2.9898 rather than 3 and the error
+    # accumulates into a multi-voxel shift across the grid.
+    lat_idx = np.empty(xyz.shape, dtype=np.int64)   # x, y, z
+    origin, spacing = [], []
+    for ax in range(3):
+        uniq = np.unique(xyz[:, ax])
+        lat_idx[:, ax] = np.searchsorted(uniq, xyz[:, ax])
+        origin.append(float(uniq[0]))
+        spacing.append(float(np.median(np.diff(uniq))) if uniq.size > 1
+                       else float(ov['dose_voxel_resolution_xyz_mm'][ax]))
+    shape_xyz = lat_idx.max(axis=0) + 1
+
+    # Built axis-aligned with ascending coordinates. That need not match the CT's
+    # own direction (some patients are stored flipped), but resampling works in
+    # PHYSICAL space, so SimpleITK reconciles the two correctly.
+    return {
+        'lat_idx_zyx': lat_idx[:, ::-1].copy(),     # numpy arrays are z, y, x
+        'shape_zyx': tuple(int(v) for v in shape_xyz[::-1]),
+        'origin': tuple(origin),
+        'spacing': tuple(spacing),
+        'direction': (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+    }
+
+
+def dose_1d_to_dose_grid_sitk(dose_1d, mapper, dtype=np.float32):
+    """Scatter a 1d dose vector onto its own lattice and wrap it as an image.
+
+    Lattice cells with no optimization voxel (outside the body) stay 0.
+
+    :param dose_1d: dose per optimization voxel, ordered as the rows of the influence matrix
+    :param mapper: output of :func:`build_dose_grid_mapper`
+    :param dtype: dtype of the returned image
+    :return: SimpleITK image of the dose on the optimization-voxel lattice
+    """
+    grid = np.zeros(mapper['shape_zyx'], dtype=dtype)
+    z, y, x = mapper['lat_idx_zyx'].T
+    grid[z, y, x] = np.asarray(dose_1d, dtype=dtype)
+    img = sitk.GetImageFromArray(grid)
+    img.SetOrigin(mapper['origin'])
+    img.SetSpacing(mapper['spacing'])
+    img.SetDirection(mapper['direction'])
+    return img
+
 def split_d1_in_out(d1_3d_down, d2_3d_down, body_mask_down, ray_radius_mm=2.5):
     """
     Minimal approximation:
@@ -641,6 +715,20 @@ def get_crop_settings_calc_box(ct: pp.CT, meta_data):
     end_xyz = ct_img.TransformPhysicalPointToIndex(cal_box_xyz_end)  # X,Y,Z
     start_zyx = [start_xyz[2], start_xyz[1], start_xyz[0]]
     end_zyx = [end_xyz[2], end_xyz[1], end_xyz[0]]
+    # When the calc box extends past the CT by even one voxel,
+    # TransformPhysicalPointToIndex returns a NEGATIVE index. Left unclamped it reaches the
+    # crop as a PYTHON NEGATIVE SLICE, e.g. img[..., -1:509] on a 512-wide axis means
+    # 511:509 = EMPTY, and the data silently comes back ALL ZEROS with no error raised.
+    # Identical clamp to data_preprocess.py and predict_using_model.py; strictly a no-op for
+    # any patient whose calc box already lies inside the CT, so previously-generated beamlet
+    # data is unaffected (only patients that currently fail or crop empty change).
+    # Axis 0 is sliced INCLUSIVELY (end[0]+1) so its limit is size-1; axes 1 and 2 are
+    # exclusive, so theirs is size.
+    size_zyx = ct_img.GetSize()[::-1]  # SimpleITK reports (x, y, z)
+    start_zyx = [max(0, v) for v in start_zyx]
+    end_zyx = [min(end_zyx[0], size_zyx[0] - 1),
+               min(end_zyx[1], size_zyx[1]),
+               min(end_zyx[2], size_zyx[2])]
     return start_zyx, end_zyx
 
 

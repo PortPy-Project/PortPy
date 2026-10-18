@@ -226,6 +226,7 @@ def vmat_optimization():
     del vmat_opt_params['objective_functions'][-1]
     vmat_opt_params['opt_parameters']['smooth_delta'] = 0
     vmat_opt_params['opt_parameters']['mu_max'] = 1000
+    vmat_opt_params['opt_parameters']['mu_min'] = 0
     vmat_opt_params['objective_functions'][1]['weight'] = 30000
 
     # Assign discrete beam/control_point_ids to arcs and create arcs dictionary.
@@ -289,45 +290,70 @@ def vmat_optimization():
     ax.set_title('Solid: MIP Global Optimal  Dashed: Column generation  Dotted: Column generation + SCP')
     plt.show()
 
-    # # run below to evaluate the plans using clinical criteria and scorecard. The scorecard will evaluate the plan based on the clinical criteria and assign a score to the plan. This will help in comparing the plans based on clinical criteria. The scorecard can be customized by the user to include different criteria and weights for each criterion.
-    # # calculate score for mip and scp based plans using the scorecard for the patient. Users can also create their own scorecard json file with custom criteria and use it for evaluation. Below is an example of using the scorecard json file.
-    # import json
-    # alias_map = {
-    #     "BILAT_FEM_HEADS": "FEMURS",
-    #     "SPINAL_CORD": "CORD",
-    #     "TOTAL LUNG - GTV": "LUNGS_NOT_GTV"
-    # }
-    # with open(r"SC_Lung(60Gy)_2022MAAS_ExampleV2.json", "r") as f:
-    #     lung_60 = json.load(f)
-    # scorecard_json = lung_60
-    # inf_matrix_db_1 = inf_matrix.create_down_sample(beamlet_width_mm=new_beamlet_width_mm,
-    #                                               beamlet_height_mm=new_beamlet_height_mm)
-    # mip_dose_1d = inf_matrix_db_1.A @ sol['optimal_intensity'] * my_plan.get_num_of_fractions()
-    # scp_dose_1d = inf_matrix_db_1.A @ sol_scp['optimal_intensity'] * my_plan.get_num_of_fractions()
-    # dummy_scp = {'optimal_intensity': sol_scp['optimal_intensity'], 'inf_matrix': inf_matrix_db_1}
-    # norm_factor = pp.Evaluation.get_dose(dummy_scp, dose_1d=scp_dose_1d, struct='PTV',
-    #                                      volume_per=90) / my_plan.get_prescription()
-    # scp_dose_1d_norm = scp_dose_1d / norm_factor
-    # scp_score, scp_df = pp.Evaluation.compute_total_quality_score(
-    #     plan=my_plan,
-    #     dose_1d=scp_dose_1d_norm,
-    #     scorecard_json=scorecard_json,
-    #     prescription_gy=my_plan.get_prescription(),
-    #     alias_map=alias_map
-    # )
-    # dummy_mip = {'optimal_intensity': sol['optimal_intensity'], 'inf_matrix': inf_matrix_db_1}
-    # norm_factor = pp.Evaluation.get_dose(dummy_mip, dose_1d=mip_dose_1d, struct='PTV',
-    #                                      volume_per=90) / my_plan.get_prescription()
-    # mip_dose_1d_norm = mip_dose_1d / norm_factor
-    # mip_score, mip_df = pp.Evaluation.compute_total_quality_score(
-    #     plan=my_plan,
-    #     dose_1d=mip_dose_1d_norm,
-    #     scorecard_json=scorecard_json,
-    #     prescription_gy=my_plan.get_prescription(),
-    #     alias_map=alias_map
-    # )
-    # print("MIP based plan score: ", mip_score)
-    # print("SCP based plan score: ", scp_score)
+    """
+    4) Plan score -- does the objective difference matter clinically?
+
+    """
+    # The objective says which method optimized best. The scorecard says whether that
+    # difference matters: it awards points per dose-volume criterion the way a planner does
+    # when accepting or rejecting a plan, and Evaluation.get_plan_score sums them. Criteria
+    # for structures this patient does not have are skipped, so the maximum attainable total
+    # is patient specific. The scorecard shipped with PortPy is used here; users can supply
+    # their own JSON with custom criteria and weights.
+    import json
+
+    alias_map = {
+        "BILAT_FEM_HEADS": "FEMURS",
+        "SPINAL_CORD": "CORD",
+        "TOTAL LUNG - GTV": "LUNGS_NOT_GTV"
+    }
+    scorecard_path = os.path.join(os.path.dirname(os.path.dirname(pp.__file__)),
+                                  'config_files', 'scorecard',
+                                  'SC_Lung(60Gy)_2022MAAS_ExampleV2.json')
+    with open(scorecard_path, "r") as f:
+        scorecard_json = json.load(f)
+
+    # The plans are OPTIMIZED on the voxel-down-sampled matrix but SCORED on the full voxel
+    # grid, because the scorecard is a clinical read-out and coarse voxels misrepresent it:
+    # at 6x down-sampling the PTV has 1,123 voxels instead of 3,954, which under-resolves
+    # the target's cold tail and costs ~4 points on the minimum-dose criterion alone (the
+    # organ-at-risk criteria are unaffected). That needs a matrix down-sampled in beamlets
+    # only, plus a plan built on it -- passing a full-grid dose together with the
+    # voxel-down-sampled plan would index the structures with the wrong voxel set.
+    inf_matrix_full = inf_matrix.create_down_sample(beamlet_width_mm=new_beamlet_width_mm,
+                                                    beamlet_height_mm=new_beamlet_height_mm)
+    plan_full = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix_full,
+                        clinical_criteria=clinical_criteria)
+
+    print('\n\n%-30s %12s' % ('method', 'plan score'))
+    print('-' * 44)
+    score_df = None
+    for name, intensity in (('MIP (global optimal)', sol['optimal_intensity']),
+                            ('Column generation', sol_col_gen['optimal_intensity']),
+                            ('Column generation + SCP', sol_scp['optimal_intensity'])):
+        dose_1d = inf_matrix_full.A @ intensity * my_plan.get_num_of_fractions()
+        # Normalize each plan so the target gets the prescription at D90, as plans are
+        # compared in the clinic: without it a plan that simply delivers less dose
+        # everywhere would score better on every organ-at-risk criterion.
+        dummy = {'optimal_intensity': intensity, 'inf_matrix': inf_matrix_full}
+        norm_factor = pp.Evaluation.get_dose(dummy, dose_1d=dose_1d, struct='PTV',
+                                             volume_per=90) / my_plan.get_prescription()
+        score, score_df = pp.Evaluation.get_plan_score(
+            plan=plan_full,
+            dose_1d=dose_1d / norm_factor,
+            scorecard_json=scorecard_json,
+            prescription_gy=my_plan.get_prescription(),
+            alias_map=alias_map,
+            return_score_df=True
+        )
+        print('%-30s %12.2f' % (name, score))
+
+    # criterion by criterion for the last method scored, so a total can always be traced
+    # back to the criteria that produced it
+    if score_df is not None:
+        print()
+        print(score_df[['Structure', 'MetricType', 'MetricValue', 'Score',
+                        'Status']].to_string(index=False))
 
 
 if __name__ == "__main__":

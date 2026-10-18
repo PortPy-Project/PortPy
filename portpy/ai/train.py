@@ -240,7 +240,7 @@ def main(opt):
         with open(loss_filename, 'w') as f:
             for i, line in enumerate(loss_summary):
                 print("{} {}".format(i + 1, line), file=f)
-        df = pd.read_csv(loss_filename, delim_whitespace=True, header=None)
+        df = pd.read_csv(loss_filename, sep=r'\s+', header=None)
         df.columns = ["Epoch", "Train_Loss"]
         df.to_excel(r"{}.xlsx".format(loss_filename))
 
@@ -251,7 +251,7 @@ def main(opt):
         with open(loss_filename, 'w') as f:
             for i, line in enumerate(loss_summary_test):
                 print("{} {}".format(i + 1, line), file=f)
-        df = pd.read_csv(loss_filename, delim_whitespace=True, header=None)
+        df = pd.read_csv(loss_filename, sep=r'\s+', header=None)
         df.columns = ["Epoch", "Val_Loss"]
         df.to_excel(r"{}.xlsx".format(loss_filename))
 
@@ -262,7 +262,7 @@ def main(opt):
             for i, line in enumerate(mae_summary_test):
                 print("{} {}".format(i + 1, line), file=f)
 
-        df = pd.read_csv(loss_filename, delim_whitespace=True, header=None)
+        df = pd.read_csv(loss_filename, sep=r'\s+', header=None)
         df.columns = ["Epoch", "Val_MAE"]
         df.to_excel(r"{}.xlsx".format(loss_filename))
 

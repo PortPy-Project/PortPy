@@ -49,13 +49,13 @@ def create_cp(my_plan, beam_id, cp_index, meterset_weight, leaf_positions):
     beam_limiting_dataset_x = Dataset()
     # X jaw.[X1 X2] -ve of the X1 we see in eclipse
     beam_limiting_dataset_x.RTBeamLimitingDeviceType = 'ASYMX'
-    beam_limiting_dataset_x.LeafJawPositions = [top_left_x_mm, bottom_right_x_mm+my_plan.beams.get_beamlet_width()] # Temporary bug fix
+    beam_limiting_dataset_x.LeafJawPositions = [top_left_x_mm, bottom_right_x_mm]
     BeamLimitingDevicePositionSequence.append(beam_limiting_dataset_x)
 
     # Y jaw.[Y1 Y2] -ve of the Y1 we see in eclipse
     beam_limiting_dataset_y = Dataset()
     beam_limiting_dataset_y.RTBeamLimitingDeviceType = 'ASYMY'
-    beam_limiting_dataset_y.LeafJawPositions = [bottom_right_y_mm - my_plan.beams.get_beamlet_height(), top_left_y_mm]
+    beam_limiting_dataset_y.LeafJawPositions = [bottom_right_y_mm, top_left_y_mm]
     BeamLimitingDevicePositionSequence.append(beam_limiting_dataset_y)
 
     beam_limiting_dataset_leaf_positions = Dataset()

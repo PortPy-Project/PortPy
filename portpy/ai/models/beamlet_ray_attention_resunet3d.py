@@ -186,16 +186,6 @@ class AttentionResUNet3D(nn.Module):
         return self.conv_out(dec1)
 
 
-def load_checkpoint(model, ckpt_path, device):
-    """Load a Lightning/plain checkpoint, stripping a leading 'model.' if present."""
-    ckpt = torch.load(ckpt_path, map_location=device)
-    if isinstance(ckpt, dict) and "state_dict" in ckpt:
-        state = {k.replace("model.", "", 1): v for k, v in ckpt["state_dict"].items()}
-    else:
-        state = ckpt
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if missing:
-        print("[attention_resunet3d] missing keys:", missing)
-    if unexpected:
-        print("[attention_resunet3d] unexpected keys:", unexpected)
-    return model
+# moved to checkpoint_io.py (it is architecture-agnostic and shared by every beamlet
+# model); re-exported here so existing imports keep working
+from .checkpoint_io import load_checkpoint  # noqa: E402,F401

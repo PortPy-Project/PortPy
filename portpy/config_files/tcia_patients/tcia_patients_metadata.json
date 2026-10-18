@@ -1141,6 +1141,21 @@
       "collection_id": "Prostate-Anatomical-Edge-Cases"
     },
     {
+      "portpy_patient_id": "Lung_Patient_101",
+      "subject_id": "LUNG1-013",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_102",
+      "subject_id": "LUNG1-015",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
+      "portpy_patient_id": "Lung_Patient_103",
+      "subject_id": "LUNG1-017",
+      "collection_id": "NSCLC-Radiomics"
+    },
+    {
       "portpy_patient_id": "Lung_Patient_104",
       "subject_id": "LUNG1-018",
       "collection_id": "NSCLC-Radiomics"

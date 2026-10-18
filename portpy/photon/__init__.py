@@ -30,3 +30,7 @@ try:
     from portpy.photon.vmat_scp import *
 except ImportError:
     pass
+try:
+    from portpy.photon.imrt_scp import *
+except ImportError:
+    pass

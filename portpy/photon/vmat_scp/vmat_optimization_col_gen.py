@@ -159,6 +159,40 @@ class VmatOptimizationColGen(Optimization):
                     continue
                 influence = A[voxels, :]
                 quadratic_grad += (2 * self.vmat_params['normalize_oar_weights'] * obj['weight'] / len(voxels)) * (influence.T @ current_dose[voxels])
+            elif obj['type'] == 'linear-overdose':
+                # d/dx of (weight/len) * sum(max(0, dose - dose_gy)) is an indicator,
+                # where the quadratic form gives 2 * (dose - dose_gy)
+                struct = obj['structure_name']
+                if struct not in structures.get_structures():
+                    continue
+                voxels = inf_matrix.get_opt_voxels_idx(struct)
+                if len(voxels) == 0:
+                    continue
+                dose_gy = self.get_dose_gy_per_frac_for_opt(obj, struct=struct)
+                influence = A[voxels, :]
+                overdose = (current_dose[voxels] > dose_gy).astype(float)
+                overdose_grad += (obj['weight'] / len(voxels)) * (influence.T @ overdose)
+            elif obj['type'] == 'linear-underdose':
+                struct = obj['structure_name']
+                if struct not in structures.get_structures():
+                    continue
+                voxels = inf_matrix.get_opt_voxels_idx(struct)
+                if len(voxels) == 0:
+                    continue
+                dose_gy = self.get_dose_gy_per_frac_for_opt(obj, struct=struct)
+                influence = A[voxels, :]
+                # negative, matching the sign convention of quadratic-underdose above
+                underdose = -(current_dose[voxels] < dose_gy).astype(float)
+                underdose_grad += (obj['weight'] / len(voxels)) * (influence.T @ underdose)
+            elif obj['type'] == 'linear':
+                struct = obj['structure_name']
+                if struct not in structures.get_structures():
+                    continue
+                voxels = inf_matrix.get_opt_voxels_idx(struct)
+                if len(voxels) == 0:
+                    continue
+                influence = A[voxels, :]
+                quadratic_grad += (self.vmat_params['normalize_oar_weights'] * obj['weight'] / len(voxels)) * (influence.T @ np.ones(len(voxels)))
             elif obj['type'] == "PTV-dose-mimicking":
                 struct = obj['structure_name']
                 if struct in self.my_plan.structures.get_structures():
@@ -317,6 +351,45 @@ class VmatOptimizationColGen(Optimization):
                     obj_diff = (1 / len(voxels)) * (
                             np.sum(obj_funcs[i]['weight'] * (perturbed_doses[voxels] ** 2), axis=0)
                             - np.sum(obj_funcs[i]['weight'] * (current_dose[voxels] ** 2)))
+                    sol['quadratic_grad'] += obj_diff / delta
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear-overdose':
+                # Same finite difference as quadratic-overdose, without the square.
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(
+                            struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    dose_key = self.matching_keys(obj_funcs[i], 'dose_')
+                    dose_gy = self.dose_to_gy(dose_key, obj_funcs[i][dose_key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_diff = (1 / len(voxels)) * (
+                                np.sum(obj_funcs[i]['weight'] * np.maximum(0, (perturbed_doses[voxels] - dose_gy)), axis=0)
+                                - np.sum(obj_funcs[i]['weight'] * np.maximum(0, (current_dose[voxels] - dose_gy))))
+                    sol['overdose_grad'] += obj_diff / delta
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear-underdose':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    dose_key = self.matching_keys(obj_funcs[i], 'dose_')
+                    dose_gy = self.dose_to_gy(dose_key, obj_funcs[i][dose_key]) / num_fractions
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_diff = (1 / len(voxels)) * (
+                            np.sum(obj_funcs[i]['weight'] * np.maximum(0, (dose_gy - perturbed_doses[voxels])), axis=0)
+                            - np.sum(obj_funcs[i]['weight'] * np.maximum(0, (dose_gy - current_dose[voxels]))))
+                    sol['underdose_grad'] += obj_diff / delta
+                    obj_ind = obj_ind + 1
+            elif obj_funcs[i]['type'] == 'linear':
+                if obj_funcs[i]['structure_name'] in structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(inf_matrix.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    voxels = inf_matrix.get_opt_voxels_idx(struct)
+                    obj_diff = (1 / len(voxels)) * (
+                            np.sum(obj_funcs[i]['weight'] * perturbed_doses[voxels], axis=0)
+                            - np.sum(obj_funcs[i]['weight'] * current_dose[voxels]))
                     sol['quadratic_grad'] += obj_diff / delta
                     obj_ind = obj_ind + 1
 
@@ -538,7 +611,21 @@ class VmatOptimizationColGen(Optimization):
             num_select_apertures = self.vmat_params['num_select_apertures']
         else:
             num_select_apertures = 1
-        top_beam_ids = sorted(aperture_score, key=aperture_score.get)[:num_select_apertures]
+        # at most one aperture per beam in a round. Several apertures of the same beam share
+        # geometry, so they tie on score and would come back with identical leaf positions.
+        # 'aperture_group' is set by imrt_scp.create_imrt_plan; without it (VMAT) every beam is
+        # its own group and the selection is unchanged.
+        beams_dict = self.my_plan.beams.beams_dict
+        group_of = dict(zip(beams_dict['ID'], beams_dict.get('aperture_group', beams_dict['ID'])))
+        top_beam_ids, taken = [], set()
+        for beam_id in sorted(aperture_score, key=aperture_score.get):
+            if len(top_beam_ids) >= num_select_apertures:
+                break
+            group = group_of.get(beam_id, beam_id)
+            if group in taken:
+                continue
+            taken.add(group)
+            top_beam_ids.append(beam_id)
         # print('Best reduced cost is of beam id ', best_beam_id, ':', str(aperture_score[best_beam_id]))
         for i, beam_id in enumerate(top_beam_ids, 1):
             print(f'#{i} best reduced cost is of beam ID {beam_id}: {aperture_score[beam_id]}')
@@ -625,6 +712,32 @@ class VmatOptimizationColGen(Optimization):
                     if len(st.get_opt_voxels_idx(struct)) == 0:
                         continue
                     obj += [self.vmat_params['normalize_oar_weights'] * (1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum_squares(B[st.get_opt_voxels_idx(struct), :] @ y))]
+            elif obj_funcs[i]['type'] == 'linear-overdose':
+                # Linear counterpart of quadratic-overdose: cp.sum of the slack instead
+                # of cp.sum_squares. Already 1/len(voxels) here, so no volume weighting.
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:  # check if there are any opt voxels for the structure
+                        continue
+                    dose_gy = self.get_dose_gy_per_frac_for_opt(obj_funcs[i], struct=struct)
+                    dO = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum(dO))]
+                    constraints += [B[st.get_opt_voxels_idx(struct), :] @ y <= dose_gy + dO]
+            elif obj_funcs[i]['type'] == 'linear-underdose':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    dose_gy = self.get_dose_gy_per_frac_for_opt(obj_funcs[i], struct=struct)
+                    dU = cp.Variable(len(st.get_opt_voxels_idx(struct)), pos=True)
+                    obj += [(1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum(dU))]
+                    constraints += [B[st.get_opt_voxels_idx(struct), :] @ y >= dose_gy - dU]
+            elif obj_funcs[i]['type'] == 'linear':
+                if obj_funcs[i]['structure_name'] in my_plan.structures.get_structures():
+                    struct = obj_funcs[i]['structure_name']
+                    if len(st.get_opt_voxels_idx(struct)) == 0:
+                        continue
+                    obj += [self.vmat_params['normalize_oar_weights'] * (1 / len(st.get_opt_voxels_idx(struct))) * (obj_funcs[i]['weight'] * cp.sum(B[st.get_opt_voxels_idx(struct), :] @ y))]
             elif obj_funcs[i]['type'] == "PTV-dose-mimicking":
                 struct = obj_funcs[i]['structure_name']
                 if struct in self.my_plan.structures.get_structures():

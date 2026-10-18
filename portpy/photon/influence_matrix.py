@@ -431,11 +431,8 @@ class InfluenceMatrix:
                 if self.beamlet_width_mm <= data_beamlet_width or self.beamlet_height_mm <= data_beamlet_height:
                     inf_matrix = inf_matrix_sparse
                 print('creating influence matrix for down sample voxels..')
-                inf_matrix = sparse.vstack(
-                    [csr_matrix((sparse.diags(self._vox_weights[i]).dot(inf_matrix[self._vox_map[i], :])).sum(axis=0))
-                     for i
-                     in
-                     range(len(self._vox_map))], format='csr')
+                inf_matrix = csr_matrix(
+                    self._voxel_restriction_matrix(inf_matrix.shape[0]).dot(inf_matrix))
         else:
             if self.beamlet_width_mm > data_beamlet_width or self.beamlet_height_mm > data_beamlet_height or self._down_sample_xyz is not None:
                 inf_matrix_full = self.A
@@ -475,9 +472,7 @@ class InfluenceMatrix:
                 if self.beamlet_width_mm <= data_beamlet_width or self.beamlet_height_mm <= data_beamlet_height:
                     inf_matrix = inf_matrix_full
                 print('creating influence matrix for down sample voxels..')
-                inf_matrix = np.vstack(
-                    [(np.diag(self._vox_weights[i]).dot(inf_matrix[self._vox_map[i], :])).sum(axis=0)
-                     for i in range(len(self._vox_map))])
+                inf_matrix = self._voxel_restriction_matrix(inf_matrix.shape[0]).dot(inf_matrix)
 
         return inf_matrix
 
@@ -632,7 +627,7 @@ class InfluenceMatrix:
             standInd = np.unique(np.sort(beam_map.flatten()))
             self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'] = beam_map
             # my_plan.beamlets_dict.setdefault('structure_mask_2dgrid', []).append(mask_2d_grid)
-            self.beamlets_dict[ind]['start_beamlet_idx'] = standInd[1]
+            self.beamlets_dict[ind]['start_beamlet_idx'] = standInd[standInd >= 0][0]
             self.beamlets_dict[ind]['end_beamlet_idx'] = np.amax(self.beamlets_dict[ind]['beamlet_idx_2d_finest_grid'])
             self.beamlets_dict[ind]['opt_beamlets_ids'] = opt_beamlets
 
@@ -1017,6 +1012,23 @@ class InfluenceMatrix:
             )
 
         return vox_map, vox_weights, down_sample_3d
+
+    def _voxel_restriction_matrix(self, num_rows: int):
+        """Sparse map from the original optimization voxels to the down-sampled ones.
+
+        Row i carries the weights of the original voxels that merge into down-sampled
+        voxel i, so ``W @ A`` IS the weighted average the down-sampling asks for -- the
+        same result as summing the rows one down-sampled voxel at a time, but in a
+        single sparse product instead of one Python iteration per voxel.
+
+        :param num_rows: number of rows of the matrix being down-sampled
+        :return: sparse matrix of shape (number of down-sampled voxels, num_rows)
+        """
+        rows = np.repeat(np.arange(len(self._vox_map)),
+                         [len(m) for m in self._vox_map])
+        return csr_matrix((np.concatenate(self._vox_weights),
+                           (rows, np.concatenate(self._vox_map))),
+                          shape=(len(self._vox_map), num_rows))
 
     def pre_process_voxels(self):
         """

@@ -92,6 +92,19 @@ def get_crop_settings_calc_box(ct: pp.CT, meta_data):
     end_xyz = ct_img.TransformPhysicalPointToIndex(cal_box_xyz_end)  # X,Y,Z
     start_zyx = [start_xyz[2], start_xyz[1], start_xyz[0]]
     end_zyx = [end_xyz[2], end_xyz[1], end_xyz[0]]
+    # When the calc box extends past the CT by even one voxel,
+    # TransformPhysicalPointToIndex returns a NEGATIVE index. Left unclamped it reaches the
+    # crop as a PYTHON NEGATIVE SLICE, e.g. img[..., -1:509] on a 512-wide axis means
+    # 511:509 = EMPTY, and the dose silently comes back ALL ZEROS with no error raised.
+    # Identical clamp to data_preprocess.py and predict_using_model.py; strictly a no-op for
+    # any patient whose calc box already lies inside the CT.
+    # Axis 0 is sliced INCLUSIVELY (end[0]+1) so its limit is size-1; axes 1 and 2 are
+    # exclusive, so theirs is size.
+    size_zyx = ct_img.GetSize()[::-1]  # SimpleITK reports (x, y, z)
+    start_zyx = [max(0, v) for v in start_zyx]
+    end_zyx = [min(end_zyx[0], size_zyx[0] - 1),
+               min(end_zyx[1], size_zyx[1]),
+               min(end_zyx[2], size_zyx[2])]
     return start_zyx, end_zyx
 
 
