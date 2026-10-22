@@ -372,6 +372,47 @@ class DataExplorer:
         return json_data
 
     @staticmethod
+    def load_config_data_splits(splits_name: str = 'default', task: str = None,
+                               site: str = None) -> dict:
+        """
+        Returns the frozen patient-level train/validation/test splits as a dictionary.
+
+        The splits are at the PATIENT level, so all beamlets and all dose voxels of a patient
+        belong to the same partition. The two prediction tasks are stored separately and are NOT
+        interchangeable: they share the same training patients and the same prostate split, but
+        the lung validation and test sets are swapped between them.
+
+        :param splits_name: splits set name (file
+            config_files/data_splits/data_splits_<splits_name>.json)
+        :param task: 'beamlet_dose_prediction' (Task 1) or 'total_dose_prediction' (Task 2).
+            If None, the whole config is returned
+        :param site: 'lung' or 'prostate'. Requires task. If None, both sites are returned
+        :return: dictionary with keys train, val, test when task and site are given, otherwise
+            the enclosing dictionary
+
+        :Example:
+
+        >>> splits = DataExplorer.load_config_data_splits(task='total_dose_prediction', site='lung')
+        >>> splits['test']
+        ['Lung_Patient_81', 'Lung_Patient_82', ...]
+        """
+        fname = os.path.join(Path(__file__).parents[1], 'config_files', 'data_splits',
+                             'data_splits_' + splits_name + '.json')
+        json_data = DataExplorer.load_json(fname)
+        if task is None:
+            return json_data
+        if task not in json_data:
+            raise ValueError('task should be one of {}. Got {}'.format(
+                [k for k in json_data if isinstance(json_data[k], dict) and 'lung' in json_data[k]],
+                task))
+        if site is None:
+            return json_data[task]
+        if site not in json_data[task]:
+            raise ValueError('site should be one of {}. Got {}'.format(
+                [k for k in json_data[task] if not k.startswith('_')], site))
+        return json_data[task][site]
+
+    @staticmethod
     def load_config_octree_params(params_name: str = 'default') -> dict:
         """
         Returns the octree sampling params config json as a dictionary.
