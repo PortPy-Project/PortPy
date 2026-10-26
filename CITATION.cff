@@ -1,0 +1,77 @@
+cff-version: 1.2.0
+message: >-
+  If you use PortPy or the PortPy.AI benchmark in your research, please cite the
+  NeurIPS 2026 paper below (preferred-citation). If you use the benchmark dataset,
+  please also cite the TCIA source collections listed in the README.
+type: software
+title: "PortPy: Planning and Optimization for Radiation Therapy in Python"
+abstract: >-
+  Open-source Python platform for radiotherapy treatment-planning research:
+  benchmark patient data, optimization algorithms (IMRT, VMAT, mixed-integer
+  references), AI-based dose prediction, and clinical plan evaluation.
+authors:
+  - family-names: Jhanwar
+    given-names: Gourav
+    affiliation: Memorial Sloan Kettering Cancer Center
+  - family-names: Tefagh
+    given-names: Mojtaba
+    affiliation: University of Edinburgh
+  - family-names: Taasti
+    given-names: Vicki Trier
+    affiliation: Aarhus University Hospital
+  - family-names: Tuomaala
+    given-names: Seppo
+    affiliation: Varian Medical Systems, Siemens Healthineers
+  - family-names: Nadeem
+    given-names: Saad
+    affiliation: Memorial Sloan Kettering Cancer Center
+  - family-names: Zarepisheh
+    given-names: Masoud
+    affiliation: Memorial Sloan Kettering Cancer Center
+    email: zarepism@mskcc.org
+repository-code: "https://github.com/PortPy-Project/PortPy"
+url: "https://portpy-project.github.io/portpy.github.io/"
+license: Apache-2.0
+license-url: "https://github.com/PortPy-Project/PortPy/blob/master/LICENSE.txt"
+keywords:
+  - radiotherapy
+  - treatment planning
+  - optimization
+  - deep learning
+  - benchmark
+  - medical physics
+preferred-citation:
+  type: conference-paper
+  title: "PortPy.AI: A Benchmark for AI and Optimization in Cancer Radiotherapy Planning"
+  authors:
+    - family-names: Jhanwar
+      given-names: Gourav
+    - family-names: Tefagh
+      given-names: Mojtaba
+    - family-names: Huang
+      given-names: Qijie
+    - family-names: Golkarieh
+      given-names: Alireza
+    - family-names: Hong
+      given-names: Linda
+    - family-names: Pham
+      given-names: Hai
+    - family-names: Taasti
+      given-names: Vicki Trier
+    - family-names: Tuomaala
+      given-names: Seppo
+    - family-names: Magliari
+      given-names: Anthony
+    - family-names: Folkerts
+      given-names: Michael
+    - family-names: Zhou
+      given-names: Ying
+    - family-names: Yang
+      given-names: Jie
+    - family-names: Nadeem
+      given-names: Saad
+    - family-names: Zarepisheh
+      given-names: Masoud
+  collection-title: "Advances in Neural Information Processing Systems (NeurIPS), Evaluations and Datasets Track"
+  year: 2026
+  notes: "To appear."

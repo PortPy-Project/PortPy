@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://portpy-project.github.io/portpy.github.io/
+    about: Installation, tutorials and FAQ.
+  - name: Benchmark dataset on Hugging Face
+    url: https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset
+    about: Browse and download patient data.
+  - name: Collaboration, licensing and other inquiries
+    url: mailto:zarepism@mskcc.org
+    about: Contact the principal investigator directly.
