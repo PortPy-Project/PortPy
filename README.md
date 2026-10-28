@@ -167,6 +167,8 @@ PortPy equips researchers with a robust benchmark patient dataset, sourced from 
 Currently, this set includes lung (2Gy×30) and prostate (26Fx, 5Gy×5Fx) protocols, and will be expanded in the future to more protocols as well as TCP/NTCP evaluation functions.  
 
 The dataset is hosted on Hugging Face: [PortPy_Dataset](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset).
+
+Pretrained models and reference optimization solutions are published separately in [PortPy-Project/artifacts](https://github.com/PortPy-Project/artifacts) and can be fetched with `pp.download_artifact(...)`.
 ## Downloading the PortPy Dataset
 
 PortPy datasets are large (GBs per patient) and are **not bundled** with the Python package. Download them either from the command line (recommended) or from Python.

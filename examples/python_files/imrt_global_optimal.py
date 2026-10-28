@@ -106,11 +106,17 @@ MIP_TIME_LIMIT_S = 180000000  # wall-clock cap so the example always terminates
 # comparison. The rest of the sweep is informative in its own right: it shows how
 # many segments the two-stage route needs to reach a given plan quality.
 LEAF_SEQ_LEVELS = (2, 3, 5, 10, 20, 40)
-# Set False to skip the MIP, which needs days at a clinical aperture count.
-RUN_MIP = True
-# Optional: with RUN_MIP False, score a MIP solved EARLIER instead of re-solving it
-# (the pickle a previous run saved). '' leaves the MIP out of the comparison.
-MIP_SOLUTION = ''
+# Solving the MIP takes days at a clinical aperture count, so by default this example scores
+# the PUBLISHED reference solution instead of re-solving. Set True to solve it yourself.
+RUN_MIP = False
+# Used when RUN_MIP is False. A bare file name is downloaded from the published artifacts
+# (github.com/PortPy-Project/artifacts); a local .npz or .pkl path is used as it is; '' leaves
+# the MIP out of the comparison entirely.
+#
+# The published solution was solved for the settings above, so if you change PATIENT_ID,
+# NUM_BEAMS, APERTURES_PER_BEAM or the down-sampling you must re-solve with RUN_MIP = True --
+# loading it anyway raises rather than silently scoring the wrong plan.
+MIP_SOLUTION = 'imrt_mip_Lung_Patient_6.npz'
 MIP_SOLVER = cp.GUROBI
 MIP_PARAMS = dict(TimeLimit=MIP_TIME_LIMIT_S,
                   Cuts=2,          # aggressive cut generation
@@ -507,15 +513,33 @@ def imrt_global_optimal():
         np.save(os.path.join(save_dir, 'dose_mip.npy'), dose_mip)
         # sol_mip carries MU and the open/closed state of every beamlet per aperture
         pp.save_optimal_sol(sol_mip, sol_name='sol_mip.pkl', path=save_dir)
-    elif MIP_SOLUTION and os.path.exists(MIP_SOLUTION):
+    elif MIP_SOLUTION:
         # Score a MIP that was solved earlier instead of re-solving it. It is the best plan
-        # FOUND in the time it was given, not a proven optimum, so the table says 'loaded'.
-        sol_mip = pp.load_optimal_sol(sol_name=os.path.basename(MIP_SOLUTION),
-                                      path=os.path.dirname(MIP_SOLUTION))
-        dose_mip = np.asarray(A @ sol_mip['optimal_intensity'])
+        # FOUND in the time the solver was given, not a proven optimum, so the table reports
+        # its runtime as 'loaded'.
+        if os.path.exists(MIP_SOLUTION):
+            sol_path = MIP_SOLUTION
+        else:
+            sol_path = str(pp.download_artifact(MIP_SOLUTION))
+
+        if sol_path.endswith('.npz'):
+            with np.load(sol_path) as npz:
+                sol_mip = {k: npz[k] for k in npz.files if not k.startswith('meta_')}
+        else:
+            sol_mip = pp.load_optimal_sol(sol_name=os.path.basename(sol_path),
+                                          path=os.path.dirname(sol_path))
+
+        intensity = np.asarray(sol_mip['optimal_intensity']).ravel()
+        if intensity.size != A.shape[1]:
+            raise ValueError(
+                f'{os.path.basename(sol_path)} holds {intensity.size} beamlet intensities but '
+                f'this plan has {A.shape[1]}. A saved solution only applies to the geometry it '
+                f'was solved for, so re-solve with RUN_MIP = True, or restore the settings the '
+                f'solution was made for.')
+        dose_mip = np.asarray(A @ intensity)
         results.append(('MIP', dose_mip, float('nan'),
                         int(np.sum(np.asarray(sol_mip['MU']) > 1e-9))))
-        print(f'\nMIP loaded from {MIP_SOLUTION}')
+        print(f'\nMIP loaded from {sol_path}')
 
     # ---------------------------------------------------------
     # 5) Compare -- one objective, one table, one DVH
