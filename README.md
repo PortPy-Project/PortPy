@@ -2,17 +2,15 @@
   <img src="./images/PortPy_logo.png" width="30%" alt="PortPy logo">
 </p>
 
-<h3 align="center">Planning and Optimization for Radiation Therapy in Python</h3>
+<h3 align="center"><ins>P</ins>lanning and <ins>O</ins>ptimization for <ins>R</ins>adiation <ins>T</ins>herapy in <ins>Py</ins>thon (PortPy)</h3>
 
 <p align="center">
-  <a href="https://pypi.org/project/portpy/"><img src="https://img.shields.io/pypi/v/portpy?color=darkgreen&label=PyPI" alt="PyPI"></a>
-  <a href="https://pypi.org/project/portpy/"><img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+"></a>
-  <a href="./LICENSE.txt"><img src="https://img.shields.io/badge/license-Apache%202.0%20%2B%20Commons%20Clause-lightgrey" alt="License"></a>
-  <a href="https://github.com/PortPy-Project/PortPy/actions/workflows/ci.yml"><img src="https://github.com/PortPy-Project/PortPy/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://pepy.tech/project/portpy"><img src="https://static.pepy.tech/personalized-badge/portpy?period=total&units=international_system&left_color=grey&right_color=blue&left_text=total%20downloads" alt="Total downloads"></a>
+<a href="https://pepy.tech/project/portpy"><img src="https://static.pepy.tech/personalized-badge/portpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=monthly%20downloads" alt="Monthly downloads"></a>
+<a href="#citing-portpy"><img src="https://img.shields.io/badge/paper-NeurIPS%202026-b31b1b" alt="NeurIPS 2026"></a>
   <a href="https://portpy-project.github.io/portpy.github.io/"><img src="https://img.shields.io/badge/docs-website-4051b5" alt="Documentation"></a>
-  <a href="https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-PortPy__Dataset-yellow" alt="Hugging Face dataset"></a>
-  <a href="#citing-portpy"><img src="https://img.shields.io/badge/paper-NeurIPS%202026-b31b1b" alt="NeurIPS 2026"></a>
-  <a href="https://pepy.tech/project/portpy"><img src="https://static.pepy.tech/badge/portpy" alt="Downloads"></a>
+  <a href="https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-PortPy__Dataset-yellow" alt="Hugging Face dataset"></a>
+   
 </p>
 
 <p align="center">
@@ -28,37 +26,71 @@
 
 **PortPy** is an open-source Python platform for **cancer radiotherapy treatment-planning research**.
 Radiotherapy treats roughly half of all cancer patients by aiming high-energy beams at a tumor
-from many directions. Choosing the shape, angle and intensity of those beams for each patient is a
+from many directions. As the animation illustrates, the treatment machine (a linear accelerator)
+rotates around the patient and delivers radiation from different angles, while a device mounted in
+the head of the machine, the multi-leaf collimator (MLC), moves its metal leaves to shape and
+modulate each beam. Choosing the shape, angle and intensity of those beams for each patient is a
 large-scale, multi-criteria, often non-convex optimization problem.
 
 PortPy gives researchers in **medical physics, mathematical optimization and AI/ML** a common,
-clinically grounded playground: real patient data with everything needed to optimize a plan, reference
-algorithms that are used clinically, AI baselines, and tools to evaluate a plan the way a clinic would.
-PortPy was initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/) and is free
-for non-commercial academic use.
+clinically grounded playground: [real patient data](#data) with everything needed to optimize a
+plan (**200 lung and 129 prostate patients**, more than 8 TB), reference algorithms that are used
+clinically (e.g., [IMRT fluence-map optimization](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb),
+[VMAT direct aperture optimization](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb)), AI baselines (e.g.,
+deep-learning [beamlet dose prediction](https://github.com/PortPy-Project/PortPy/blob/master/examples/beamlet_dose_prediction.ipynb) and
+[total dose prediction](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb)), and tools to
+[evaluate a plan](#examples).
+
 
 <br clear="right">
 
 ## Why PortPy?
 
-- **Clinically realistic data.** Beamlet-to-voxel dose matrices, beams, voxels, expert-selected
-  beams and reference plans extracted from the FDA-approved Varian Eclipse treatment planning
-  system (TPS) with its clinically commissioned dose engine, for **200 lung and 129 prostate patients**.
+- **Clinically realistic data.** Beamlet-to-voxel dose matrices (also called dose-influence or
+  *dij* matrices) computed by the clinically commissioned Varian Eclipse treatment planning system
+  (TPS), together with expert-selected beams, clinical criteria and expert reference plans (IMRT for
+  every patient, VMAT for prostate), for **329 patients** (**200 lung, 129 prostate**).
+- **Eclipse integration.** Eclipse users can
+  [bring their own patients](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_photon_dose_calculation.ipynb):
+  Varian's open-source [Eclipse Scripting API (ESAPI) tool](https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-DoseInfluenceMatrix),
+  developed in collaboration with the PortPy team, exports beamlets, voxels and dose-influence
+  matrices directly in PortPy format. In the other direction, PortPy exports IMRT plans as
+  Eclipse-compatible [optimal fluence](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb)
+  that Eclipse imports for leaf sequencing and final dose calculation. Alternatively, PortPy writes
+  DICOM-RT plans, including the leaf motions, for both
+  [IMRT](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb) and
+  [VMAT](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_tps_import.ipynb), which
+  any TPS can import.
 - **Deliverable plans.** PortPy models the actual multi-leaf collimator (MLC) and exports IMRT and
-  VMAT plans as DICOM-RT, so a plan can be imported into a clinical TPS and recalculated.
-- **Clinically deployed algorithms.** The VMAT and step-and-shoot IMRT optimizers (column generation +
-  sequential convex programming) are the engine of MSK's in-house automated planning system,
-  ECHO, which has planned more than 10,000 patients.
-- **Global-optimality references.** Mixed-integer formulations for VMAT, IMRT, beam-orientation and
-  DVH-constrained planning give slow but exact answers to benchmark fast heuristics against.
-- **An end-to-end AI benchmark.** PortPy.AI defines three tasks (beamlet-dose prediction, total-dose
-  prediction, plan optimization) with frozen splits, baselines, and an evaluation protocol that scores
-  the *final deliverable plan*, not just the prediction.
-- **Open and interoperable.** Problems are built in [CVXPY](https://www.cvxpy.org/) (swap solvers in
-  one line), data lives on Hugging Face, plans visualize in [3D Slicer](https://www.slicer.org/), and
-  Eclipse users can bring their own patients.
+  VMAT plans as [DICOM-RT](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb),
+  so a plan can be imported into a clinical TPS and recalculated with only small dose differences.
+- **Clinically deployed algorithms.** The fluence-map IMRT and VMAT optimizers are the engines of
+  MSK's in-house automated planning systems,
+  [ECHO-IMRT](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572) and
+  [ECHO-VMAT](https://iopscience.iop.org/article/10.1088/1361-6560/ace09e), which together have
+  planned more than 14,000 patients as of October 2026.
+- **Global-optimality references.** Mixed-integer formulations for [VMAT](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb),
+  [IMRT](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_global_optimal.ipynb), [beam orientation](https://github.com/PortPy-Project/PortPy/blob/master/examples/beam_orientation_global_optimal.ipynb)
+  and [DVH constraints](https://github.com/PortPy-Project/PortPy/blob/master/examples/dvh_constraint_global_optimal.ipynb)
+  provide globally optimal solutions that are slow to compute but serve as an exact reference for
+  benchmarking fast heuristic algorithms.
+- **An end-to-end AI benchmark.** [PortPy.AI](#portpyai-benchmark) defines three tasks (beamlet-dose
+  prediction, total-dose prediction, plan optimization) with frozen data splits, baselines, and an
+  evaluation protocol that scores the *final deliverable plan*, not just the prediction.
+- **Solver-agnostic.** Optimization problems are written in
+  [CVXPY](https://www.cvxpy.org/), so solvers can be swapped in one line: commercial
+  [MOSEK](https://www.mosek.com/) and [Gurobi](https://www.gurobi.com/) (free academic licenses)
+  or open-source [SCS](https://www.cvxgrp.org/scs/) and [Clarabel](https://clarabel.org/), among
+  [others](https://www.cvxpy.org/tutorial/solvers/index.html). *Coming soon:* our own
+  open-source optimization engine, already in clinical use at MSK, which runs more than 2x faster
+  than commercial solvers on CPU and also supports GPU. 
 
 ## Quickstart
+
+The best place to start is the
+[basic tutorial notebook](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb),
+which walks through every step below and explains the objects involved. Installation options,
+including solvers, are [below](#installation). The condensed version:
 
 ```bash
 pip install "portpy[data]"
@@ -67,206 +99,132 @@ pip install "portpy[data]"
 ```python
 import portpy.photon as pp
 
-# 1. Data: pick a patient; the first call downloads it from Hugging Face (~2 GB with expert beams)
+# ---- 1. Load a patient (first call downloads ~2 GB from Hugging Face) ------------
 data = pp.DataExplorer(hf_repo_id="PortPy-Project/PortPy_Dataset", local_download_dir="./portpy_data")
 data.patient_id = "Lung_Patient_3"
 data.filter_and_download_hf_dataset()
 ct, structs, beams = pp.CT(data), pp.Structures(data), pp.Beams(data)
 
-# 2. Plan: load a clinical protocol and solve an IMRT fluence-map optimization
+# ---- 2. Build the plan from a clinical protocol ----------------------------------
 protocol = "Lung_2Gy_30Fx"
-criteria = pp.ClinicalCriteria(data, protocol_name=protocol)
-opt_params = data.load_config_opt_params(protocol_name=protocol)
+criteria = pp.ClinicalCriteria(data, protocol_name=protocol)      # dose limits the plan must meet
+opt_params = data.load_config_opt_params(protocol_name=protocol)  # objectives, constraints, weights
 structs.create_opt_structures(opt_params=opt_params, clinical_criteria=criteria)
-inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)
+inf_matrix = pp.InfluenceMatrix(ct=ct, structs=structs, beams=beams)  # dose = inf_matrix @ fluence
 plan = pp.Plan(ct=ct, structs=structs, beams=beams, inf_matrix=inf_matrix, clinical_criteria=criteria)
-opt = pp.Optimization(plan, opt_params=opt_params, clinical_criteria=criteria)
-opt.create_cvxpy_problem()
-sol = opt.solve(solver="SCS", verbose=False)   # free solver, a few minutes; MOSEK/GUROBI (free academic licenses) are much faster
 
-# 3. Evaluate: DVH, dose on a CT slice, and a clinical scorecard
+# ---- 3. Optimize the IMRT fluence map (any CVXPY solver) -------------------------
+opt = pp.Optimization(plan, opt_params=opt_params, clinical_criteria=criteria)
+opt.create_cvxpy_problem()   # add your own objectives and constraints here, in CVXPY syntax
+sol = opt.solve(solver="SCS")   # SCS is free but slow; MOSEK is much faster (free academic license)
+# Coming soon: PortPy's own open-source optimization engine, faster than commercial solvers.
+
+# ---- 4. Evaluate: DVH, dose on a CT slice, clinical scorecard --------------------
 pp.Visualization.plot_dvh(plan, sol=sol, struct_names=["PTV", "CORD", "ESOPHAGUS", "LUNGS_NOT_GTV"])
 pp.Visualization.plot_2d_slice(my_plan=plan, sol=sol, slice_num=60, struct_names=["PTV", "CORD"])
 pp.Evaluation.display_clinical_criteria(plan, sol=sol, clinical_criteria=criteria)
 ```
 
-The full walk-through, including saving plans and viewing them in 3D Slicer, is in
-[`1_basic_tutorial.ipynb`](./examples/1_basic_tutorial.ipynb). Installation options are
-[below](#installation).
-
-## What's inside
-
 <p align="center">
-  <img src="./images/PortPy_Workflow_rev1.png" width="85%" alt="PortPy architecture: data management, plan generation, plan evaluation">
+  <img src="./images/PortPy_outputs.png" width="90%" alt="PortPy outputs: dose color map on a CT slice, beamlet intensity map, dose-volume histogram, and a plan-quality scorecard">
 </p>
-
-| Module | What it does | Key classes |
-|---|---|---|
-| **Data management** | Browse, filter and download the benchmark dataset from Hugging Face or load it locally; build the dose-influence matrix; down-sample or sparsify it | `DataExplorer`, `CT`, `Structures`, `Beams`, `InfluenceMatrix` |
-| **Plan generation** | Formulate and solve planning problems with CVXPY (IMRT fluence maps, VMAT and step-and-shoot IMRT with deliverability constraints, MIP references); predict dose with deep learning | `Optimization`, `VmatScpOptimization`, `VmatOptimizationColGen`, `ImrtScpOptimization`, `portpy.ai` |
-| **Plan evaluation** | DVHs, dose maps, fluence maps, clinical-criteria scorecards, overall plan score, conformity/homogeneity indices; 3D Slicer views; DICOM-RT and Eclipse fluence export | `Evaluation`, `Visualization`, `write_rt_plan_imrt`, `write_rt_plan_vmat` |
+<p align="center"><em>What PortPy gives back: (a) dose overlaid on the CT, (b) a beam's fluence map, (c) dose-volume histograms, (d) a colour-coded clinical scorecard.</em></p>
 
 ## Examples
 
-Every example is a Jupyter notebook under [`examples/`](./examples) (plain `.py` versions in
-[`examples/python_files/`](./examples/python_files)). The *Needs* column tells you what beyond
-`pip install portpy` is required. All notebooks use MOSEK by default; any CVXPY solver works
-for the convex problems.
+PortPy ships with more than 15 Jupyter notebooks in
+[`examples/`](https://github.com/PortPy-Project/PortPy/tree/master/examples) (plain `.py` versions in
+[`examples/python_files/`](https://github.com/PortPy-Project/PortPy/tree/master/examples/python_files))
+that walk through most of its features; the
+[examples guide](https://github.com/PortPy-Project/PortPy/blob/master/examples/README.md) groups them
+by topic and lists what each one needs. Six good entry points:
 
-**Start here**
-
-| Notebook | What you learn | Needs |
+| Notebook | Topic | What you learn |
 |---|---|---|
-| [1_basic_tutorial](./examples/1_basic_tutorial.ipynb) | Load a patient, create an IMRT plan, visualize and evaluate it, save and reload | – |
-| [structure_operations](./examples/structure_operations.ipynb) | Union, intersection, subtraction, expansion and shrinking of structures | – |
-| [inf_matrix_down_sampling](./examples/inf_matrix_down_sampling.ipynb) | Down-sample beamlets and voxels for faster experiments, and what it costs | – |
-| [inf_matrix_sparsification](./examples/inf_matrix_sparsification.ipynb) | Sparse vs. full influence matrix; truncation thresholds | – |
+| [1_basic_tutorial](https://github.com/PortPy-Project/PortPy/blob/master/examples/1_basic_tutorial.ipynb) | <img src="https://img.shields.io/badge/IMRT-1f77b4" alt="IMRT"> | Load a patient, create an IMRT plan, visualize and evaluate it |
+| [vmat_scp_tutorial](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_scp_tutorial.ipynb) | <img src="https://img.shields.io/badge/VMAT-2ca02c" alt="VMAT"> | VMAT planning with direct aperture optimization, exported as DICOM-RT |
+| [imrt_dose_prediction](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_dose_prediction.ipynb) | <img src="https://img.shields.io/badge/AI-9467bd" alt="AI"> <img src="https://img.shields.io/badge/GPU-444444" alt="GPU"> | Predict a patient's 3D dose with a deep-learning model and turn it into a deliverable IMRT plan by dose mimicking |
+| [beamlet_dose_prediction](https://github.com/PortPy-Project/PortPy/blob/master/examples/beamlet_dose_prediction.ipynb) | <img src="https://img.shields.io/badge/AI-9467bd" alt="AI"> <img src="https://img.shields.io/badge/GPU-444444" alt="GPU"> | Predict beamlet-to-voxel doses (the dose-influence matrix) with a 3D U-Net, assemble the predicted matrix, and plan with it |
+| [vmat_global_optimal](https://github.com/PortPy-Project/PortPy/blob/master/examples/vmat_global_optimal.ipynb) | <img src="https://img.shields.io/badge/Global%20optimum-ff7f0e" alt="Global optimum"> | Globally optimal VMAT plan from a mixed-integer program, as a reference for the fast heuristics |
+| [imrt_tps_import](https://github.com/PortPy-Project/PortPy/blob/master/examples/imrt_tps_import.ipynb) | <img src="https://img.shields.io/badge/TPS-6c757d" alt="TPS"> | Export a plan as DICOM-RT or Eclipse fluence, import it into a TPS, and compare the recalculated dose |
 
-**IMRT and VMAT planning**
-
-| Notebook | What you learn | Needs |
-|---|---|---|
-| [vmat_scp_tutorial](./examples/vmat_scp_tutorial.ipynb) | VMAT planning with column generation + sequential convex programming; export the DICOM-RT plan | – |
-| [imrt_scp_tutorial](./examples/imrt_scp_tutorial.ipynb) | Step-and-shoot IMRT with several apertures per beam via column generation + SCP | – |
-| [dose_mimicking](./examples/dose_mimicking.ipynb) | Optimize a plan to reproduce a given reference dose (dose mimicking) | Eclipse |
-
-**How far from the global optimum?** (mixed-integer programming references)
-
-| Notebook | What you learn | Needs |
-|---|---|---|
-| [vmat_global_optimal](./examples/vmat_global_optimal.ipynb) | Globally optimal VMAT plan on a down-sampled problem vs. column generation and SCP | MIP solver |
-| [imrt_global_optimal](./examples/imrt_global_optimal.ipynb) | Compares fluence-map + leaf sequencing, column generation, SCP and a deliverability-constrained MIP | Gurobi |
-| [beam_orientation_global_optimal](./examples/beam_orientation_global_optimal.ipynb) | Globally optimal beam angles for IMRT | MIP solver |
-| [dvh_constraint_global_optimal](./examples/dvh_constraint_global_optimal.ipynb) | Globally optimal plan that meets dose-volume-histogram constraints | Gurobi |
-
-**AI-based dose prediction** (`portpy.ai`)
-
-| Notebook | What you learn | Needs |
-|---|---|---|
-| [beamlet_dose_prediction](./examples/beamlet_dose_prediction.ipynb) | Task 1: predict the dose of individual beamlets with a 3D U-Net, assemble a predicted influence matrix, and plan with it | GPU, `portpy[ai]` |
-| [imrt_dose_prediction](./examples/imrt_dose_prediction.ipynb) | Task 2: predict a patient's 3D dose distribution and turn it into a deliverable IMRT plan | GPU, `portpy[ai]` |
-| [vmat_scp_dose_prediction](./examples/vmat_scp_dose_prediction.ipynb) | Task 2 for VMAT: predicted dose as the reference for SCP-based VMAT planning | GPU, `portpy[ai]` |
-
-**Clinical integration**
-
-| Notebook | What you learn | Needs |
-|---|---|---|
-| [imrt_tps_import](./examples/imrt_tps_import.ipynb) | Leaf-sequence an IMRT plan to DICOM-RT and import it into a TPS; export optimal fluence to Eclipse | TPS / Eclipse |
-| [vmat_tps_import](./examples/vmat_tps_import.ipynb) | Export a VMAT plan as DICOM-RT and import it into a TPS | TPS |
-| [eclipse_photon_dose_calculation](./examples/eclipse_photon_dose_calculation.ipynb) | Bring your own patients: extract beamlets, voxels and the influence matrix from Eclipse with Varian's [MAAS-DoseInfluenceMatrix](https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-DoseInfluenceMatrix) tool, then plan in PortPy | Eclipse |
-| [3d_slicer_integration](./examples/3d_slicer_integration.ipynb) | View CT, structures and dose in 3D Slicer from a Jupyter notebook | 3D Slicer |
+Eclipse users who want to plan their own patients should start with
+[eclipse_photon_dose_calculation](https://github.com/PortPy-Project/PortPy/blob/master/examples/eclipse_photon_dose_calculation.ipynb). The notebooks use
+MOSEK by default; any CVXPY solver works for the convex problems, and the two dose-prediction
+notebooks need a GPU and `pip install "portpy[ai]"`.
 
 ## PortPy.AI benchmark
 
 <p align="center">
-  <img src="./images/dose_prediction_pipeline.png" width="80%" alt="Benchmark tasks: beamlet-dose prediction, total-dose prediction, plan optimization, evaluation">
+  <img src="./images/PortPyAI_benchmark_tasks.png" width="90%" alt="The three PortPy.AI benchmark tasks: beamlet-to-voxel dose prediction, total dose prediction and plan optimization, followed by downstream evaluation of the deliverable plan">
 </p>
 
-**PortPy.AI** ([NeurIPS 2026, Evaluations and Datasets Track](#citing-portpy)) turns PortPy into an
-end-to-end benchmark for AI and optimization in radiotherapy planning. Three tasks follow the
-planning pipeline, and each is evaluated at two levels: its own accuracy **and** the clinical quality
-of the deliverable plan it leads to.
+AI-based treatment planning has shown real promise, but progress has been slowed by three
+obstacles: training data that is small, private and cannot be shared, evaluation criteria that differ
+from one study to the next, and metrics that measure the accuracy of a prediction rather than the
+quality of the plan a clinic could deliver. **PortPy.AI**
+([NeurIPS 2026, Evaluations and Datasets Track](#citing-portpy)) tackles all three: a shared
+public dataset with frozen train/validation/test splits, standardized clinical criteria for
+evaluation, and scoring of the *final deliverable plan* rather than the intermediate prediction.
+The figure above shows how its three tasks fit together. **Task 1** predicts the dose of each
+beamlet from the patient's anatomy and the beamlet geometry, replacing the computationally expensive
+physics-based dose calculation; PortPy.AI provides three baseline models for it (3D U-Net, 3D ViT,
+3D Swin UNETR). **Task 2** predicts the total dose from the patient's anatomy, structure masks and
+beam geometry, learning the trade-off between tumor coverage and healthy-organ sparing from previous
+treatments; its three baselines are the top three performers of the
+[AAPM GDP-HMM challenge](https://github.com/RiqiangGao/GDP-HMM_AAPMChallenge). **Task 3** takes both
+predictions as inputs and optimizes a deliverable plan; PortPy offers a range of optimization
+engines as baselines (e.g., fluence-map optimization, direct aperture optimization). Every task is
+scored downstream, on the plan it leads to, against the clinical criteria.
 
-| Task | Input → Output | Why it matters | Baselines in PortPy |
-|---|---|---|---|
-| **1. Beamlet-dose prediction** | CT + beamlet geometry → 3D dose of one beamlet | Replaces the expensive physics computation of the dose-influence matrix *A* | 3D U-Net, 3D ViT, 3D Swin UNETR |
-| **2. Total-dose prediction** | CT + structure masks + beam encoding → 3D dose distribution | Gives the optimizer a patient-specific target and removes manual weight tuning | MedNeXt (+ attention and dual-decoder variants), U-Net |
-| **3. Plan optimization** | *A*, reference dose, clinical criteria → deliverable beam shapes and intensities | The large-scale, non-convex combinatorial core of planning | Column generation + SCP (clinical), column generation only, MIP (global reference) |
-
-- **Dataset:** 200 lung and 129 prostate patients; 72 candidate beams per patient at 5° spacing;
-  3 mm voxels; 2.5 mm beamlets; beamlet dose from Eclipse's AAA engine; expert reference plans;
-  harmonized structure names; clinical criteria as editable JSON. See [Data](#data).
-- **Splits:** frozen, patient-level 80/10/10 splits ship with the package
-  (`portpy/config_files/data_splits/data_splits_default.json`; load with
-  `DataExplorer.load_config_data_splits`). Task 1 pools both sites; Task 2 is site-specific.
-- **Metrics:** mean absolute error for the prediction tasks; for every task the **clinical scorecard**
-  (`Evaluation.display_clinical_criteria`) and the **overall plan score**
-  (`Evaluation.get_plan_score`, a points-based DVH scorecard adapted from planning competitions);
-  runtime for Task 3.
-
-Baseline results from the paper (mean ± SD over the test split; Task 3 on one representative VMAT patient):
-
-| Task | Baseline | Upstream metric | Plan score (reference) | Plan score (method) |
-|---|---|---|---|---|
-| 1 | 3D U-Net | MAE 1.4 × 10⁻⁴ | 53.95 ± 14.64 (physics-based *A*) | 52.30 ± 15.51 (predicted *A*) |
-| 2 | MedNeXt, lung | MAE 1.105 Gy | 50.29 ± 9.74 (expert plan) | 45.69 ± 11.79 |
-| 2 | MedNeXt, prostate | MAE 0.442 Gy | 52.35 ± 12.17 (expert plan) | 48.11 ± 16.19 |
-| 3 | MIP (global reference) | 10,080 min | – | 71.52 |
-| 3 | Column generation + SCP | 1.45 min | – | 71.48 |
-| 3 | Column generation only | 0.14 min | – | 65.27 |
-
-A central finding: models that are indistinguishable on MAE can differ by 15 % in plan score, and the
-ranking can flip. Report the downstream plan quality, not only the prediction error.
-Training, inference and evaluation code for all baselines is in `portpy.ai` and the
-[AI notebooks](#examples).
-
-<details>
-<summary><b>Radiotherapy optimization in two minutes</b> (click to expand)</summary>
-
-<img src="./images/discretization_latest.png" align="right" width="45%" alt="Discretization of a beam into beamlets and the patient into voxels">
-
-The decision variables in treatment planning are the parameters of the **radiation beams** (angles,
-shapes, intensities), but plan quality is judged by the **dose** delivered to the patient. The two are
-linked linearly. The patient is discretized into small 3D **voxels** and each beam into small 2D
-**beamlets**. A physics-based dose engine computes the dose *a<sub>ij</sub>* that beamlet *j* deposits in
-voxel *i*; collecting these values gives the **dose-influence matrix** *A* (also called the dose-deposition
-or *d<sub>ij</sub>* matrix). With beamlet intensities *x*, the dose is simply **d = A x**.
-
-A planning problem then reads
-
-```
-minimize   f(Ax, x)
-subject to g(Ax, x) ≤ 0,   x ≥ 0
-```
-
-where *f* and *g* score the dose (tumor coverage, organ sparing) and the beamlets (smoothness, machine
-deliverability). Typical instances have 10,000–100,000 beamlets and 100,000–1,000,000 voxels, several
-competing objectives, and, once MLC deliverability is modelled, a non-convex combinatorial structure.
-They must be solved per patient within minutes to hours.
-
-New to the field? These reviews are a good start:
-[Zarepisheh et al. 2022](https://pubsonline.informs.org/doi/abs/10.1287/inte.2021.1095),
-[Breedveld et al. 2019](https://www.sciencedirect.com/science/article/abs/pii/S0377221718307148),
-[Ehrgott et al. 2010](https://link.springer.com/article/10.1007/s10479-009-0659-4);
-and these videos: [ECHO at the Edelman competition](https://www.youtube.com/watch?v=895M6j5KjPs&t=1025s),
-[Varian IMRT](https://www.youtube.com/watch?v=eZS6DVGBx0k), [Elekta VMAT](https://www.youtube.com/watch?v=AE1SxvnFT3s).
-
-<br clear="right">
-</details>
+Pretrained models and reference optimization solutions are published separately in
+[PortPy-Project/artifacts](https://github.com/PortPy-Project/artifacts) and can be fetched with
+`pp.download_artifact(...)`.
 
 ## Data
 
-<img src="./images/PortPy_Data_Curation.png" align="right" width="45%" alt="How the PortPy dataset was curated">
-
 The benchmark dataset is hosted on Hugging Face:
-[**PortPy-Project/PortPy_Dataset**](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset)
-(license CC BY-NC 4.0). Each patient folder contains:
+[**PortPy-Project/PortPy_Dataset**](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset).
+The original CT images and contours come from two public, de-identified TCIA collections,
+[NSCLC-Radiomics](https://www.cancerimagingarchive.net/collection/nsclc-radiomics/) (lung) and
+[Prostate-Anatomical-Edge-Cases](https://doi.org/10.7937/QSTF-ST65) (prostate). We imported them into
+Eclipse and extracted everything needed for treatment planning, including:
 
-1. **Dose-influence matrix** – dose contribution of every beamlet to every voxel, for 72 candidate beams
-2. **Beamlet and voxel geometry** – positions and sizes, CT and structure masks
-3. **Expert-selected beams** – the beam arrangement a clinical physicist chose for the patient
-4. **Reference plan** – a deliverable IMRT plan from MSK's automated planning system ECHO
-   ([video](https://youtu.be/895M6j5KjPs), [paper](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572))
-5. **Clinical criteria** – mean/max/DVH criteria for the lung (2 Gy × 30) and prostate (2.7 Gy × 26, 5 Gy × 5) protocols
+1. **DICOM files** – CT images, structure set, RT dose and RT plans (IMRT for every patient, VMAT for prostate)
+2. **Beamlet-to-voxel dose matrix** (also known as the dose-influence matrix) – dose contribution of
+   every beamlet to every voxel, for 72 candidate beams
+3. **Beamlet and voxel geometry** – positions and sizes, CT and structure masks
+4. **Expert-selected beams** – the beam arrangement a clinical physicist chose for the patient
+5. **Reference plans** – deliverable IMRT plans for every patient from MSK's automated planning system
+   [ECHO-IMRT](https://aapm.onlinelibrary.wiley.com/doi/epdf/10.1002/mp.13572), plus VMAT plans for the
+   prostate patients from [ECHO-VMAT](https://iopscience.iop.org/article/10.1088/1361-6560/ace09e)
+6. **Clinical criteria** – mean/max/DVH criteria for the lung (2 Gy × 30) and prostate (2.7 Gy × 26, 5 Gy × 5) protocols
 
-Metadata is JSON; large arrays are HDF5 (inspect them with [HDFView](https://www.hdfgroup.org/downloads/hdfview/)).
-The data is **not bundled** with the Python package. A patient is about **2 GB** with the expert-selected
-beams and about **20 GB** with all 72 beams.
+The data is not bundled with the Python package. A patient is about **2 GB** with the expert-selected
+beams and about **20 GB** with all 72 beams; file formats and the folder layout are documented on the
+[dataset card](https://huggingface.co/datasets/PortPy-Project/PortPy_Dataset).
 
-<br clear="right">
+<details>
+<summary><b>Downloading the data</b> (click to expand)</summary>
 
-**Download from the command line**
+There are three ways to download patients:
+
+**1. On demand with `DataExplorer`**, as in the [Quickstart](#quickstart): set `patient_id` and call
+`filter_and_download_hf_dataset()`, which can also filter patients by site, tumor volume or beam
+properties. The [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization)
+lets you browse the dataset before choosing.
+
+**2. From the command line:**
 
 ```bash
 pip install "portpy[data]"
 download_portpy_data --patients Lung_Patient_3 Lung_Patient_4 --beam-mode planner --out ./portpy_data
 ```
 
-- `--beam-mode planner` (default) downloads the expert-selected beams; `all` downloads all 72;
-  `ids` downloads the beams in `--beam-ids`, e.g. `--beam-mode ids --beam-ids 0,10,20`; `none` skips beams.
-- Patients are written to `<out>/data/<patient_id>`, so point PortPy at `./portpy_data/data`.
+`--beam-mode` is `planner` (expert-selected beams, default), `all` (all 72 beams), `ids` (the beams in
+`--beam-ids`, e.g. `--beam-ids 0,10,20`) or `none`. Patients land in `<out>/data/<patient_id>`.
 
-**Download from Python**
+**3. From Python:**
 
 ```python
 import portpy.photon as pp
@@ -275,20 +233,14 @@ pp.download_portpy_data(["Lung_Patient_3", "Lung_Patient_4"], out="./portpy_data
 data = pp.DataExplorer(data_dir="./portpy_data/data")
 ```
 
-Alternatively, let `DataExplorer` fetch patients on demand (as in the [Quickstart](#quickstart)), filter
-patients by site, tumor volume or beam properties with `filter_and_download_hf_dataset`, or browse the
-dataset in the [Hugging Face Space](https://huggingface.co/spaces/PortPy-Project/portpy_dataset_visualization).
-
-**Source data and attribution.** CT images and contours come from two public, de-identified TCIA
-collections: [NSCLC-Radiomics](https://www.cancerimagingarchive.net/collection/nsclc-radiomics/)
-(lung, CC BY-NC 3.0, Aerts et al.) and
-[Prostate-Anatomical-Edge-Cases](https://doi.org/10.7937/QSTF-ST65) (prostate, CC BY 4.0, Kanwar et al.).
-Please cite them alongside PortPy. `DataExplorer.get_tcia_metadata()` returns the TCIA collection and
-subject id of each PortPy patient.
+</details>
 
 ## Installation
 
-Python 3.11 or newer.
+Python 3.11 or newer; `pip install portpy` is enough to run the [Quickstart](#quickstart).
+
+<details>
+<summary><b>Installation options and solvers</b> (click to expand)</summary>
 
 ```bash
 pip install portpy                      # core: data access, optimization (Clarabel and SCS solvers), evaluation, visualization
@@ -312,31 +264,10 @@ PortPy and are enough to get started: on the Quickstart problem (about 430,000 v
 SCS takes a few minutes and Clarabel about 20 minutes on a laptop. For routine work, for large problems
 and for the mixed-integer notebooks we recommend [MOSEK](https://www.mosek.com/products/academic-licenses/)
 or [Gurobi](https://www.gurobi.com/academia/academic-program-and-licenses/), both free for academic use
-and much faster.
+and much faster. And stay tuned: PortPy's own open-source optimization engine, already in clinical use
+at MSK and faster than the commercial solvers, is coming.
 
-## Ecosystem
-
-| Project | What it adds |
-|---|---|
-| [ECHO-VMAT](https://github.com/PortPy-Project/ECHO-VMAT) | Hierarchical (prioritized) automated VMAT planning on top of PortPy |
-| [CompressRTP](https://github.com/PortPy-Project/CompressRTP) | Sparse-plus-low-rank and wavelet compression for much faster optimization |
-| [Varian MAAS-DoseInfluenceMatrix](https://github.com/Varian-MedicalAffairsAppliedSolutions/MAAS-DoseInfluenceMatrix) | Eclipse scripting tool that exports your own patients in PortPy format |
-| [3D Slicer](https://www.slicer.org/) | Advanced visualization of PortPy plans ([notebook](./examples/3d_slicer_integration.ipynb)) |
-
-Building something on PortPy? We would love to feature it. See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## Publications
-
-Selected publications by the PortPy team:
-
-- G. Jhanwar *et al.* **PortPy.AI: A Benchmark for AI and Optimization in Cancer Radiotherapy Planning.** NeurIPS 2026, Evaluations and Datasets Track (to appear).
-- S. Adeli, M. Tefagh, G. Jhanwar, M. Zarepisheh. **Randomized sparse matrix compression for large-scale constrained optimization in cancer radiotherapy.** NeurIPS 2024.
-- M. Tefagh, G. Jhanwar, M. Zarepisheh. **Compressed radiotherapy treatment planning.** *Medical Physics*, 2025.
-- P. Dursun, L. Hong, G. Jhanwar *et al.* **Automated VMAT treatment planning using sequential convex programming: algorithm development and clinical implementation.** *Physics in Medicine & Biology*, 2023.
-- M. Zarepisheh *et al.* **Automated and clinically optimal treatment planning for cancer radiotherapy.** *INFORMS Journal on Applied Analytics*, 2022.
-- G. Jhanwar, N. Dahiya, P. Ghahremani, M. Zarepisheh, S. Nadeem. **Domain knowledge driven 3D dose prediction using moment-based loss function.** *Physics in Medicine & Biology*, 2022.
-- P. Dursun, M. Zarepisheh, G. Jhanwar, J. O. Deasy. **Solving the VMAT problem using a sequential convex programming method.** *Physics in Medicine & Biology*, 2021.
-- M. Zarepisheh *et al.* **Automated intensity modulated treatment planning: the expedited constrained hierarchical optimization (ECHO) system.** *Medical Physics*, 2019.
+</details>
 
 ## Citing PortPy
 
@@ -351,32 +282,36 @@ If PortPy or the PortPy.AI benchmark is useful in your research, please cite:
 }
 ```
 
-A machine-readable citation is in [`CITATION.cff`](./CITATION.cff) (GitHub's *Cite this repository* button).
-
 ## Contributing and support
 
-- Questions and bug reports: open an [issue](https://github.com/PortPy-Project/PortPy/issues).
-- Contributions: see [CONTRIBUTING.md](./CONTRIBUTING.md). Project-specific work lives in
-  extension repositories under [PortPy-Project](https://github.com/PortPy-Project); contact us before
-  starting a large change so we can align on scope.
-- Starring the repository helps us demonstrate community interest when seeking funding for
-  further development. Thank you!
+| 🐛 Bug reports and usage questions | ✉️ Other questions and collaborations | 🧩 Contributing |
+|---|---|---|
+| Please open an [issue](https://github.com/PortPy-Project/PortPy/issues) so others can find the answer too | Contact Gourav Jhanwar, lead developer (jhanwarg@mskcc.org), or Masoud Zarepisheh, principal investigator (zarepism@mskcc.org) | Pull requests are welcome; see the note on scope below |
+
+To keep PortPy lightweight, this repository holds only the core functionality, benchmark data and
+reference algorithms. Project-specific work lives in extension repositories under
+[PortPy-Project](https://github.com/PortPy-Project), such as
+[CompressRTP](https://github.com/PortPy-Project/CompressRTP) and
+[ECHO-VMAT](https://github.com/PortPy-Project/ECHO-VMAT).
+
+⭐ Starring the repository helps us demonstrate community interest when seeking funding for further
+development. Thank you!
 
 ## Team
 
 PortPy is a community project initiated at [Memorial Sloan Kettering Cancer Center](https://www.mskcc.org/) (MSK).
-It is developed and maintained by [Masoud Zarepisheh](https://masoudzp.github.io/) (Principal
+It is currently developed and maintained by [Masoud Zarepisheh](https://masoudzp.github.io/) (Principal
 Investigator, zarepism@mskcc.org) and [Gourav Jhanwar](https://github.com/gourav3017) (Lead Developer,
-jhanwarg@mskcc.org), with [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)
-(optimization and AI/ML, University of Edinburgh), [Linda Hong](https://www.mskcc.org/profile/linda-hong)
-(medical physics, MSK), [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en)
-(proton physics, Aarhus University) and [Saad Nadeem](https://nadeemlab.org/) (AI and imaging, MSK).
+jhanwarg@mskcc.org). Other team members include: [Mojtaba Tefagh](https://www.ed.ac.uk/profile/mojtaba-tefagh)
+(Optimization/AI/ML expert from University of Edinburgh), [Linda Hong](https://www.mskcc.org/profile/linda-hong)
+(Medical Physicist from MSK), [Vicki Taasti](https://scholar.google.com/citations?user=PEPyvewAAAAJ&hl=en)
+(Proton Physicist from Aarhus University), and [Saad Nadeem](https://nadeemlab.org/) (AI/Imaging expert from MSK).
 
 ## License
 
 PortPy is distributed under the **Apache 2.0 license with the Commons Clause** and is free for
 non-commercial academic and research use. Commercial use requires a separate license; please contact
-Masoud Zarepisheh (zarepism@mskcc.org). See [`LICENSE.txt`](./LICENSE.txt).
+Masoud Zarepisheh (zarepism@mskcc.org). See [`LICENSE.txt`](https://github.com/PortPy-Project/PortPy/blob/master/LICENSE.txt).
 
 PortPy is a research platform. It is not a medical device and must not be used for clinical
 decision-making or patient treatment.
