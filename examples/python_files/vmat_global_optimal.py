@@ -43,6 +43,15 @@ def compute_objective(my_plan, d, objectives, prescription_dose):
             raise ValueError(f"Unsupported objective type: {obj['type']}")
     return total
 
+# Solving this MIP takes many hours, so by default the example scores the PUBLISHED reference
+# solution instead of re-solving. Set True to solve it yourself.
+RUN_MIP = False
+# Used when RUN_MIP is False. A bare file name is downloaded from the published artifacts
+# (github.com/PortPy-Project/artifacts); a local .npz path is used as it is. The solution only
+# applies to the beams and down-sampling set up below, so re-solve if you change them.
+MIP_SOLUTION = 'vmat_mip_Lung_Patient_6.npz'
+
+
 def vmat_optimization():
     """
     1. Create down sampled influence matrix and generate benchmark VMAT plan
@@ -190,18 +199,35 @@ def vmat_optimization():
         opt.constraints += [mu[i] <= U]
     opt.constraints += [lbi >= 0]
     opt.constraints += [rbi >= 0]
-    # Optimize the problem
-    sol = opt.solve(solver=cp.MOSEK, verbose=True)
-    sol['MU'] = mu.value
-    sol['left_leaf_pos'] = lbi.value
-    sol['right_leaf_pos'] = rbi.value
+    if RUN_MIP:
+        # Optimize the problem
+        sol = opt.solve(solver=cp.MOSEK, verbose=True)
+        sol['MU'] = mu.value
+        sol['left_leaf_pos'] = lbi.value
+        sol['right_leaf_pos'] = rbi.value
 
-    # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    # Comment/Uncomment these lines to save and load the pickle file for plans and optimal solution from the directory
-    pp.save_plan(my_plan, plan_name='my_plan_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-    pp.save_optimal_sol(sol, sol_name='sol_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-    # my_plan = pp.load_plan(plan_name='my_plan_phantom_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
-    # sol = pp.load_optimal_sol(sol_name='sol_phantom_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+        # Comment/Uncomment these lines to save the pickle file for plans and optimal solution from the directory
+        pp.save_plan(my_plan, plan_name='my_plan_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+        pp.save_optimal_sol(sol, sol_name='sol_vmat.pkl', path=os.path.join(r'C:\temp', data.patient_id))
+    else:
+        # Score the published reference solution instead of re-solving. The constraints built
+        # above are still what define the problem; this is simply its recorded answer.
+        sol_path = (MIP_SOLUTION if os.path.exists(MIP_SOLUTION)
+                    else str(pp.download_artifact(MIP_SOLUTION)))
+        with np.load(sol_path) as npz:
+            sol = {key: npz[key] for key in npz.files if not key.startswith('meta_')}
+        n_beamlets = my_plan.inf_matrix.A.shape[1]
+        if sol['optimal_intensity'].size != n_beamlets:
+            raise ValueError(
+                f"{os.path.basename(sol_path)} holds {sol['optimal_intensity'].size} beamlet "
+                f'intensities but this plan has {n_beamlets}. A saved solution only applies to '
+                f'the geometry it was solved for, so set RUN_MIP = True to re-solve, or restore '
+                f'the beam selection and down-sampling the solution was made for.')
+        # The published file carries only the arrays, not the influence matrix it was solved on
+        # (that would make it a gigabyte). It is rebuilt above, and plot_dvh / plot_2d_slice
+        # read it from here.
+        sol['inf_matrix'] = my_plan.inf_matrix
+        print(f'MIP loaded from {sol_path}')
 
     """
     2) Visualize the benchmarked VMAT plan
